@@ -20,12 +20,12 @@ export function installMemoryWhiteboards(): Map<string, Whiteboard> {
     elementCount: scene.elements.length,
   });
   Object.assign(storage, {
-    async listWhiteboards(search?: string) {
+    async listWhiteboards({ search, limit = 24, offset = 0 }: { search?: string; limit?: number; offset?: number } = {}) {
       const term = search?.trim().toLowerCase();
-      return Array.from(rows.values())
+      const matches = Array.from(rows.values())
         .filter((row) => !term || row.title.toLowerCase().includes(term) || row.slug.includes(term))
-        .sort((a, b) => (b.updatedAt?.getTime() ?? 0) - (a.updatedAt?.getTime() ?? 0))
-        .map(summary);
+        .sort((a, b) => (b.updatedAt?.getTime() ?? 0) - (a.updatedAt?.getTime() ?? 0));
+      return { data: matches.slice(offset, offset + limit).map(summary), total: matches.length };
     },
     async getWhiteboard(id: string) {
       return rows.get(id);
@@ -41,18 +41,19 @@ export function installMemoryWhiteboards(): Map<string, Whiteboard> {
         title: data.title,
         scene: data.scene ?? { elements: [], appState: {}, files: {} },
         thumbnailUrl: data.thumbnailUrl ?? null,
+        version: 1,
         createdAt: now,
         updatedAt: now,
       };
       rows.set(row.id, row);
       return row;
     },
-    async updateWhiteboard(id: string, data: Partial<InsertWhiteboard>) {
+    async updateWhiteboard(id: string, data: Partial<InsertWhiteboard>, expectedVersion?: number) {
       const row = rows.get(id);
-      if (!row) throw new Error("missing row");
+      if (!row || (expectedVersion !== undefined && row.version !== expectedVersion)) return undefined;
       // Undefined fields are left untouched, as drizzle's .set() does.
       const defined = Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined));
-      const updated = { ...row, ...defined, updatedAt: new Date() } as Whiteboard;
+      const updated = { ...row, ...defined, version: row.version + 1, updatedAt: new Date() } as Whiteboard;
       rows.set(id, updated);
       return updated;
     },

@@ -6,6 +6,13 @@ import { requireAdmin, sendError } from "./_shared.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// A missing or non-numeric value falls back to the default; the cap bounds a page.
+function parseListParam(raw: unknown, fallback: number, min: number, max: number): number {
+  const value = Number(raw);
+  if (raw === undefined || !Number.isInteger(value)) return fallback;
+  return Math.min(Math.max(value, min), max);
+}
+
 function slugify(value: string): string {
   return value
     .toLowerCase()
@@ -42,7 +49,9 @@ export function registerWhiteboardsRoutes(app: Express) {
   app.get("/api/whiteboards", requireAdmin, async (req, res) => {
     try {
       const search = typeof req.query.search === "string" ? req.query.search : undefined;
-      res.json(await storage.listWhiteboards(search));
+      const limit = parseListParam(req.query.limit, 24, 1, 100);
+      const offset = parseListParam(req.query.offset, 0, 0, Number.MAX_SAFE_INTEGER);
+      res.json(await storage.listWhiteboards({ search, limit, offset }));
     } catch (err) {
       sendError(res, err, "Failed to load whiteboards");
     }
@@ -84,16 +93,28 @@ export function registerWhiteboardsRoutes(app: Express) {
       }
       const existing = await storage.getWhiteboard(req.params.id);
       if (!existing) return res.status(404).json({ message: "Whiteboard not found" });
-      const updateData = { ...parsed.data };
+      const { baseVersion, ...updateData } = parsed.data;
       if (typeof updateData.slug === "string") {
         const slug = slugify(updateData.slug);
         const owner = await storage.getWhiteboardBySlug(slug);
         if (owner && owner.id !== existing.id) {
-          return res.status(409).json({ message: "Slug already in use" });
+          return res.status(409).json({ message: "Slug already in use", code: "slug_taken" });
         }
         updateData.slug = slug;
       }
-      res.json(await storage.updateWhiteboard(existing.id, updateData));
+      const updated = await storage.updateWhiteboard(existing.id, updateData, baseVersion);
+      if (!updated) {
+        // Saved from another tab or device since this editor loaded the board.
+        const current = await storage.getWhiteboard(existing.id);
+        if (!current) return res.status(404).json({ message: "Whiteboard not found" });
+        return res.status(409).json({
+          message: "This whiteboard was saved somewhere else since you opened it",
+          code: "version_conflict",
+          version: current.version,
+          updatedAt: current.updatedAt,
+        });
+      }
+      res.json(updated);
     } catch (err) {
       sendError(res, err, "Failed to save whiteboard");
     }

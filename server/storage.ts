@@ -92,6 +92,7 @@ import {
   type Whiteboard,
   type InsertWhiteboard,
   type WhiteboardSummary,
+  type WhiteboardPage,
   type BrandGuidelines,
   type EstimateGuidelines,
   type SlideBlock,
@@ -393,11 +394,12 @@ export interface IStorage {
   recordPresentationView(presentationId: string, ipHash?: string): Promise<void>;
 
   // Whiteboards
-  listWhiteboards(search?: string): Promise<WhiteboardSummary[]>;
+  listWhiteboards(opts?: { search?: string; limit?: number; offset?: number }): Promise<WhiteboardPage>;
   getWhiteboard(id: string): Promise<Whiteboard | undefined>;
   getWhiteboardBySlug(slug: string): Promise<Whiteboard | undefined>;
   createWhiteboard(data: InsertWhiteboard): Promise<Whiteboard>;
-  updateWhiteboard(id: string, data: Partial<InsertWhiteboard>): Promise<Whiteboard>;
+  /** Bumps the version. With `expectedVersion`, undefined when the stored version differs (or the row is gone). */
+  updateWhiteboard(id: string, data: Partial<InsertWhiteboard>, expectedVersion?: number): Promise<Whiteboard | undefined>;
   deleteWhiteboard(id: string): Promise<void>;
 
   // Pages (Phase 43)
@@ -2543,18 +2545,24 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async listWhiteboards(search?: string): Promise<WhiteboardSummary[]> {
+  async listWhiteboards(opts: { search?: string; limit?: number; offset?: number } = {}): Promise<WhiteboardPage> {
     const { scene: _scene, ...columns } = getTableColumns(whiteboards);
-    const term = search?.trim();
-    const rows = await db
-      .select({
-        ...columns,
-        elementCount: sql<number>`coalesce(jsonb_array_length(${whiteboards.scene}->'elements'), 0)::int`,
-      })
-      .from(whiteboards)
-      .where(term ? or(ilike(whiteboards.title, `%${term}%`), ilike(whiteboards.slug, `%${term}%`)) : undefined)
-      .orderBy(desc(whiteboards.updatedAt));
-    return rows;
+    const term = opts.search?.trim();
+    const where = term ? or(ilike(whiteboards.title, `%${term}%`), ilike(whiteboards.slug, `%${term}%`)) : undefined;
+    const [rows, [{ total }]] = await Promise.all([
+      db
+        .select({
+          ...columns,
+          elementCount: sql<number>`coalesce(jsonb_array_length(${whiteboards.scene}->'elements'), 0)::int`,
+        })
+        .from(whiteboards)
+        .where(where)
+        .orderBy(desc(whiteboards.updatedAt), desc(whiteboards.id))
+        .limit(opts.limit ?? 24)
+        .offset(opts.offset ?? 0),
+      db.select({ total: sql<number>`count(*)::int` }).from(whiteboards).where(where),
+    ]);
+    return { data: rows, total };
   }
 
   async getWhiteboard(id: string): Promise<Whiteboard | undefined> {
@@ -2572,8 +2580,15 @@ export class DatabaseStorage implements IStorage {
     return row;
   }
 
-  async updateWhiteboard(id: string, data: Partial<InsertWhiteboard>): Promise<Whiteboard> {
-    const [row] = await db.update(whiteboards).set(data).where(eq(whiteboards.id, id)).returning();
+  async updateWhiteboard(id: string, data: Partial<InsertWhiteboard>, expectedVersion?: number): Promise<Whiteboard | undefined> {
+    // Check and bump in one statement, so two concurrent saves cannot both win.
+    const [row] = await db
+      .update(whiteboards)
+      .set({ ...data, version: sql`${whiteboards.version} + 1` })
+      .where(expectedVersion === undefined
+        ? eq(whiteboards.id, id)
+        : and(eq(whiteboards.id, id), eq(whiteboards.version, expectedVersion)))
+      .returning();
     return row;
   }
 

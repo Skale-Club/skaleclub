@@ -6,18 +6,39 @@ import { Excalidraw, getSceneVersion } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import '@excalidraw/excalidraw/index.css';
 import { ArrowLeft, Check, Copy, ExternalLink, Save } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { createWhiteboardThumbnail, serializeWhiteboardScene, toInitialData, whiteboardPublicUrl } from '@/components/whiteboard/whiteboardScene';
+import { apiRequest, HttpError, queryClient } from '@/lib/queryClient';
+import { createWhiteboardThumbnail, serializeWhiteboardScene, toInitialData, waitForImageFiles, whiteboardPublicUrl } from '@/components/whiteboard/whiteboardScene';
 import type { Whiteboard } from '@shared/schema';
 
 interface WhiteboardEditorProps {
   id: string;
-  onClose: () => void;
+  /** `replace` when the editor left a guard entry in history (see below). */
+  onClose: (opts?: { replace?: boolean }) => void;
+}
+
+// The body of a 409 the server sends when the board was saved elsewhere.
+function isVersionConflict(err: unknown): boolean {
+  if (!(err instanceof HttpError) || err.status !== 409) return false;
+  try {
+    return JSON.parse(err.message.slice(err.message.indexOf(':') + 1)).code === 'version_conflict';
+  } catch {
+    return false;
+  }
 }
 
 type ChangeArgs = Parameters<NonNullable<React.ComponentProps<typeof Excalidraw>['onChange']>>;
@@ -43,6 +64,11 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
   const [title, setTitle] = useState('');
   const [savedTitle, setSavedTitle] = useState('');
   const [copied, setCopied] = useState(false);
+  // The stored version this editor's content is based on (sent with each save).
+  const baseVersionRef = useRef<number | null>(null);
+  const [conflict, setConflict] = useState(false);
+  // Remounts Excalidraw when the latest saved version is loaded over local edits.
+  const [sceneKey, setSceneKey] = useState(0);
 
   const { data: board, isLoading, isError } = useQuery<Whiteboard>({
     queryKey: ['/api/whiteboards', id],
@@ -61,6 +87,7 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
       titleSeededRef.current = true;
       setTitle(board.title);
       setSavedTitle(board.title);
+      baseVersionRef.current = board.version;
     }
   }, [board]);
 
@@ -74,7 +101,8 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
     setIsDirty(signature !== savedSignatureRef.current);
   }, []);
 
-  const save = useCallback(async () => {
+  // `overwrite` saves even if another tab or device saved since this one loaded.
+  const save = useCallback(async ({ overwrite = false }: { overwrite?: boolean } = {}) => {
     const api = apiRef.current;
     if (!api || isSaving) return;
     const nextTitle = title.trim() || savedTitle;
@@ -82,6 +110,7 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
     const currentSignature = () =>
       sceneSignature(api.getSceneElementsIncludingDeleted(), api.getAppState(), api.getFiles());
     try {
+      await waitForImageFiles(api);
       // Snapshot first: anything drawn while the request is in flight stays unsaved.
       const scene = serializeWhiteboardScene(api);
       const sentSignature = currentSignature();
@@ -90,8 +119,15 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
         console.warn('Failed to render whiteboard thumbnail', err);
         return undefined;
       });
-      const response = await apiRequest('PUT', `/api/whiteboards/${id}`, { title: nextTitle, scene, thumbnailUrl });
+      const response = await apiRequest('PUT', `/api/whiteboards/${id}`, {
+        title: nextTitle,
+        scene,
+        thumbnailUrl,
+        baseVersion: overwrite ? undefined : (baseVersionRef.current ?? undefined),
+      });
       const updated = (await response.json()) as Whiteboard;
+      baseVersionRef.current = updated.version;
+      setConflict(false);
       savedSignatureRef.current = sentSignature;
       setIsDirty(currentSignature() !== sentSignature);
       setSavedTitle(updated.title);
@@ -99,11 +135,32 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
       queryClient.invalidateQueries({ queryKey: ['/api/whiteboards', 'list'] });
       toast({ title: t('Whiteboard saved'), description: t('The public link now shows this version.') });
     } catch (err: any) {
-      toast({ title: t('Failed to save whiteboard'), description: err.message, variant: 'destructive' });
+      if (isVersionConflict(err)) {
+        setConflict(true);
+      } else {
+        toast({ title: t('Failed to save whiteboard'), description: err.message, variant: 'destructive' });
+      }
     } finally {
       setIsSaving(false);
     }
   }, [id, isSaving, savedTitle, t, title, toast]);
+
+  // Drops local edits and shows what was saved elsewhere.
+  const loadLatest = useCallback(async () => {
+    try {
+      const latest = (await apiRequest('GET', `/api/whiteboards/${id}`).then((r) => r.json())) as Whiteboard;
+      queryClient.setQueryData(['/api/whiteboards', id], latest);
+      baseVersionRef.current = latest.version;
+      savedSignatureRef.current = null;
+      setIsDirty(false);
+      setTitle(latest.title);
+      setSavedTitle(latest.title);
+      setConflict(false);
+      setSceneKey((key) => key + 1);
+    } catch (err: any) {
+      toast({ title: t('Failed to load whiteboard'), description: err.message, variant: 'destructive' });
+    }
+  }, [id, t, toast]);
 
   // Ctrl/Cmd+S saves to the server instead of Excalidraw's "save to file".
   useEffect(() => {
@@ -128,9 +185,37 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [hasUnsavedChanges]);
 
+  // Browser back (or a swipe) would unmount the editor with no warning: while
+  // there are unsaved changes, a duplicate history entry absorbs the first back
+  // and asks. Once clean, that entry is passed through on the next back.
+  const unsavedRef = useRef(hasUnsavedChanges);
+  unsavedRef.current = hasUnsavedChanges;
+  const guardEntryRef = useRef(false);
+  useEffect(() => {
+    if (!hasUnsavedChanges || guardEntryRef.current) return;
+    window.history.pushState({ whiteboardGuard: true }, '', window.location.href);
+    guardEntryRef.current = true;
+  }, [hasUnsavedChanges]);
+  useEffect(() => {
+    const onPopState = () => {
+      if (!guardEntryRef.current) return;
+      // The guard entry was popped; the URL is still the editor's.
+      guardEntryRef.current = false;
+      if (unsavedRef.current && !window.confirm(t('You have unsaved changes. Leave without saving?'))) {
+        window.history.pushState({ whiteboardGuard: true }, '', window.location.href);
+        guardEntryRef.current = true;
+        return;
+      }
+      window.history.back();
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [t]);
+
   function handleClose() {
     if (hasUnsavedChanges && !window.confirm(t('You have unsaved changes. Leave without saving?'))) return;
-    onClose();
+    // Replace the guard entry rather than stacking the list on top of it.
+    onClose({ replace: guardEntryRef.current });
   }
 
   async function copyLink() {
@@ -207,6 +292,7 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
         )}
         {initialData && (
           <Excalidraw
+            key={sceneKey}
             initialData={initialData}
             excalidrawAPI={(api) => {
               apiRef.current = api;
@@ -219,6 +305,26 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
           />
         )}
       </div>
+
+      <AlertDialog open={conflict} onOpenChange={setConflict}>
+        <AlertDialogContent data-testid="whiteboard-conflict">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('This board was saved somewhere else')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('Another tab or device saved this whiteboard after you opened it. Keep your version and overwrite theirs, or load the saved version and lose your unsaved changes.')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('Cancel')}</AlertDialogCancel>
+            <Button variant="outline" onClick={() => void loadLatest()} data-testid="whiteboard-conflict-load">
+              {t('Load saved version')}
+            </Button>
+            <AlertDialogAction onClick={() => void save({ overwrite: true })} data-testid="whiteboard-conflict-overwrite">
+              {t('Overwrite with mine')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>,
     document.body,
   );

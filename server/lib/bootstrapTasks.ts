@@ -32,6 +32,8 @@ const TASKS: Task[] = [
   // After service-3d-printing, so the card it adds gets a category too.
   { name: "catalog-categories-2026-09", description: "Explicit catalog category on each Our Services card", run: assignServiceCategories },
   { name: "whiteboards-table-2026-10", description: "Whiteboards table for /admin/whiteboards and the public /w/:slug pages", run: ensureWhiteboardsTable },
+  // Same idempotent DDL, re-run once for the version column (the task above is done in prod).
+  { name: "whiteboards-version-2026-10", description: "Whiteboards version column, for detecting saves from another tab", run: ensureWhiteboardsTable },
 ];
 
 let tableReady: Promise<void> | null = null;

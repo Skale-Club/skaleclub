@@ -2,6 +2,24 @@ import { exportToCanvas } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI, ExcalidrawInitialDataState } from '@excalidraw/excalidraw/types';
 import type { WhiteboardScene } from '@shared/schema';
 
+// A pasted or dropped image is on the canvas before its file has loaded; saving
+// in that window would store the image without its picture. Resolves once every
+// image element's file is in, or rejects after `timeoutMs`.
+export async function waitForImageFiles(api: ExcalidrawImperativeAPI, timeoutMs = 10_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const files = api.getFiles();
+    // A placeholder has no fileId yet; a failed image is marked "error" and is
+    // not waited for.
+    const loading = api
+      .getSceneElements()
+      .some((element) => element.type === 'image' && element.status !== 'error' && (!element.fileId || !files[element.fileId]));
+    if (!loading) return;
+    if (Date.now() > deadline) throw new Error('An image is still loading. Try saving again in a moment.');
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+}
+
 // Only the parts of the editor state that change how the board looks are
 // stored; selection, zoom and open menus stay per-session.
 export function serializeWhiteboardScene(api: ExcalidrawImperativeAPI): WhiteboardScene {

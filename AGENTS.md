@@ -32,8 +32,10 @@ shared/schema.ts         # Drizzle tables + Zod schemas
   with Node's test runner; no database is needed.
 - `npm run test:e2e` builds the client and drives it in Chromium (`e2e/*.e2e.ts`).
   The whiteboard suite runs the real routes against an in-memory table.
-- `*.pg.test.ts` files need a disposable Postgres and are skipped by `npm test`; each
-  file's header has the command (e.g. `WHITEBOARDS_PG_TEST=1 DATABASE_URL=...`).
+- `npm run test:pg` runs the `*.pg.test.ts` suites against the Postgres in
+  `DATABASE_URL`; they drop and recreate their tables, so point it at a disposable
+  database only. `npm test` skips them. CI runs both, plus the e2e suite in
+  Chromium, Firefox and WebKit (`E2E_BROWSERS=chromium,firefox,webkit`).
 - Use `data-testid` attributes for UI elements that need reliable selectors.
 - Manually verify critical flows (booking, admin CRUD, availability) before PRs.
 

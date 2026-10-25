@@ -20,6 +20,7 @@
     "secrets:scan": "tsx scripts/run-gitleaks.ts",
     "db:migrate": "node scripts/apply-migrations.mjs",
     "test": "cross-env DATABASE_URL=postgresql://test:test@127.0.0.1:1/test POSTGRES_URL=postgresql://test:test@127.0.0.1:1/test tsx --test \"server/**/*.test.ts\" \"shared/**/*.test.ts\"",
+    "test:pg": "cross-env WHITEBOARDS_PG_TEST=1 tsx --test \"server/**/*.pg.test.ts\"",
     "test:e2e": "vite build && npm run test:e2e:run",
     "test:e2e:run": "cross-env DATABASE_URL=postgresql://test:test@127.0.0.1:1/test POSTGRES_URL=postgresql://test:test@127.0.0.1:1/test tsx --test \"e2e/**/*.e2e.ts\""
   },
