@@ -26,6 +26,8 @@ export const whiteboards = pgTable("whiteboards", {
   slug:      text("slug").notNull().unique(),
   title:     text("title").notNull(),
   scene:     jsonb("scene").$type<WhiteboardScene>().notNull().default(EMPTY_WHITEBOARD_SCENE),
+  // 16:9 card preview rendered by the editor on save (data URL); null when empty.
+  thumbnailUrl: text("thumbnail_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
 });
@@ -40,4 +42,10 @@ export const insertWhiteboardSchema = z.object({
   title: z.string().trim().min(1).max(200),
   slug:  z.string().min(1).max(120).optional(),
   scene: whiteboardSceneSchema.optional(),
+  thumbnailUrl: z
+    .string()
+    .regex(/^data:image\/(webp|png);base64,[A-Za-z0-9+/=]+$/)
+    .max(1_000_000)
+    .nullable()
+    .optional(),
 });

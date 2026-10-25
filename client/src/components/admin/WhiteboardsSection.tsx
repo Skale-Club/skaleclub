@@ -158,6 +158,21 @@ export function WhiteboardsSection() {
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {boards.map((board) => (
             <AdminCard key={board.id} padding="compact" className="flex flex-col gap-3" data-testid={`whiteboard-card-${board.id}`}>
+              <button
+                type="button"
+                onClick={() => openBoard(board.id)}
+                className="aspect-video w-full overflow-hidden rounded-lg border bg-muted/40"
+                aria-label={`${t('Edit')} ${board.title}`}
+                data-testid={`whiteboard-thumbnail-${board.id}`}
+              >
+                {board.thumbnailUrl ? (
+                  <img src={board.thumbnailUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                    <PenTool className="h-8 w-8 opacity-40" />
+                  </div>
+                )}
+              </button>
               <button type="button" onClick={() => openBoard(board.id)} className="text-left min-w-0">
                 <p className="font-semibold truncate">{board.title}</p>
                 <p className="text-xs text-muted-foreground truncate">/w/{board.slug}</p>

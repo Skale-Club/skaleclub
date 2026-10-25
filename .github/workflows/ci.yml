@@ -41,6 +41,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Browser tests against the build above (Chromium version pinned by the
+      # exact `playwright` devDependency).
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: npm run test:e2e:run
+
       - name: Dependency audit (high and above, prod deps only)
         run: npm audit --omit=dev --audit-level=high
         continue-on-error: true

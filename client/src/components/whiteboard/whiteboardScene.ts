@@ -1,3 +1,4 @@
+import { exportToCanvas } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI, ExcalidrawInitialDataState } from '@excalidraw/excalidraw/types';
 import type { WhiteboardScene } from '@shared/schema';
 
@@ -34,4 +35,48 @@ export function toInitialData(scene: WhiteboardScene | null | undefined): Excali
 
 export function whiteboardPublicUrl(slug: string): string {
   return `${window.location.origin}/w/${slug}`;
+}
+
+const THUMBNAIL_WIDTH = 640;
+const THUMBNAIL_HEIGHT = 360;
+
+// 16:9 card thumbnail of the saved scene: the drawing is fitted inside and the
+// rest is filled with the board's own (theme-adjusted) background. null for an
+// empty board.
+export async function createWhiteboardThumbnail(scene: WhiteboardScene): Promise<string | null> {
+  const initial = toInitialData(scene);
+  if (!initial.elements?.length) return null;
+  const dark = scene.appState?.theme === 'dark';
+  const drawing = await exportToCanvas({
+    elements: initial.elements,
+    files: initial.files ?? null,
+    appState: {
+      viewBackgroundColor: scene.appState?.viewBackgroundColor ?? '#ffffff',
+      exportBackground: true,
+      exportWithDarkMode: dark,
+    },
+    exportPadding: 24,
+    // Render at the size it is drawn at, so small boards stay sharp.
+    getDimensions: (width: number, height: number) => {
+      const scale = Math.min(THUMBNAIL_WIDTH / width, THUMBNAIL_HEIGHT / height, 4);
+      return { width: width * scale, height: height * scale, scale };
+    },
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.width = THUMBNAIL_WIDTH;
+  canvas.height = THUMBNAIL_HEIGHT;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  // The exported corner pixel is the background as rendered (dark mode inverts it).
+  const [r, g, b] = drawing.getContext('2d')?.getImageData(0, 0, 1, 1).data ?? [255, 255, 255];
+  ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+  ctx.fillRect(0, 0, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
+  ctx.drawImage(
+    drawing,
+    Math.round((THUMBNAIL_WIDTH - drawing.width) / 2),
+    Math.round((THUMBNAIL_HEIGHT - drawing.height) / 2),
+  );
+  // Safari cannot encode WebP and silently returns PNG; the server takes both.
+  return canvas.toDataURL('image/webp', 0.85);
 }

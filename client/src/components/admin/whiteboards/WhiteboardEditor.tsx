@@ -12,7 +12,7 @@ import { Loader2 } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { serializeWhiteboardScene, toInitialData, whiteboardPublicUrl } from '@/components/whiteboard/whiteboardScene';
+import { createWhiteboardThumbnail, serializeWhiteboardScene, toInitialData, whiteboardPublicUrl } from '@/components/whiteboard/whiteboardScene';
 import type { Whiteboard } from '@shared/schema';
 
 interface WhiteboardEditorProps {
@@ -53,8 +53,12 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
     refetchOnWindowFocus: false,
   });
 
+  // Seed the title once: later cache updates (after a save) must not overwrite
+  // what is being typed.
+  const titleSeededRef = useRef(false);
   useEffect(() => {
-    if (board) {
+    if (board && !titleSeededRef.current) {
+      titleSeededRef.current = true;
       setTitle(board.title);
       setSavedTitle(board.title);
     }
@@ -75,17 +79,21 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
     if (!api || isSaving) return;
     const nextTitle = title.trim() || savedTitle;
     setIsSaving(true);
+    const currentSignature = () =>
+      sceneSignature(api.getSceneElementsIncludingDeleted(), api.getAppState(), api.getFiles());
     try {
+      // Snapshot first: anything drawn while the request is in flight stays unsaved.
       const scene = serializeWhiteboardScene(api);
-      const response = await apiRequest('PUT', `/api/whiteboards/${id}`, { title: nextTitle, scene });
+      const sentSignature = currentSignature();
+      // A failed thumbnail never blocks the save; the card keeps the old one.
+      const thumbnailUrl = await createWhiteboardThumbnail(scene).catch((err) => {
+        console.warn('Failed to render whiteboard thumbnail', err);
+        return undefined;
+      });
+      const response = await apiRequest('PUT', `/api/whiteboards/${id}`, { title: nextTitle, scene, thumbnailUrl });
       const updated = (await response.json()) as Whiteboard;
-      savedSignatureRef.current = sceneSignature(
-        api.getSceneElementsIncludingDeleted(),
-        api.getAppState(),
-        api.getFiles(),
-      );
-      setIsDirty(false);
-      setTitle(updated.title);
+      savedSignatureRef.current = sentSignature;
+      setIsDirty(currentSignature() !== sentSignature);
       setSavedTitle(updated.title);
       queryClient.setQueryData(['/api/whiteboards', id], updated);
       queryClient.invalidateQueries({ queryKey: ['/api/whiteboards', 'list'] });
