@@ -19,6 +19,7 @@ export type AdminSection =
   | 'estimates'
   | 'presentations'
   | 'whiteboards'
+  | 'boards'
   | 'skaleHub'
   | 'pages'
   | 'notifications'

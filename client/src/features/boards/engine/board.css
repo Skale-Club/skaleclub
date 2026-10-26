@@ -1,0 +1,144 @@
+/* Board content colors. They follow the board's own theme (document.theme.dark
+   or the viewer toggle), never the admin/site theme around the editor, so a
+   light board stays light inside a dark admin. Editing chrome (toolbar, zoom
+   bar, panels) keeps using the app tokens. */
+.board-surface {
+  --board-bg: #ffffff;
+  /* Mind-map root: brand navy; on a dark board navy would vanish, so CTA blue. */
+  --board-root-bg: #0A162E;
+  --board-node-bg: #ffffff;
+  --board-node-fg: #1e293b;
+  --board-node-border: #cbd5e1;
+  --board-muted: #64748b;
+  --board-frame-bg: rgba(248, 250, 252, 0.7);
+  --board-frame-border: #e2e8f0;
+  background: var(--board-bg);
+  color: var(--board-node-fg);
+}
+
+.board-surface.board-dark {
+  --board-bg: #0f172a;
+  --board-root-bg: #5173D6;
+  --board-node-bg: #1e293b;
+  --board-node-fg: #f1f5f9;
+  --board-node-border: #475569;
+  --board-muted: #94a3b8;
+  --board-frame-bg: rgba(30, 41, 59, 0.55);
+  --board-frame-border: #334155;
+}
+
+.board-surface .react-flow {
+  --xy-background-color: var(--board-bg);
+}
+
+.board-surface .react-flow__attribution {
+  background: transparent;
+  opacity: 0.6;
+}
+
+/* Mind maps: nodes glide to their new place after an edit (the canvas drops
+   `board-animate` while dragging so nodes follow the pointer 1:1). Edges morph
+   with them where the browser can transition the path `d` property. */
+.board-surface.board-animate .react-flow__node-mind {
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 300ms ease;
+}
+.board-surface.board-animate .react-flow__node-mind.dragging {
+  transition: none;
+}
+.board-surface.board-animate .react-flow__edge-tree path {
+  transition: d 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes board-mind-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.board-surface .mind-node-body {
+  animation: board-mind-pop 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Nodes keep their own focus styling (the selection ring). */
+.board-surface .react-flow__node:focus,
+.board-surface .react-flow__node:focus-visible {
+  outline: none;
+}
+
+/* Frames sit under everything and only grab the pointer by their title (or
+   once selected), so a drag that starts on a frame's body box-selects what is
+   inside it, and the read-only viewer pans through it. */
+.board-surface .react-flow__node-frame {
+  pointer-events: none !important;
+}
+.board-surface:not(.board-readonly) .react-flow__node-frame.selected,
+.board-surface:not(.board-readonly) .react-flow__node-frame .frame-title,
+.board-surface .react-flow__node-frame .react-flow__resize-control,
+.board-surface .react-flow__node-frame .react-flow__handle.connectable {
+  pointer-events: all !important;
+}
+
+/* Resize handles: small white squares with the accent border. */
+.board-surface .board-resize-handle {
+  width: 9px;
+  height: 9px;
+  background: #ffffff;
+  border: 1.5px solid #5173D6;
+  border-radius: 2px;
+}
+.board-surface .board-resize-line {
+  border-color: transparent;
+}
+
+/* Connector tool: every handle shows, and nodes are targets to click. */
+.board-surface.board-tool-connector .react-flow__handle.connectable {
+  opacity: 1 !important;
+}
+.board-surface.board-tool-connector .react-flow__node {
+  cursor: crosshair;
+}
+
+/* Dropping an image file onto the canvas. */
+.board-surface.board-drop-active::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  z-index: 20;
+  border: 2px dashed #5173D6;
+  border-radius: 16px;
+  background: rgba(81, 115, 214, 0.06);
+  pointer-events: none;
+}
+
+/* Connector labels stay readable over the edge. */
+.board-surface .react-flow__edge-connector.selected .react-flow__edge-path {
+  filter: drop-shadow(0 0 2px rgba(81, 115, 214, 0.35));
+}
+
+.board-surface.board-tool-mind .react-flow__pane {
+  cursor: crosshair;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-surface.board-animate .react-flow__node-mind,
+  .board-surface.board-animate .react-flow__edge-tree path {
+    transition: none;
+  }
+  .board-surface .mind-node-body {
+    animation: none;
+  }
+}
+
+/* Present mode: everything outside the current slide steps back. */
+.board-surface .react-flow__node,
+.board-surface .react-flow__edge {
+  transition: opacity 300ms ease;
+}
+.board-surface .react-flow__node.board-dimmed,
+.board-surface .react-flow__edge.board-dimmed {
+  opacity: 0.14;
+}

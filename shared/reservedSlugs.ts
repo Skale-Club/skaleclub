@@ -16,6 +16,7 @@ export const RESERVED_SLUGS: readonly string[] = [
   "e",          // /e/:slug — estimate viewer
   "p",          // /p/:slug — presentation viewer
   "w",          // /w/:slug — public whiteboard
+  "b",          // /b/:slug — public board (mind map / canvas)
   "f",          // /f/:slug — public form
   "q",          // /q/:code — 301 to the tag link on Xpot
   "n",          // /n/:code — 301 to the tag link on Xpot
