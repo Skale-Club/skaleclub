@@ -39,6 +39,7 @@ import {
   presentations,
   presentationViews,
   whiteboards,
+  boards,
   brandGuidelines,
   estimateGuidelines,
   pages,
@@ -93,6 +94,9 @@ import {
   type InsertWhiteboard,
   type WhiteboardSummary,
   type WhiteboardPage,
+  type Board,
+  type InsertBoard,
+  type BoardPage,
   type BrandGuidelines,
   type EstimateGuidelines,
   type SlideBlock,
@@ -401,6 +405,15 @@ export interface IStorage {
   /** Bumps the version. With `expectedVersion`, undefined when the stored version differs (or the row is gone). */
   updateWhiteboard(id: string, data: Partial<InsertWhiteboard>, expectedVersion?: number): Promise<Whiteboard | undefined>;
   deleteWhiteboard(id: string): Promise<void>;
+
+  // Boards (mind map + canvas)
+  listBoards(opts?: { search?: string; limit?: number; offset?: number }): Promise<BoardPage>;
+  getBoard(id: string): Promise<Board | undefined>;
+  getBoardBySlug(slug: string): Promise<Board | undefined>;
+  createBoard(data: InsertBoard): Promise<Board>;
+  /** Bumps the version. With `expectedVersion`, undefined when the stored version differs (or the row is gone). */
+  updateBoard(id: string, data: Partial<InsertBoard>, expectedVersion?: number): Promise<Board | undefined>;
+  deleteBoard(id: string): Promise<void>;
 
   // Pages (Phase 43)
   listPages(): Promise<Page[]>;
@@ -2594,6 +2607,57 @@ export class DatabaseStorage implements IStorage {
 
   async deleteWhiteboard(id: string): Promise<void> {
     await db.delete(whiteboards).where(eq(whiteboards.id, id));
+  }
+
+  async listBoards(opts: { search?: string; limit?: number; offset?: number } = {}): Promise<BoardPage> {
+    const { document: _document, ...columns } = getTableColumns(boards);
+    const term = opts.search?.trim();
+    const where = term ? or(ilike(boards.title, `%${term}%`), ilike(boards.slug, `%${term}%`)) : undefined;
+    const [rows, [{ total }]] = await Promise.all([
+      db
+        .select({
+          ...columns,
+          nodeCount: sql<number>`coalesce(jsonb_array_length(${boards.document}->'nodes'), 0)::int`,
+        })
+        .from(boards)
+        .where(where)
+        .orderBy(desc(boards.updatedAt), desc(boards.id))
+        .limit(opts.limit ?? 24)
+        .offset(opts.offset ?? 0),
+      db.select({ total: sql<number>`count(*)::int` }).from(boards).where(where),
+    ]);
+    return { data: rows, total };
+  }
+
+  async getBoard(id: string): Promise<Board | undefined> {
+    const [row] = await db.select().from(boards).where(eq(boards.id, id));
+    return row;
+  }
+
+  async getBoardBySlug(slug: string): Promise<Board | undefined> {
+    const [row] = await db.select().from(boards).where(eq(boards.slug, slug));
+    return row;
+  }
+
+  async createBoard(data: InsertBoard): Promise<Board> {
+    const [row] = await db.insert(boards).values(data).returning();
+    return row;
+  }
+
+  async updateBoard(id: string, data: Partial<InsertBoard>, expectedVersion?: number): Promise<Board | undefined> {
+    // Check and bump in one statement, so two concurrent saves cannot both win.
+    const [row] = await db
+      .update(boards)
+      .set({ ...data, version: sql`${boards.version} + 1` })
+      .where(expectedVersion === undefined
+        ? eq(boards.id, id)
+        : and(eq(boards.id, id), eq(boards.version, expectedVersion)))
+      .returning();
+    return row;
+  }
+
+  async deleteBoard(id: string): Promise<void> {
+    await db.delete(boards).where(eq(boards.id, id));
   }
 
   // Pages (Phase 43)
