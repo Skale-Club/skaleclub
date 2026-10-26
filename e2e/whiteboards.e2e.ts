@@ -737,7 +737,11 @@ function whiteboardSuite(browserName: EngineName) {
       const res = await fetch(`${baseUrl}/api/whiteboards/${board().id}`, { method: "DELETE" });
       assert.equal(res.status, 200);
       assert.equal(rows.size, 0);
-      await page.goto(`${baseUrl}/admin/whiteboards`);
+      // Leave in-app, as the paging test below expects: a page.goto here left
+      // Firefox mid-navigation and aborted that test's reload.
+      await page.getByTestId("whiteboard-back").click();
+      await page.getByTestId("whiteboard-editor").waitFor({ state: "detached" });
+      assert.match(page.url(), /\/admin\/whiteboards$/);
     });
 
     it("the list loads a page at a time", async () => {
