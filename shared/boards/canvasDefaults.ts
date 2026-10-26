@@ -1,6 +1,9 @@
 // Defaults shared by the canvas editor, the templates and the pure canvas ops.
 import type { BoardNodeData } from "../schema/boards.js";
 
+// Largest board image upload (client check and storage bucket limit).
+export const BOARD_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+
 export type CanvasNodeType = BoardNodeData["type"];
 
 // Sizes used before React Flow has measured a node (and for new nodes).

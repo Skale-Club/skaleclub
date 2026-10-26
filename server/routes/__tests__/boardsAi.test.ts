@@ -43,7 +43,8 @@ async function withAi(provider: BoardsAiProvider, fn: (call: Call) => Promise<vo
 
 test("code fences are stripped, with or without chatter before them", () => {
   assert.equal(stripCodeFences("```markdown\n- A\n  - B\n```"), "- A\n  - B");
-  assert.equal(stripCodeFences("Here you go:\n```\n- A\n```\nEnjoy!"), "- A");
+  assert.equal(stripCodeFences("Here you go:\n```\n- A\n```\nEnjoy!"), "Here you go:\n- A\nEnjoy!", "text outside the fence is kept");
+  assert.equal(stripCodeFences("```\n- A\n```\nand\n```\n- B\n```"), "- A\nand\n- B", "every fenced block is kept");
   assert.equal(stripCodeFences("- A\n- B"), "- A\n- B");
   assert.equal(stripCodeFences("```\n- A\n- B"), "- A\n- B", "an unclosed fence");
 });
@@ -132,6 +133,10 @@ test("POST /expand returns new short children, never the existing ones", () => {
     assert.match(requests[0].user, /Plan > Marketing/);
     assert.match(requests[0].user, /do not repeat\): Ads/);
     assert.equal((await call("POST", "/api/boards/ai/expand", { topic: "x", count: 9 })).status, 400);
+    const empty = await call("POST", "/api/boards/ai/expand", { topic: "   " });
+    assert.equal(empty.status, 400);
+    assert.deepEqual(empty.json, { message: "Write the topic text first" });
+    assert.equal(requests.length, 1, "no model call for an empty topic");
   });
 });
 

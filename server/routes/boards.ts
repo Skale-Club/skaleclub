@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { storage } from "../storage.js";
-import { randomSlugSuffix } from "../lib/slug.js";
-import { createBoardSchema, updateBoardSchema, EMPTY_BOARD_DOCUMENT, type PublicBoard } from "#shared/schema.js";
+import { randomSlugSuffix, slugifyTitle } from "../lib/slug.js";
+import { createBoardSchema, updateBoardSchema, boardThumbnailSchema, EMPTY_BOARD_DOCUMENT, type PublicBoard } from "#shared/schema.js";
 import { requireAdmin, sendError } from "./_shared.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -14,14 +14,7 @@ function parseListParam(raw: unknown, fallback: number, min: number, max: number
 }
 
 function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80) || "board";
+  return slugifyTitle(value, { fallback: "board", maxLength: 80 });
 }
 
 async function buildUniqueBoardSlug(title: string): Promise<string> {
@@ -104,13 +97,18 @@ export function registerBoardsRoutes(app: Express) {
   app.put("/api/boards/:id", requireAdmin, async (req, res) => {
     if (!UUID_RE.test(req.params.id)) return res.status(400).json({ message: "Invalid board id" });
     try {
-      const parsed = updateBoardSchema.safeParse(req.body);
+      // A bad thumbnail alone must not lose the save: it is only a card
+      // preview, so it is dropped and everything else is stored.
+      const parsed = updateBoardSchema.omit({ thumbnailUrl: true }).safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
       }
+      const rawThumbnail = (req.body as { thumbnailUrl?: unknown } | null)?.thumbnailUrl;
+      const thumbnail = rawThumbnail === null ? ({ success: true, data: null } as const) : boardThumbnailSchema.safeParse(rawThumbnail);
       const existing = await storage.getBoard(req.params.id);
       if (!existing) return res.status(404).json({ message: "Board not found" });
-      const { baseVersion, ...updateData } = parsed.data;
+      const { baseVersion, ...updateData }: Omit<typeof parsed.data, "baseVersion"> & { baseVersion?: number; thumbnailUrl?: string | null } = parsed.data;
+      if (rawThumbnail !== undefined && thumbnail.success) updateData.thumbnailUrl = thumbnail.data;
       if (typeof updateData.slug === "string") {
         const slug = slugify(updateData.slug);
         const owner = await storage.getBoardBySlug(slug);

@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import { db } from "../../db.js";
-import { registerUploadRoutes } from "../uploads.js";
+import { registerUploadRoutes, ensureBoardBucket, resetBoardBucketForTests, BOARD_IMAGE_BUCKET, BOARD_IMAGE_MIME_TYPES } from "../uploads.js";
+import { BOARD_IMAGE_MAX_BYTES } from "#shared/boards/canvasDefaults.js";
 import { listen } from "./helpers/boardsHarness.js";
 
 // The board-image signing route up to the point where it would call Supabase:
@@ -66,4 +67,32 @@ test("board image signing: admin only, 503 without storage, validates the file n
   } finally {
     server.close();
   }
+});
+
+function stubSupabase(existing: string[]) {
+  const calls: { op: string; name: string; options: unknown }[] = [];
+  const client = {
+    storage: {
+      listBuckets: async () => ({ data: existing.map((name) => ({ name })), error: null }),
+      createBucket: async (name: string, options: unknown) => (calls.push({ op: "create", name, options }), { error: null }),
+      updateBucket: async (name: string, options: unknown) => (calls.push({ op: "update", name, options }), { error: null }),
+    },
+  };
+  return { calls, client: client as unknown as Parameters<typeof ensureBoardBucket>[0] };
+}
+
+test("the boards bucket is created with a mime allowlist and the size limit, or has them updated", async () => {
+  const expected = { public: true, allowedMimeTypes: BOARD_IMAGE_MIME_TYPES, fileSizeLimit: BOARD_IMAGE_MAX_BYTES };
+  assert.deepEqual(BOARD_IMAGE_MIME_TYPES, ["image/png", "image/jpeg", "image/gif", "image/webp", "image/avif"]);
+
+  resetBoardBucketForTests();
+  const fresh = stubSupabase([]);
+  await ensureBoardBucket(fresh.client);
+  assert.deepEqual(fresh.calls, [{ op: "create", name: BOARD_IMAGE_BUCKET, options: expected }]);
+
+  resetBoardBucketForTests();
+  const existing = stubSupabase([BOARD_IMAGE_BUCKET]);
+  await ensureBoardBucket(existing.client);
+  assert.deepEqual(existing.calls, [{ op: "update", name: BOARD_IMAGE_BUCKET, options: expected }]);
+  resetBoardBucketForTests();
 });

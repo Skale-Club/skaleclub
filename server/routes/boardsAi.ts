@@ -61,11 +61,14 @@ export const configuredBoardsAiProvider: BoardsAiProvider = {
 // ---------------------------------------------------------------------------
 // Output handling (pure, exported for tests)
 
-/** Removes a ``` fence wrapped around the whole answer (and any leading chatter before it). */
+/** Removes ``` fence marker lines (with their language tag) but keeps all of the text, fenced or not. */
 export function stripCodeFences(text: string): string {
-  const fenced = /```[a-zA-Z]*\n([\s\S]*?)```/.exec(text);
-  if (fenced) return fenced[1].trim();
-  return text.replace(/^```[a-zA-Z]*\n?/, "").replace(/```\s*$/, "").trim();
+  return text
+    .split("\n")
+    .filter((line) => !/^\s*```[\w+-]*\s*$/.test(line))
+    .map((line) => line.replace(/```[\w+-]*\s*$/, ""))
+    .join("\n")
+    .trim();
 }
 
 function cleanItemText(text: string): string {
@@ -186,7 +189,8 @@ const mindmapBody = z.object({
 });
 
 const expandBody = z.object({
-  topic: text(2_000),
+  // Emptiness is checked in the route, for a readable message.
+  topic: z.string().max(2_000),
   path: z.array(z.string().max(2_000)).max(30).default([]),
   existing: z.array(z.string().max(2_000)).max(100).default([]),
   count: z.number().int().min(3).max(6).default(4),
@@ -244,7 +248,9 @@ export function registerBoardsAiRoutes(app: Express, provider: BoardsAiProvider 
   app.post("/api/boards/ai/expand", requireAdmin, limit, async (req, res) => {
     const parsed = expandBody.safeParse(req.body);
     if (!parsed.success) return invalid(res, parsed.error);
-    const { topic, path, existing, count, language: lang } = parsed.data;
+    const { path, existing, count, language: lang } = parsed.data;
+    const topic = parsed.data.topic.trim();
+    if (!topic) return res.status(400).json({ message: "Write the topic text first" });
     const answer = await ask(res, expandPrompt({ topic, path, existing, count, language: lang }));
     if (answer === null) return;
     const children = normalizeExpandAnswer(answer, [topic, ...existing], count);

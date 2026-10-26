@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { z } from "zod";
 import { getSupabaseAdmin } from "../lib/supabase.js";
 import { SupabaseStorageService } from "../storage/supabaseStorage.js";
+import { BOARD_IMAGE_MAX_BYTES } from "#shared/boards/canvasDefaults.js";
 import { requireAdmin } from "./_shared.js";
 
 // Allowlist of image MIME types accepted for links-page uploads.
@@ -51,17 +52,32 @@ const ALLOWED_VIDEO_EXT = new Set(["mp4", "webm"]);
 // board image is any admin's upload shown to anyone with the board link.
 export const BOARD_IMAGE_EXT = new Set(["png", "jpg", "jpeg", "gif", "webp", "avif"]);
 export const BOARD_IMAGE_BUCKET = "boards";
+export const BOARD_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/avif"];
 let boardBucketReady = false;
 
-async function ensureBoardBucket() {
+export function resetBoardBucketForTests() {
+  boardBucketReady = false;
+}
+
+// The bucket itself enforces what a signed upload may contain (type and size):
+// a signed upload URL cannot be bound to a content type in this client.
+export async function ensureBoardBucket(supabase: ReturnType<typeof getSupabaseAdmin> = getSupabaseAdmin()) {
   if (boardBucketReady) return;
-  const supabase = getSupabaseAdmin();
+  const options = { public: true, allowedMimeTypes: BOARD_IMAGE_MIME_TYPES, fileSizeLimit: BOARD_IMAGE_MAX_BYTES };
   const { data: buckets } = await supabase.storage.listBuckets();
   if (!buckets?.some((b) => b.name === BOARD_IMAGE_BUCKET)) {
-    const { error } = await supabase.storage.createBucket(BOARD_IMAGE_BUCKET, { public: true });
+    const { error } = await supabase.storage.createBucket(BOARD_IMAGE_BUCKET, options);
     if (error && !error.message.includes("already exists")) throw new Error(`Failed to create bucket: ${error.message}`);
+    if (error) await updateBoardBucket(supabase, options);
+  } else {
+    await updateBoardBucket(supabase, options);
   }
   boardBucketReady = true;
+}
+
+async function updateBoardBucket(supabase: ReturnType<typeof getSupabaseAdmin>, options: { public: boolean; allowedMimeTypes: string[]; fileSizeLimit: number }) {
+  const { error } = await supabase.storage.updateBucket(BOARD_IMAGE_BUCKET, options);
+  if (error) throw new Error(`Failed to update bucket: ${error.message}`);
 }
 
 export function registerUploadRoutes(app: Express) {

@@ -32,6 +32,13 @@ const id = z.string().min(1).max(64);
 const color = z.string().max(32);
 const point = z.object({ x: z.number().finite(), y: z.number().finite() });
 const size = z.object({ w: z.number().finite().positive(), h: z.number().finite().positive() });
+// User-facing URLs (links, images) open in other people's browsers: http(s) only,
+// so javascript:, data: and vbscript: never reach the document.
+export const safeUrl = z
+  .string()
+  .url()
+  .max(2_000)
+  .refine((u) => /^https?:\/\//i.test(u), { message: "Only http(s) URLs are allowed" });
 const nodeText = z.string().max(BOARD_LIMITS.nodeText);
 
 export const mindNodeDataSchema = z.object({
@@ -41,9 +48,9 @@ export const mindNodeDataSchema = z.object({
   collapsed: z.boolean().optional(),
   icon: z.string().max(16).optional(),
   note: z.string().max(5_000).optional(),
-  link: z.string().url().max(2_000).optional(),
+  link: safeUrl.optional(),
   task: z.object({ done: z.boolean() }).optional(),
-  imageUrl: z.string().url().max(2_000).optional(),
+  imageUrl: safeUrl.optional(),
   // Which side of the root this first-level branch hangs on; descendants follow.
   side: z.enum(MIND_SIDES).optional(),
   // Only meaningful on a root: how its tree is laid out.
@@ -80,7 +87,7 @@ export const frameNodeDataSchema = z.object({
 
 export const imageNodeDataSchema = z.object({
   type: z.literal("image"),
-  url: z.string().url().max(2_000),
+  url: safeUrl,
   alt: z.string().max(500).optional(),
   naturalW: z.number().int().positive().optional(),
   naturalH: z.number().int().positive().optional(),
@@ -214,18 +221,20 @@ export const createBoardSchema = z.object({
   document: boardDocumentSchema.optional(),
 });
 
+// Card preview data URL. JPEG is the client's fallback when the PNG is too big.
+export const BOARD_THUMBNAIL_MAX_CHARS = 1_500_000;
+export const boardThumbnailSchema = z
+  .string()
+  .regex(/^data:image\/(webp|png|jpeg);base64,[A-Za-z0-9+/=]+$/)
+  .max(BOARD_THUMBNAIL_MAX_CHARS);
+
 export const updateBoardSchema = z.object({
   title: z.string().trim().min(1).max(BOARD_LIMITS.title).optional(),
   slug: z.string().min(1).max(120).optional(),
   kind: z.enum(BOARD_KINDS).optional(),
   document: boardDocumentSchema.optional(),
   visibility: z.enum(BOARD_VISIBILITIES).optional(),
-  thumbnailUrl: z
-    .string()
-    .regex(/^data:image\/(webp|png);base64,[A-Za-z0-9+/=]+$/)
-    .max(1_000_000)
-    .nullable()
-    .optional(),
+  thumbnailUrl: boardThumbnailSchema.nullable().optional(),
   // The version the editor loaded. Omitted to overwrite whatever is stored.
   baseVersion: z.number().int().positive().optional(),
 });

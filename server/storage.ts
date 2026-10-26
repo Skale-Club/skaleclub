@@ -1,6 +1,7 @@
 import { db } from "./db.js";
 import { recordRevision } from "./storage/revisions.js";
 import { invalidateSeoCache } from "./seo/caches.js";
+import { escapeLike } from "./lib/slug.js";
 import { decryptToken, encryptToken, isEncryptedToken } from "./lib/token-crypto.js";
 import { scoreItem } from "./blog/rss-selector.js";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "#shared/form.js";
@@ -2561,7 +2562,7 @@ export class DatabaseStorage implements IStorage {
   async listWhiteboards(opts: { search?: string; limit?: number; offset?: number } = {}): Promise<WhiteboardPage> {
     const { scene: _scene, ...columns } = getTableColumns(whiteboards);
     const term = opts.search?.trim();
-    const where = term ? or(ilike(whiteboards.title, `%${term}%`), ilike(whiteboards.slug, `%${term}%`)) : undefined;
+    const where = term ? or(ilike(whiteboards.title, `%${escapeLike(term)}%`), ilike(whiteboards.slug, `%${escapeLike(term)}%`)) : undefined;
     const [rows, [{ total }]] = await Promise.all([
       db
         .select({
@@ -2609,10 +2610,11 @@ export class DatabaseStorage implements IStorage {
     await db.delete(whiteboards).where(eq(whiteboards.id, id));
   }
 
+  // Rows carry the full thumbnail data URL (capped by updateBoardSchema, 1.5M chars).
   async listBoards(opts: { search?: string; limit?: number; offset?: number } = {}): Promise<BoardPage> {
     const { document: _document, ...columns } = getTableColumns(boards);
     const term = opts.search?.trim();
-    const where = term ? or(ilike(boards.title, `%${term}%`), ilike(boards.slug, `%${term}%`)) : undefined;
+    const where = term ? or(ilike(boards.title, `%${escapeLike(term)}%`), ilike(boards.slug, `%${escapeLike(term)}%`)) : undefined;
     const [rows, [{ total }]] = await Promise.all([
       db
         .select({

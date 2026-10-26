@@ -145,7 +145,7 @@ test("save validates the document, the payload and the id", () =>
     assert.equal((await put({ document: unknownType })).status, 400);
     assert.equal((await put({ document: doc(BOARD_LIMITS.nodes + 1) })).status, 400);
     assert.equal((await put({ document: doc(BOARD_LIMITS.nodes) })).status, 200, "the limit itself is fine");
-    assert.equal((await put({ thumbnailUrl: "https://evil.example/x.png" })).status, 400);
+    assert.equal((await put({ visibility: "public", thumbnailUrl: THUMB })).status, 400);
     assert.equal((await put({ visibility: "public" })).status, 400);
     assert.equal((await put({ title: "" })).status, 400);
     assert.equal((await call("PUT", "/api/boards/not-a-uuid", { title: "x" })).status, 400);
@@ -213,4 +213,29 @@ test("delete removes the board and its public page", () =>
     assert.equal((await call("DELETE", `/api/boards/${id}`)).status, 200);
     assert.equal((await call("GET", `/api/boards/slug/${slug}`, undefined, false)).status, 404);
     assert.equal((await call("DELETE", `/api/boards/${id}`)).status, 404);
+  }));
+
+test("an invalid thumbnail alone is dropped and the rest is saved; JPEG is accepted", () =>
+  withApi(async (call) => {
+    const { id } = (await call("POST", "/api/boards", { title: "Board" })).json;
+    await call("PUT", `/api/boards/${id}`, { thumbnailUrl: THUMB });
+    const dropped = await call("PUT", `/api/boards/${id}`, { document: doc(2), title: "Kept", thumbnailUrl: "https://evil.example/x.png" });
+    assert.equal(dropped.status, 200);
+    assert.equal(dropped.json.title, "Kept");
+    assert.equal(dropped.json.document.nodes.length, 2);
+    assert.equal(dropped.json.thumbnailUrl, THUMB, "the previous thumbnail stays");
+    const tooBig = await call("PUT", `/api/boards/${id}`, { title: "Big", thumbnailUrl: `data:image/png;base64,${"A".repeat(1_500_001)}` });
+    assert.equal(tooBig.status, 200);
+    assert.equal(tooBig.json.thumbnailUrl, THUMB);
+    const jpeg = "data:image/jpeg;base64,/9j/4AAQ";
+    assert.equal((await call("PUT", `/api/boards/${id}`, { thumbnailUrl: jpeg })).json.thumbnailUrl, jpeg);
+    assert.equal((await call("PUT", `/api/boards/${id}`, { document: { nodes: [{ id: "x", position: { x: 0, y: 0 }, data: { type: "hologram", text: "a" } }] }, thumbnailUrl: "nope" })).status, 400);
+  }));
+
+test("search matches %, _ and backslash literally", () =>
+  withApi(async (call) => {
+    await call("POST", "/api/boards", { title: "100% done" });
+    await call("POST", "/api/boards", { title: "plain" });
+    assert.equal((await call("GET", "/api/boards?search=%25")).json.total, 1);
+    assert.equal((await call("GET", "/api/boards?search=_")).json.total, 0);
   }));
