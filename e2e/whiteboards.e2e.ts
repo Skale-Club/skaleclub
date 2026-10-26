@@ -10,7 +10,7 @@ import { existsSync } from "node:fs";
 import type { Server } from "node:http";
 import express from "express";
 import sharp from "sharp";
-import { chromium, devices, firefox, webkit, type Browser, type BrowserContext, type Page } from "playwright";
+import { chromium, devices, firefox, webkit, type Browser, type BrowserContext, type Dialog, type Page } from "playwright";
 import type { Whiteboard } from "#shared/schema.js";
 import {
   createWhiteboardsApp,
@@ -116,11 +116,15 @@ function whiteboardSuite(browserName: EngineName) {
   }
 
   async function waitForSaveStatus(expected: string, target: Page = page) {
-    await target.waitForFunction(
-      (text) => document.querySelector('[data-testid="whiteboard-save-status"]')?.textContent?.trim() === text,
-      expected,
-      { timeout: 10_000 },
-    );
+    try {
+      await target.waitForFunction(
+        (text) => document.querySelector('[data-testid="whiteboard-save-status"]')?.textContent?.trim() === text,
+        expected,
+        { timeout: 15_000 },
+      );
+    } catch (err) {
+      throw new Error(`save status stayed "${await saveStatus(target)}", expected "${expected}"`, { cause: err });
+    }
   }
 
   async function canvasBox(target: Page = page) {
@@ -164,12 +168,23 @@ function whiteboardSuite(browserName: EngineName) {
   // screen. Read from a screenshot, not the canvas: in dark theme the canvas
   // holds pre-inverted colours that a CSS filter turns back.
   async function redPixelsOnScreen(target: Page) {
-    const { data, info } = await sharp(await target.screenshot()).raw().toBuffer({ resolveWithObject: true });
+    return countRed(await target.screenshot());
+  }
+
+  async function countRed(image: Buffer) {
+    const { data, info } = await sharp(image).raw().toBuffer({ resolveWithObject: true });
     let red = 0;
     for (let i = 0; i < data.length; i += info.channels) {
       if (data[i] > data[i + 1] + 60 && data[i] > data[i + 2] + 60) red++;
     }
     return red;
+  }
+
+  // The stored thumbnail, decoded here rather than in the page: WebKit can hand
+  // back a blank canvas when a just-decoded image is drawn and read at once.
+  function thumbnailBytes() {
+    const url = board().thumbnailUrl ?? "";
+    return Buffer.from(url.slice(url.indexOf(",") + 1), "base64");
   }
 
   describe(`whiteboards (${browserName})`, { timeout: 300_000 }, () => {
@@ -191,23 +206,117 @@ function whiteboardSuite(browserName: EngineName) {
       server?.close();
     });
 
-    it("starts with an empty list and creates a board from the dialog", async () => {
+    it("New opens an empty editor at /new without creating anything", async () => {
+      const requested: string[] = [];
+      page.on("request", (request) => requested.push(request.url()));
       await page.goto(`${baseUrl}/admin/whiteboards`);
       await page.getByText("No whiteboards yet").waitFor({ timeout: 30_000 });
       await page.getByTestId("whiteboards-new").click();
-      await page.getByTestId("whiteboard-new-title").fill("Como funciona o Google Ads");
-      await page.getByTestId("whiteboard-create").click();
       await openEditorReady();
 
+      assert.match(page.url(), /\/admin\/whiteboards\/new$/);
+      assert.equal(rows.size, 0, "no record before the first save");
+      assert.equal(await page.getByTestId("whiteboard-title-input").inputValue(), "");
+      assert.equal(await saveStatus(), "Not saved yet");
+      assert.equal(await page.getByTestId("whiteboard-save").isDisabled(), true, "nothing to save yet");
+      assert.equal(await page.getByTestId("whiteboard-copy-link").count(), 0, "no link before the board exists");
+      assert.equal(await page.getByTestId("whiteboard-open-public").count(), 0);
+
+      // A reload on /new is a fresh empty board, never a lookup of the id "new".
+      await page.reload();
+      await openEditorReady();
+      assert.equal(await saveStatus(), "Not saved yet");
+      assert.deepEqual(requested.filter((url) => /\/api\/whiteboards\/new\b/.test(url)), []);
+
+      // Nothing drawn and no title: leaving needs no confirmation.
+      let prompted = false;
+      const onDialog = (dialog: Dialog) => {
+        prompted = true;
+        void dialog.dismiss();
+      };
+      page.on("dialog", onDialog);
+      await page.getByTestId("whiteboard-back").click();
+      await page.getByTestId("whiteboard-editor").waitFor({ state: "detached" });
+      page.off("dialog", onDialog);
+      assert.equal(prompted, false);
+      assert.match(page.url(), /\/admin\/whiteboards$/);
+      assert.equal(rows.size, 0);
+    });
+
+    it("a new board with a title or a drawing counts as unsaved and asks before leaving", async () => {
+      await page.getByTestId("whiteboards-new").click();
+      await openEditorReady();
+
+      await page.getByTestId("whiteboard-title-input").fill("Rascunho");
+      await waitForSaveStatus("Unsaved changes");
+      assert.equal(await page.getByTestId("whiteboard-save").isDisabled(), false);
+      await page.getByTestId("whiteboard-title-input").fill("");
+      await waitForSaveStatus("Not saved yet");
+      assert.equal(await page.getByTestId("whiteboard-save").isDisabled(), true);
+
+      await drag("rectangle", [300, 200], [600, 380]);
+      await waitForSaveStatus("Unsaved changes");
+      assert.equal(await page.getByTestId("whiteboard-save").isDisabled(), false);
+
+      page.once("dialog", (dialog) => void dialog.dismiss());
+      await page.getByTestId("whiteboard-back").click();
+      assert.equal(await page.getByTestId("whiteboard-editor").isVisible(), true, "dismiss keeps the editor open");
+
+      page.once("dialog", (dialog) => void dialog.accept());
+      await page.getByTestId("whiteboard-back").click();
+      await page.getByTestId("whiteboard-editor").waitFor({ state: "detached" });
+      assert.match(page.url(), /\/admin\/whiteboards$/);
+      assert.equal(rows.size, 0, "a discarded new board never reaches the server");
+    });
+
+    it("the first save asks for a name, then creates the board without reloading the editor", async () => {
+      await page.getByTestId("whiteboards-new").click();
+      await openEditorReady();
+      await page.getByTestId("whiteboard-title-input").fill("Rascunho");
+      await drag("rectangle", [300, 200], [600, 380]);
+      await waitForSaveStatus("Unsaved changes");
+      await page.evaluate(() => {
+        (window as any).__editorCanvas = document.querySelector("canvas.excalidraw__canvas.interactive");
+      });
+
+      // The dialog opens with the top-bar title; cancelling saves nothing.
+      await page.getByTestId("whiteboard-save").click();
+      await page.getByTestId("whiteboard-name-dialog").waitFor();
+      assert.equal(await page.getByTestId("whiteboard-name-input").inputValue(), "Rascunho");
+      await page.getByTestId("whiteboard-name-dialog").getByRole("button", { name: "Cancel" }).click();
+      await page.getByTestId("whiteboard-name-dialog").waitFor({ state: "detached" });
+      assert.equal(rows.size, 0, "cancel creates nothing");
+      assert.match(page.url(), /\/admin\/whiteboards\/new$/);
+      assert.equal(await saveStatus(), "Unsaved changes");
+
+      await page.keyboard.press("Control+s");
+      await page.getByTestId("whiteboard-name-dialog").waitFor();
+      await page.getByTestId("whiteboard-name-input").fill("Como funciona o Google Ads");
+      // Ctrl+S inside the open dialog confirms it with the name typed there.
+      await page.keyboard.press("Control+s");
+      await waitForSaveStatus("All changes saved");
+
       assert.equal(rows.size, 1);
+      assert.equal(board().title, "Como funciona o Google Ads");
+      assert.match(board().slug, /^como-funciona-o-google-ads-/);
+      assert.deepEqual(board().scene.elements.map((element) => element.type), ["rectangle"]);
+      assert.match(board().thumbnailUrl ?? "", /^data:image\/(webp|png);base64,/);
       assert.match(page.url(), new RegExp(`/admin/whiteboards/${board().id}$`));
       assert.equal(await page.getByTestId("whiteboard-title-input").inputValue(), "Como funciona o Google Ads");
-      assert.equal(await saveStatus(), "All changes saved");
       assert.equal(await page.getByTestId("whiteboard-save").isDisabled(), true);
+      await page.getByTestId("whiteboard-copy-link").waitFor();
+      assert.match((await page.getByTestId("whiteboard-open-public").getAttribute("href")) ?? "", /^\/w\//);
+      assert.equal(
+        await page.evaluate(
+          () => document.querySelector("canvas.excalidraw__canvas.interactive") === (window as any).__editorCanvas,
+        ),
+        true,
+        "the canvas was not remounted",
+      );
+      assert.equal((await inkBox(page))?.empty, false, "the drawing is still on the canvas");
     });
 
     it("drawing marks the board unsaved and Ctrl+S stores the scene and a thumbnail", async () => {
-      await drag("rectangle", [300, 200], [600, 380]);
       await drag("ellipse", [700, 200], [950, 400]);
       await drag("arrow", [610, 290], [690, 300]);
       const box = await canvasBox();
@@ -230,25 +339,14 @@ function whiteboardSuite(browserName: EngineName) {
     });
 
     it("the thumbnail is a 16:9 picture of the drawing", async () => {
-      const thumbnail = board().thumbnailUrl!;
-      const stats = await page.evaluate(async (src) => {
-        const image = new Image();
-        image.src = src;
-        await image.decode();
-        const canvas = document.createElement("canvas");
-        canvas.width = image.naturalWidth;
-        canvas.height = image.naturalHeight;
-        const ctx = canvas.getContext("2d")!;
-        ctx.drawImage(image, 0, 0);
-        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        let ink = 0;
-        for (let i = 0; i < data.length; i += 4) if (data[i] < 160) ink++;
-        return { width: image.naturalWidth, height: image.naturalHeight, inkRatio: ink / (data.length / 4) };
-      }, thumbnail);
-      assert.equal(stats.width, 640);
-      assert.equal(stats.height, 360);
-      assert.ok(stats.inkRatio > 0.005, `thumbnail shows the drawing (ink ${stats.inkRatio})`);
-      assert.ok(stats.inkRatio < 0.5, `thumbnail is not a solid block (ink ${stats.inkRatio})`);
+      const { data, info } = await sharp(thumbnailBytes()).raw().toBuffer({ resolveWithObject: true });
+      let ink = 0;
+      for (let i = 0; i < data.length; i += info.channels) if (data[i] < 160) ink++;
+      const inkRatio = ink / (info.width * info.height);
+      assert.equal(info.width, 640);
+      assert.equal(info.height, 360);
+      assert.ok(inkRatio > 0.005, `thumbnail shows the drawing (ink ${inkRatio})`);
+      assert.ok(inkRatio < 0.5, `thumbnail is not a solid block (ink ${inkRatio})`);
     });
 
     // Holds the next save on the server (a slow network, in any browser) until
@@ -511,20 +609,7 @@ function whiteboardSuite(browserName: EngineName) {
       assert.match(String(file?.dataURL ?? ""), /^data:image\//, "with its picture embedded");
       assert.ok(Object.keys(board().scene.files ?? {}).length >= 1);
 
-      const thumbnailRed = await page.evaluate(async (src) => {
-        const img = new Image();
-        img.src = src;
-        await img.decode();
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext("2d")!;
-        ctx.drawImage(img, 0, 0);
-        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        let red = 0;
-        for (let i = 0; i < data.length; i += 4) if (data[i] > data[i + 1] + 60 && data[i] > data[i + 2] + 60) red++;
-        return red;
-      }, board().thumbnailUrl!);
+      const thumbnailRed = await countRed(thumbnailBytes());
       assert.ok(thumbnailRed > 50, `thumbnail shows the image (${thumbnailRed} red pixels)`);
 
       const viewer = await context.newPage();
@@ -564,6 +649,99 @@ function whiteboardSuite(browserName: EngineName) {
       assert.equal(rows.size, 0);
       const res = await fetch(`${baseUrl}/api/whiteboards/slug/${slug}`);
       assert.equal(res.status, 404);
+    });
+
+    it("a new board saved without a name gets a dated default name", async () => {
+      const defaultName = /^Whiteboard \d{2}\/\d{2} \d{2}:\d{2}$/;
+      await page.getByTestId("whiteboards-new").click();
+      await openEditorReady();
+      await drag("ellipse", [300, 200], [500, 360]);
+      await waitForSaveStatus("Unsaved changes");
+
+      await page.keyboard.press("Control+s");
+      const input = page.getByTestId("whiteboard-name-input");
+      await input.waitFor();
+      assert.equal(await input.inputValue(), "", "an empty top-bar title leaves the field empty");
+      assert.match((await input.getAttribute("placeholder")) ?? "", defaultName);
+      await screenshot(page, "name-dialog");
+      await page.getByTestId("whiteboard-name-confirm").click();
+      await waitForSaveStatus("All changes saved");
+      await screenshot(page, "default-name-saved");
+
+      assert.equal(rows.size, 1);
+      assert.match(board().title, defaultName);
+      assert.equal(await page.getByTestId("whiteboard-title-input").inputValue(), board().title);
+      assert.match(board().slug, /^whiteboard-\d{2}-\d{2}-\d{2}-\d{2}-/);
+    });
+
+    it("browser back after a first save asks as usual and never lands on /new", async () => {
+      // The delete test above leaves an unused accept-listener behind; it would answer this prompt first.
+      page.removeAllListeners("dialog");
+      const editorUrl = page.url();
+      assert.match(editorUrl, /\/admin\/whiteboards\/[0-9a-f-]{36}$/);
+      await drag("rectangle", [600, 200], [700, 300]);
+      await waitForSaveStatus("Unsaved changes");
+
+      const asked = page.waitForEvent("dialog", { timeout: 5_000 });
+      await page.evaluate(() => history.back());
+      await (await asked).dismiss();
+      await page.waitForTimeout(300);
+      assert.equal(await page.getByTestId("whiteboard-editor").isVisible(), true, "dismiss keeps the editor open");
+      assert.equal(page.url(), editorUrl, "the URL is the board's, not /new");
+      assert.equal(await saveStatus(), "Unsaved changes");
+
+      page.once("dialog", (dialog) => void dialog.accept());
+      await page.evaluate(() => history.back());
+      await page.getByTestId("whiteboard-editor").waitFor({ state: "detached" });
+      assert.match(page.url(), /\/admin\/whiteboards$/);
+      assert.equal(board().scene.elements.length, 1, "the discarded stroke never reached the server");
+
+      const res = await fetch(`${baseUrl}/api/whiteboards/${board().id}`, { method: "DELETE" });
+      assert.equal(res.status, 200);
+      assert.equal(rows.size, 0);
+    });
+
+    it("history through a created board never shows a stale new-board editor", async () => {
+      await page.getByTestId("whiteboards-new").click();
+      await openEditorReady();
+      await drag("rectangle", [300, 200], [500, 320]);
+      await page.keyboard.press("Control+s");
+      await page.getByTestId("whiteboard-name-input").fill("Historico");
+      // A double click must create one board, not two.
+      await page.getByTestId("whiteboard-name-confirm").dblclick();
+      await waitForSaveStatus("All changes saved");
+      await page.waitForTimeout(500);
+      assert.equal(rows.size, 1);
+      const boardUrl = page.url();
+      assert.match(boardUrl, /\/admin\/whiteboards\/[0-9a-f-]{36}$/);
+
+      // Back to the list, forward to the fresh /new, forward again to the board.
+      await page.evaluate(() => history.back());
+      await page.getByTestId("whiteboard-editor").waitFor({ state: "detached" });
+      assert.match(page.url(), /\/admin\/whiteboards$/);
+      await page.goForward();
+      await openEditorReady();
+      assert.match(page.url(), /\/admin\/whiteboards\/new$/);
+      assert.equal(await saveStatus(), "Not saved yet");
+      await page.goForward();
+      await page.waitForFunction(
+        () => (document.querySelector('[data-testid="whiteboard-title-input"]') as HTMLInputElement | null)?.value === "Historico",
+        undefined,
+        { timeout: 15_000 },
+      );
+      assert.equal(page.url(), boardUrl);
+      await openEditorReady();
+      assert.equal(await saveStatus(), "All changes saved");
+
+      page.removeAllListeners("dialog");
+      const res = await fetch(`${baseUrl}/api/whiteboards/${board().id}`, { method: "DELETE" });
+      assert.equal(res.status, 200);
+      assert.equal(rows.size, 0);
+      // Leave in-app, as the paging test below expects: a page.goto here left
+      // Firefox mid-navigation and aborted that test's reload.
+      await page.getByTestId("whiteboard-back").click();
+      await page.getByTestId("whiteboard-editor").waitFor({ state: "detached" });
+      assert.match(page.url(), /\/admin\/whiteboards$/);
     });
 
     it("the list loads a page at a time", async () => {

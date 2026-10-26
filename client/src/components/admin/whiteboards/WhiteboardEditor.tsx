@@ -17,6 +17,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
@@ -26,7 +34,10 @@ import { createWhiteboardThumbnail, serializeWhiteboardScene, toInitialData, wai
 import type { Whiteboard } from '@shared/schema';
 
 interface WhiteboardEditorProps {
-  id: string;
+  /** The board to edit, or null for a new one that has no record until its first save. */
+  id: string | null;
+  /** Called once the first save has created the board, so the URL can move to its id. */
+  onCreated?: (id: string) => void;
   /** `replace` when the editor left a guard entry in history (see below). */
   onClose: (opts?: { replace?: boolean }) => void;
 }
@@ -39,6 +50,12 @@ function isVersionConflict(err: unknown): boolean {
   } catch {
     return false;
   }
+}
+
+// "Whiteboard 26/10 14:30": what a new board is called when saved without a name.
+function defaultWhiteboardName(now = new Date()): string {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `Whiteboard ${pad(now.getDate())}/${pad(now.getMonth() + 1)} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 }
 
 type ChangeArgs = Parameters<NonNullable<React.ComponentProps<typeof Excalidraw>['onChange']>>;
@@ -54,13 +71,29 @@ function sceneSignature(elements: ChangeArgs[0], appState: ChangeArgs[1], files:
   ].join('|');
 }
 
-export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
+export function WhiteboardEditor({ id, onCreated, onClose }: WhiteboardEditorProps) {
   const { t, language } = useTranslation();
   const { toast } = useToast();
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
+  // False once the editor is gone: a request still in flight must not bring the
+  // board back or save a canvas that was discarded.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   const savedSignatureRef = useRef<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  // null until a new board's first save creates it. Later changes of the `id`
+  // prop (the URL moving to the created board) are ignored: this editor already
+  // holds that board's canvas.
+  const [boardId, setBoardId] = useState<string | null>(id);
+  const [nameDialogOpen, setNameDialogOpen] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [namePlaceholder, setNamePlaceholder] = useState('');
   const [title, setTitle] = useState('');
   const [savedTitle, setSavedTitle] = useState('');
   const [copied, setCopied] = useState(false);
@@ -69,10 +102,14 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
   const [conflict, setConflict] = useState(false);
   // Remounts Excalidraw when the latest saved version is loaded over local edits.
   const [sceneKey, setSceneKey] = useState(0);
+  // Bumped with sceneKey but synchronously: the instance being replaced can
+  // still fire onChange before it unmounts, and must not set the new baseline.
+  const sceneKeyRef = useRef(0);
 
   const { data: board, isLoading, isError } = useQuery<Whiteboard>({
-    queryKey: ['/api/whiteboards', id],
-    queryFn: () => apiRequest('GET', `/api/whiteboards/${id}`).then((r) => r.json()),
+    queryKey: ['/api/whiteboards', boardId],
+    queryFn: () => apiRequest('GET', `/api/whiteboards/${boardId}`).then((r) => r.json()),
+    enabled: boardId !== null,
     // The editor owns the scene once loaded; a background refetch must not
     // reset what is on the canvas.
     staleTime: Infinity,
@@ -80,8 +117,8 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
   });
 
   // Seed the title once: later cache updates (after a save) must not overwrite
-  // what is being typed.
-  const titleSeededRef = useRef(false);
+  // what is being typed. A new board has no title to load.
+  const titleSeededRef = useRef(id === null);
   useEffect(() => {
     if (board && !titleSeededRef.current) {
       titleSeededRef.current = true;
@@ -91,26 +128,31 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
     }
   }, [board]);
 
-  const initialData = useMemo(() => (board ? toInitialData(board.scene) : null), [board]);
+  const initialData = useMemo(
+    () => (board ? toInitialData(board.scene) : boardId === null ? toInitialData(null) : null),
+    [board, boardId],
+  );
   const hasUnsavedChanges = isDirty || title.trim() !== savedTitle;
 
-  const handleChange = useCallback((...[elements, appState, files]: ChangeArgs) => {
+  const handleChange = useCallback((key: number, ...[elements, appState, files]: ChangeArgs) => {
+    if (key !== sceneKeyRef.current) return;
     const signature = sceneSignature(elements, appState, files);
     // The first onChange reflects the loaded scene: that is the saved baseline.
     if (savedSignatureRef.current === null) savedSignatureRef.current = signature;
     setIsDirty(signature !== savedSignatureRef.current);
   }, []);
 
-  // `overwrite` saves even if another tab or device saved since this one loaded.
-  const save = useCallback(async ({ overwrite = false }: { overwrite?: boolean } = {}) => {
+  // Stores the canvas on board `targetId`. `overwrite` saves even if another tab
+  // or device saved since this one loaded.
+  const persist = useCallback(async (targetId: string, nextTitle: string, overwrite: boolean) => {
     const api = apiRef.current;
-    if (!api || isSaving) return;
-    const nextTitle = title.trim() || savedTitle;
+    if (!api) return;
     setIsSaving(true);
     const currentSignature = () =>
       sceneSignature(api.getSceneElementsIncludingDeleted(), api.getAppState(), api.getFiles());
     try {
       await waitForImageFiles(api);
+      if (!mountedRef.current) return;
       // Snapshot first: anything drawn while the request is in flight stays unsaved.
       const scene = serializeWhiteboardScene(api);
       const sentSignature = currentSignature();
@@ -119,7 +161,7 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
         console.warn('Failed to render whiteboard thumbnail', err);
         return undefined;
       });
-      const response = await apiRequest('PUT', `/api/whiteboards/${id}`, {
+      const response = await apiRequest('PUT', `/api/whiteboards/${targetId}`, {
         title: nextTitle,
         scene,
         thumbnailUrl,
@@ -131,7 +173,7 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
       savedSignatureRef.current = sentSignature;
       setIsDirty(currentSignature() !== sentSignature);
       setSavedTitle(updated.title);
-      queryClient.setQueryData(['/api/whiteboards', id], updated);
+      queryClient.setQueryData(['/api/whiteboards', targetId], updated);
       queryClient.invalidateQueries({ queryKey: ['/api/whiteboards', 'list'] });
       toast({ title: t('Whiteboard saved'), description: t('The public link now shows this version.') });
     } catch (err: any) {
@@ -143,24 +185,86 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
     } finally {
       setIsSaving(false);
     }
-  }, [id, isSaving, savedTitle, t, title, toast]);
+  }, [t, toast]);
+
+  // A new board has no record yet: its first save asks for a name, creates the
+  // board, then stores the canvas on it like any other save.
+  const save = useCallback(async ({ overwrite = false }: { overwrite?: boolean } = {}) => {
+    if (!apiRef.current || isSaving) return;
+    if (boardId === null) {
+      // Ctrl/Cmd+S with the name dialog open confirms it.
+      if (nameDialogOpen) {
+        confirmName();
+        return;
+      }
+      if (!hasUnsavedChanges) return;
+      setNameInput(title);
+      setNamePlaceholder(defaultWhiteboardName());
+      setNameDialogOpen(true);
+      return;
+    }
+    await persist(boardId, title.trim() || savedTitle, overwrite);
+  }, [boardId, confirmName, hasUnsavedChanges, isSaving, nameDialogOpen, persist, savedTitle, title]);
+
+  // Only the top-bar title as it was when the name was confirmed is replaced by
+  // the name: something typed since then stays.
+  async function createAndSave(name: string, titleAtConfirm: string) {
+    setIsSaving(true);
+    let created: Whiteboard;
+    try {
+      created = (await apiRequest('POST', '/api/whiteboards', { title: name }).then((r) => r.json())) as Whiteboard;
+    } catch (err: any) {
+      creatingRef.current = false;
+      setIsSaving(false);
+      // Keep the name for a retry.
+      setTitle((current) => (current === titleAtConfirm ? name : current));
+      toast({ title: t('Failed to create whiteboard'), description: err.message, variant: 'destructive' });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['/api/whiteboards', 'list'] });
+    // Left while the board was being created: it stays empty, and the drawing
+    // that was discarded is not saved into it.
+    if (!mountedRef.current) return;
+    // From here the board exists: a failed save below is retried as a normal
+    // save of this id, and the canvas keeps what was drawn.
+    baseVersionRef.current = created.version;
+    queryClient.setQueryData(['/api/whiteboards', created.id], created);
+    setBoardId(created.id);
+    setTitle((current) => (current === titleAtConfirm ? created.title : current));
+    setSavedTitle(created.title);
+    onCreated?.(created.id);
+    guardUrlRef.current = window.location.href;
+    await persist(created.id, created.title, false);
+  }
+
+  // Synchronous guard: the dialog stays mounted through its exit animation, so a
+  // double click or Enter would otherwise create two boards.
+  const creatingRef = useRef(false);
+  function confirmName() {
+    if (creatingRef.current) return;
+    creatingRef.current = true;
+    const name = nameInput.trim() || defaultWhiteboardName();
+    setNameDialogOpen(false);
+    void createAndSave(name, title);
+  }
 
   // Drops local edits and shows what was saved elsewhere.
   const loadLatest = useCallback(async () => {
     try {
-      const latest = (await apiRequest('GET', `/api/whiteboards/${id}`).then((r) => r.json())) as Whiteboard;
-      queryClient.setQueryData(['/api/whiteboards', id], latest);
+      const latest = (await apiRequest('GET', `/api/whiteboards/${boardId}`).then((r) => r.json())) as Whiteboard;
+      queryClient.setQueryData(['/api/whiteboards', boardId], latest);
       baseVersionRef.current = latest.version;
+      sceneKeyRef.current += 1;
       savedSignatureRef.current = null;
       setIsDirty(false);
       setTitle(latest.title);
       setSavedTitle(latest.title);
       setConflict(false);
-      setSceneKey((key) => key + 1);
+      setSceneKey(sceneKeyRef.current);
     } catch (err: any) {
       toast({ title: t('Failed to load whiteboard'), description: err.message, variant: 'destructive' });
     }
-  }, [id, t, toast]);
+  }, [boardId, t, toast]);
 
   // Ctrl/Cmd+S saves to the server instead of Excalidraw's "save to file".
   useEffect(() => {
@@ -191,6 +295,9 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
   const unsavedRef = useRef(hasUnsavedChanges);
   unsavedRef.current = hasUnsavedChanges;
   const guardEntryRef = useRef(false);
+  // Set once a new board is created: guard entries then carry the board's URL, not the /new one
+  // that browser back passes through.
+  const guardUrlRef = useRef<string | null>(null);
   useEffect(() => {
     if (!hasUnsavedChanges || guardEntryRef.current) return;
     window.history.pushState({ whiteboardGuard: true }, '', window.location.href);
@@ -202,7 +309,7 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
       // The guard entry was popped; the URL is still the editor's.
       guardEntryRef.current = false;
       if (unsavedRef.current && !window.confirm(t('You have unsaved changes. Leave without saving?'))) {
-        window.history.pushState({ whiteboardGuard: true }, '', window.location.href);
+        window.history.pushState({ whiteboardGuard: true }, '', guardUrlRef.current ?? window.location.href);
         guardEntryRef.current = true;
         return;
       }
@@ -245,11 +352,17 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
           }}
           className="h-9 max-w-xs font-medium"
           aria-label={t('Title')}
-          disabled={!board}
+          disabled={boardId !== null && !board}
           data-testid="whiteboard-title-input"
         />
         <span className="hidden text-xs text-muted-foreground sm:inline" data-testid="whiteboard-save-status">
-          {isSaving ? t('Saving…') : hasUnsavedChanges ? t('Unsaved changes') : t('All changes saved')}
+          {isSaving
+            ? t('Saving…')
+            : hasUnsavedChanges
+              ? t('Unsaved changes')
+              : boardId === null
+                ? t('Not saved yet')
+                : t('All changes saved')}
         </span>
         <div className="ml-auto flex items-center gap-2">
           {board && (
@@ -270,7 +383,7 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
             size="sm"
             className="gap-2"
             onClick={() => void save()}
-            disabled={!board || isSaving || !hasUnsavedChanges}
+            disabled={(boardId !== null && !board) || isSaving || !hasUnsavedChanges}
             data-testid="whiteboard-save"
           >
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -297,7 +410,7 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
             excalidrawAPI={(api) => {
               apiRef.current = api;
             }}
-            onChange={handleChange}
+            onChange={(...args) => handleChange(sceneKey, ...args)}
             langCode={language === 'pt' ? 'pt-BR' : 'en'}
             name={title}
             UIOptions={{ canvasActions: { loadScene: true, saveToActiveFile: false, toggleTheme: true } }}
@@ -305,6 +418,38 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
           />
         )}
       </div>
+
+      <Dialog open={nameDialogOpen} onOpenChange={setNameDialogOpen}>
+        <DialogContent data-testid="whiteboard-name-dialog">
+          <DialogHeader>
+            <DialogTitle>{t('Name your whiteboard')}</DialogTitle>
+            <DialogDescription>{t('You can change it later.')}</DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              confirmName();
+            }}
+          >
+            <Input
+              autoFocus
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              placeholder={namePlaceholder}
+              maxLength={200}
+              data-testid="whiteboard-name-input"
+            />
+            <DialogFooter className="mt-4">
+              <Button type="button" variant="outline" onClick={() => setNameDialogOpen(false)}>
+                {t('Cancel')}
+              </Button>
+              <Button type="submit" disabled={isSaving} data-testid="whiteboard-name-confirm">
+                {t('Save')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={conflict} onOpenChange={setConflict}>
         <AlertDialogContent data-testid="whiteboard-conflict">

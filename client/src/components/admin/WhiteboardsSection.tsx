@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useInfiniteQuery, useMutation } from '@tanstack/react-query';
 import { Copy, ExternalLink, PenLine, PenTool, Plus, Search, Trash2, X } from 'lucide-react';
@@ -12,14 +12,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from '@/components/ui/loader';
@@ -29,7 +21,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { whiteboardPublicUrl } from '@/components/whiteboard/whiteboardScene';
 import { AdminCard, EmptyState, SectionHeader } from './shared';
-import type { Whiteboard, WhiteboardPage, WhiteboardSummary } from '@shared/schema';
+import type { WhiteboardPage, WhiteboardSummary } from '@shared/schema';
 
 // Excalidraw is a large bundle: it loads only once a board is opened.
 const WhiteboardEditor = lazy(() =>
@@ -38,18 +30,26 @@ const WhiteboardEditor = lazy(() =>
 
 // Each card carries a thumbnail, so the list loads a page at a time.
 const PAGE_SIZE = 24;
+const NEW_BOARD_ID = 'new';
 
 export function WhiteboardsSection() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
   // /admin/whiteboards/:id opens the editor, so a reload keeps the board open.
+  // /admin/whiteboards/new opens an empty board that has no record until its first save.
   const editingId = location.replace(/^\/admin\/whiteboards\/?/, '').split('/')[0] || null;
+  const isNewBoard = editingId === NEW_BOARD_ID;
+  // The first save moves the URL from /new to the board's id. The editor must stay
+  // mounted through that (it holds the canvas and its undo history), so both URLs
+  // share one key.
+  const createdIdRef = useRef<string | null>(null);
+  // Only meaningful during that transition: once the editor is closed the id is stale.
+  if (!editingId) createdIdRef.current = null;
+  const editorKey = isNewBoard || editingId === createdIdRef.current ? NEW_BOARD_ID : editingId;
 
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<WhiteboardSummary | null>(null);
 
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useInfiniteQuery({
@@ -71,18 +71,12 @@ export function WhiteboardsSection() {
   const openBoard = (id: string) => setLocation(`/admin/whiteboards/${id}`);
   const closeBoard = (opts?: { replace?: boolean }) => setLocation('/admin/whiteboards', opts);
 
-  const createMutation = useMutation({
-    mutationFn: (title: string) => apiRequest('POST', '/api/whiteboards', { title }).then((r) => r.json() as Promise<Whiteboard>),
-    onSuccess: (board) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/whiteboards', 'list'] });
-      setIsCreateOpen(false);
-      setNewTitle('');
-      openBoard(board.id);
-    },
-    onError: (err: any) => {
-      toast({ title: t('Failed to create whiteboard'), description: err.message, variant: 'destructive' });
-    },
-  });
+  function handleCreated(id: string) {
+    createdIdRef.current = id;
+    // Replace the current entry (the editor's history guard, if any) instead of
+    // stacking the board's URL on top of /new.
+    setLocation(`/admin/whiteboards/${id}`, { replace: true });
+  }
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest('DELETE', `/api/whiteboards/${id}`),
@@ -103,11 +97,6 @@ export function WhiteboardsSection() {
     } catch {
       toast({ title: t('Could not copy link'), variant: 'destructive' });
     }
-  }
-
-  function submitCreate() {
-    const title = newTitle.trim();
-    if (title) createMutation.mutate(title);
   }
 
   return (
@@ -138,7 +127,7 @@ export function WhiteboardsSection() {
                 </button>
               )}
             </div>
-            <Button onClick={() => setIsCreateOpen(true)} className="gap-2 shrink-0" data-testid="whiteboards-new">
+            <Button onClick={() => openBoard(NEW_BOARD_ID)} className="gap-2 shrink-0" data-testid="whiteboards-new">
               <Plus className="w-4 h-4" />
               {t('New whiteboard')}
             </Button>
@@ -157,7 +146,7 @@ export function WhiteboardsSection() {
           description={debouncedSearch ? undefined : t('Create a board, draw, and save: the link goes public right away.')}
           action={
             debouncedSearch ? undefined : (
-              <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+              <Button onClick={() => openBoard(NEW_BOARD_ID)} className="gap-2">
                 <Plus className="w-4 h-4" />
                 {t('New whiteboard')}
               </Button>
@@ -238,39 +227,6 @@ export function WhiteboardsSection() {
         </div>
       )}
 
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('New whiteboard')}</DialogTitle>
-            <DialogDescription>{t('Give it a name. You can change it later.')}</DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              submitCreate();
-            }}
-          >
-            <Input
-              autoFocus
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder={t('e.g. How Google Ads bidding works')}
-              maxLength={200}
-              data-testid="whiteboard-new-title"
-            />
-            <DialogFooter className="mt-4">
-              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
-                {t('Cancel')}
-              </Button>
-              <Button type="submit" disabled={!newTitle.trim() || createMutation.isPending} data-testid="whiteboard-create">
-                {createMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                {t('Create')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -299,7 +255,12 @@ export function WhiteboardsSection() {
             </div>
           }
         >
-          <WhiteboardEditor key={editingId} id={editingId} onClose={closeBoard} />
+          <WhiteboardEditor
+            key={editorKey}
+            id={isNewBoard ? null : editingId}
+            onCreated={handleCreated}
+            onClose={closeBoard}
+          />
         </Suspense>
       )}
     </div>

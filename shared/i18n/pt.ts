@@ -658,6 +658,10 @@ export const translations = {
     'Move up': 'Mover para cima', 'Move down': 'Mover para baixo',
     'One bullet per line': 'Um tópico por linha',
     'Unsaved changes': 'Alterações não salvas',
+    // Whiteboards — name asked on a new board's first save
+    'Name your whiteboard': 'Dê um nome ao quadro',
+    'You can change it later.': 'Você pode mudar depois.',
+    'Not saved yet': 'Ainda não salvo',
     // Landing — Websites (bilingual: EN source, PT translation)
     'Is your website still stuck in the Stone Age?': 'O seu site ainda está no tempo das pedras?',
     'We build fast, Google-optimized websites for service businesses, deployed in days, not months.': 'Criamos sites rápidos e otimizados para o Google para negócios de serviço, entregues em dias, não em meses.',

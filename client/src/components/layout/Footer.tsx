@@ -13,9 +13,9 @@ import {
   SiInstagram,
   SiX,
   SiYoutube,
-  SiLinkedin,
   SiTiktok
 } from "react-icons/si";
+import { FaLinkedin } from "react-icons/fa";
 
 const platformIcons: Record<string, any> = {
   facebook: SiFacebook,
@@ -23,7 +23,7 @@ const platformIcons: Record<string, any> = {
   twitter: SiX,
   x: SiX,
   youtube: SiYoutube,
-  linkedin: SiLinkedin,
+  linkedin: FaLinkedin,
   tiktok: SiTiktok,
 };
 
