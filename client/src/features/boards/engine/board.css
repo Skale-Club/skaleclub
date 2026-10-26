@@ -35,3 +35,50 @@
   background: transparent;
   opacity: 0.6;
 }
+
+/* Mind maps: nodes glide to their new place after an edit (the canvas drops
+   `board-animate` while dragging so nodes follow the pointer 1:1). Edges morph
+   with them where the browser can transition the path `d` property. */
+.board-surface.board-animate .react-flow__node-mind {
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.board-surface.board-animate .react-flow__node-mind.dragging {
+  transition: none;
+}
+.board-surface.board-animate .react-flow__edge-tree path {
+  transition: d 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes board-mind-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.board-surface .mind-node-body {
+  animation: board-mind-pop 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Mind nodes keep their own focus styling (the selection ring). */
+.board-surface .react-flow__node-mind:focus,
+.board-surface .react-flow__node-mind:focus-visible {
+  outline: none;
+}
+
+.board-surface.board-tool-mind .react-flow__pane {
+  cursor: crosshair;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-surface.board-animate .react-flow__node-mind,
+  .board-surface.board-animate .react-flow__edge-tree path {
+    transition: none;
+  }
+  .board-surface .mind-node-body {
+    animation: none;
+  }
+}

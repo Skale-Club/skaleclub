@@ -29,6 +29,24 @@ export const BOARD_SHORTCUTS: { group: string; items: { keys: string[]; label: s
     ],
   },
   {
+    group: 'Mind map',
+    items: [
+      { keys: ['M'], label: 'Mind map tool (click to start a map)' },
+      { keys: ['Tab'], label: 'Add child topic' },
+      { keys: ['Enter'], label: 'Add sibling below' },
+      { keys: ['Shift', 'Tab'], label: 'Move up a level' },
+      { keys: ['←', '↑', '→', '↓'], label: 'Move between topics' },
+      { keys: ['Space'], label: 'Collapse / expand branch' },
+      { keys: ['F2'], label: 'Edit text (or just start typing)' },
+      { keys: ['Enter'], label: 'Finish editing' },
+      { keys: ['Shift', 'Enter'], label: 'New line while editing' },
+      { keys: ['Esc'], label: 'Stop editing, keep selection' },
+      { keys: ['Delete'], label: 'Delete topic and its branch' },
+      { keys: [MOD, 'V'], label: 'Paste indented text as a branch' },
+      { keys: ['Drag'], label: 'Drop a topic on another to move it' },
+    ],
+  },
+  {
     group: 'Board',
     items: [
       { keys: [MOD, 'S'], label: 'Save now' },
@@ -41,7 +59,7 @@ export function ShortcutsDialog({ open, onOpenChange }: { open: boolean; onOpenC
   const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg" data-testid="board-shortcuts-dialog">
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto" data-testid="board-shortcuts-dialog">
         <DialogHeader>
           <DialogTitle>{t('Keyboard shortcuts')}</DialogTitle>
           <DialogDescription>{t('Work faster on the board.')}</DialogDescription>

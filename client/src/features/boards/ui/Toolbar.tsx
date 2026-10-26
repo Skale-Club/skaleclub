@@ -13,11 +13,13 @@ export interface ToolDefinition {
   shortcut: string;
   /** Later phases flip this on as each tool lands. */
   enabled: boolean;
+  /** One line under the name in the tooltip. */
+  description?: string;
 }
 
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
-  { id: 'select', label: 'Select', icon: MousePointer2, shortcut: 'V', enabled: true },
-  { id: 'mind', label: 'Mind map', icon: Network, shortcut: 'M', enabled: false },
+  { id: 'select', label: 'Select', icon: MousePointer2, shortcut: 'V', enabled: true, description: 'Select, move and edit' },
+  { id: 'mind', label: 'Mind map', icon: Network, shortcut: 'M', enabled: true, description: 'Click the canvas to start a new map' },
   { id: 'sticky', label: 'Sticky note', icon: StickyNote, shortcut: 'N', enabled: false },
   { id: 'shape', label: 'Shape', icon: Square, shortcut: 'S', enabled: false },
   { id: 'text', label: 'Text', icon: Type, shortcut: 'T', enabled: false },
@@ -39,6 +41,7 @@ interface ToolbarProps {
 function ToolButton({
   label,
   hint,
+  description,
   icon: Icon,
   active,
   disabled,
@@ -47,6 +50,7 @@ function ToolButton({
 }: {
   label: string;
   hint: string;
+  description?: string;
   icon: LucideIcon;
   active?: boolean;
   disabled?: boolean;
@@ -76,9 +80,12 @@ function ToolButton({
           </button>
         </span>
       </TooltipTrigger>
-      <TooltipContent side="right" className="flex items-center gap-2">
-        <span>{label}</span>
-        <span className="text-xs text-muted-foreground">{hint}</span>
+      <TooltipContent side="right" className="max-w-[220px]">
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{label}</span>
+          {hint && <kbd className="rounded border bg-muted px-1 font-sans text-[10px] text-muted-foreground">{hint}</kbd>}
+        </div>
+        {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
       </TooltipContent>
     </Tooltip>
   );
@@ -97,7 +104,8 @@ export function Toolbar({ activeTool, onSelectTool, tools = TOOL_DEFINITIONS, on
         <ToolButton
           key={tool.id}
           label={t(tool.label)}
-          hint={tool.enabled ? tool.shortcut : t('Coming soon')}
+          hint={tool.enabled ? tool.shortcut : ''}
+          description={tool.enabled ? (tool.description ? t(tool.description) : undefined) : t('Coming soon')}
           icon={tool.icon}
           active={activeTool === tool.id}
           disabled={!tool.enabled}

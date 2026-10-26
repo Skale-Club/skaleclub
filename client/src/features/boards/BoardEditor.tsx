@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useStore } from 'zustand';
-import { AlertTriangle, ArrowLeft, CloudOff, Keyboard, Loader2 as Spinner, Save } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CloudOff, FileDown, FileUp, Keyboard, Loader2 as Spinner, MoreHorizontal, Save } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,6 +14,23 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from '@/components/ui/loader';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -30,6 +47,8 @@ import { Toolbar } from './ui/Toolbar';
 import { StylePanel } from './ui/StylePanel';
 import { ShareMenu } from './ui/ShareMenu';
 import { ShortcutsDialog } from './ui/ShortcutsDialog';
+import { exportOutline, importOutlineText } from './mindmap/actions';
+import { countOutlineItems, parseIndentedText } from '@shared/boards/outline';
 
 interface BoardEditorProps {
   id: string;
@@ -40,6 +59,73 @@ interface BoardEditorProps {
 function isTypingTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
   return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+}
+
+function downloadText(filename: string, text: string, type = 'text/markdown') {
+  const url = URL.createObjectURL(new Blob([text], { type: `${type};charset=utf-8` }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+}
+
+function fileSafe(name: string) {
+  return name.trim().replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').slice(0, 80) || 'board';
+}
+
+// "Import from text": pasted Markdown or an indented list becomes a new map.
+function ImportTextDialog({ open, onOpenChange, onImport }: { open: boolean; onOpenChange: (open: boolean) => void; onImport: (text: string) => void }) {
+  const { t } = useTranslation();
+  const [text, setText] = useState('');
+  const count = text.trim() ? countOutlineItems(parseIndentedText(text)) : 0;
+  useEffect(() => {
+    if (!open) setText('');
+  }, [open]);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg" data-testid="board-import-dialog">
+        <DialogHeader>
+          <DialogTitle>{t('Import from text')}</DialogTitle>
+          <DialogDescription>
+            {t('Paste a Markdown list or indented text. Each line becomes a topic; indentation makes branches.')}
+          </DialogDescription>
+        </DialogHeader>
+        <Textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Tab') {
+              // Tab indents instead of leaving the field.
+              e.preventDefault();
+              const el = e.currentTarget;
+              const { selectionStart, selectionEnd } = el;
+              const next = `${text.slice(0, selectionStart)}  ${text.slice(selectionEnd)}`;
+              setText(next);
+              requestAnimationFrame(() => el.setSelectionRange(selectionStart + 2, selectionStart + 2));
+            }
+          }}
+          placeholder={'# Q3 plan\n- Ads\n  - Google\n  - Meta\n- SEO'}
+          className="min-h-[220px] rounded-xl font-mono text-sm"
+          autoFocus
+          data-testid="board-import-textarea"
+        />
+        <DialogFooter className="items-center gap-2 sm:justify-between">
+          <span className="text-xs text-muted-foreground">{count ? `${count} ${count === 1 ? t('topic') : t('topics')}` : ''}</span>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              {t('Cancel')}
+            </Button>
+            <Button onClick={() => onImport(text)} disabled={!count} data-testid="board-import-confirm">
+              {t('Import')}
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function SaveStatusText({ status }: { status: SaveStatus }) {
@@ -107,6 +193,24 @@ function EditorShell({
   const [restoreSnapshot, setRestoreSnapshot] = useState<BoardSnapshot | null>(null);
   const [conflictOpen, setConflictOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+
+  function exportMarkdown() {
+    const markdown = exportOutline(store);
+    if (!markdown.trim()) {
+      toast({ title: t('There is no mind map to export yet') });
+      return;
+    }
+    downloadText(`${fileSafe(store.getState().title)}.md`, markdown);
+  }
+
+  function importText(text: string) {
+    const rootId = importOutlineText(store, text, t('Imported outline'));
+    if (rootId) {
+      setImportOpen(false);
+      toast({ title: t('Outline imported') });
+    }
+  }
 
   const autosave = useBoardAutosave({
     boardId: id,
@@ -329,6 +433,29 @@ function EditorShell({
             {board && slug && (
               <ShareMenu slug={slug} visibility={visibility} onVisibilityChange={(v) => void changeVisibility(v)} pending={visibilityPending} disabled={!loaded} />
             )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" disabled={!loaded} aria-label={t('More')} data-testid="board-more">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60 rounded-xl" data-testid="board-more-menu">
+                <DropdownMenuLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('Mind map')}</DropdownMenuLabel>
+                <DropdownMenuItem onSelect={exportMarkdown} data-testid="board-export-markdown">
+                  <FileDown className="mr-2 h-4 w-4" />
+                  {t('Export outline (Markdown)')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setImportOpen(true)} data-testid="board-import-text">
+                  <FileUp className="mr-2 h-4 w-4" />
+                  {t('Import from text')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => setShortcutsOpen(true)}>
+                  <Keyboard className="mr-2 h-4 w-4" />
+                  {t('Keyboard shortcuts')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               size="sm"
               className="gap-2"
@@ -365,6 +492,7 @@ function EditorShell({
         </div>
 
         <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+        <ImportTextDialog open={importOpen} onOpenChange={setImportOpen} onImport={importText} />
 
         <AlertDialog open={!!restoreSnapshot}>
           <AlertDialogContent data-testid="board-restore">

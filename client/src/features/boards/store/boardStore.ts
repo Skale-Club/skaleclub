@@ -4,6 +4,8 @@ import { temporal, type TemporalState } from 'zundo';
 import type { EdgeChange, NodeChange, Viewport } from '@xyflow/react';
 import type { BoardDocument, BoardEdge, BoardNode, BoardNodeData, BoardTheme } from '@shared/schema';
 import { createEmptyDocument, removeEdgesById, removeNodesCascade } from '@shared/boards/document';
+import { setMindCollapsed } from '@shared/boards/mindOps';
+import { autoLayoutDocument, getMindForest, relayoutRoots } from '../mindmap/autoLayout';
 
 // The single source of truth for an open board. React Flow renders nodes and
 // edges derived from `document` (engine/toFlow.ts) and reports changes back
@@ -11,6 +13,12 @@ import { createEmptyDocument, removeEdgesById, removeNodesCascade } from '@share
 //
 // Undo/redo (zundo) records `document` only: selection, viewport, measured
 // sizes and the title never create history entries.
+//
+// Mind maps lay themselves out: every commit runs the auto layout
+// (mindmap/autoLayout.ts) so an edit and the positions it causes are one
+// document, one undo step. Re-layouts caused only by the DOM (a node measured
+// a new size) are applied "silently": no history entry and no version bump, the
+// positions simply ride along with the next save.
 
 export type BoardTool = 'select' | 'mind' | 'sticky' | 'shape' | 'text' | 'connector' | 'pen' | 'image' | 'frame';
 
@@ -22,6 +30,14 @@ export interface BoardSelection {
 export interface MeasuredSize {
   width: number;
   height: number;
+}
+
+/** What the mounted canvas lets the rest of the editor do with the camera. */
+export interface BoardCanvasApi {
+  /** Pans (keeping the zoom) so the node is centred; `ifOffscreen` only when it is not fully visible. */
+  focusNode: (id: string, opts?: { ifOffscreen?: boolean }) => void;
+  /** The flow-space point at the centre of the visible canvas. */
+  getViewportCenter: () => { x: number; y: number };
 }
 
 export interface BoardState {
@@ -39,6 +55,11 @@ export interface BoardState {
   selection: BoardSelection;
   activeTool: BoardTool;
   editingNodeId: string | null;
+  /** Text that replaces the node's text when editing starts by typing a character. */
+  editingSeed: string | null;
+  /** Mind node highlighted as the drop target while a branch is dragged. */
+  dropTargetId: string | null;
+  canvasApi: BoardCanvasApi | null;
   /** Sizes React Flow measured in the DOM, so derived nodes keep them across renders. */
   measured: Record<string, MeasuredSize>;
   readOnly: boolean;
@@ -62,6 +83,10 @@ export interface BoardState {
   removeEdges: (ids: string[]) => void;
   removeSelection: () => void;
   setTheme: (patch: Partial<BoardTheme>) => void;
+  /** Collapses / expands a mind node (toggles without `value`). Works read-only too: the viewer can fold branches. */
+  toggleCollapsed: (id: string, value?: boolean) => void;
+  /** Lays out the maps containing `ids` again (all maps when omitted), as an edit. */
+  relayout: (ids?: string[]) => void;
   // Session state (never undoable)
   /** `silent`: remember the camera without counting it as a change to save (programmatic moves such as the initial fit). */
   setViewport: (viewport: Viewport, opts?: { silent?: boolean }) => void;
@@ -69,7 +94,9 @@ export interface BoardState {
   select: (selection: Partial<BoardSelection>) => void;
   clearSelection: () => void;
   setActiveTool: (tool: BoardTool) => void;
-  setEditingNode: (id: string | null) => void;
+  setEditingNode: (id: string | null, opts?: { seed?: string }) => void;
+  setDropTarget: (id: string | null) => void;
+  setCanvasApi: (api: BoardCanvasApi | null) => void;
   /** Called after a successful save with what was sent. */
   markSaved: (sent: { documentVersion: number; viewportVersion: number; title: string }) => void;
   // History
@@ -90,25 +117,44 @@ function sameIds(a: string[], b: string[]) {
   return a.length === b.length && a.every((id, i) => id === b[i]);
 }
 
-export function createBoardStore(init?: { document?: BoardDocument; title?: string; readOnly?: boolean }): BoardStore {
+export function createBoardStore(init?: { document?: BoardDocument; title?: string; readOnly?: boolean; autoLayout?: boolean }): BoardStore {
   const initialDoc = init?.document ?? createEmptyDocument();
+  const autoLayout = init?.autoLayout ?? true;
   // Depth of nested beginBatch calls; while > 0 history is paused after the
   // first edit (which records the pre-batch state).
   let batchDepth = 0;
   let batchRecorded = false;
+  // A drag opens its own batch (closed by the drag end), independent of any
+  // batch a caller opened around it (useAutoLayout wraps drag + reparent).
+  let dragBatch = false;
 
   const store = createStore<BoardState>()(
     temporal(
       (set, get, api) => {
         // Every document edit goes through here so the version always moves.
-        const commit = (next: BoardDocument) => {
+        const commit = (input: BoardDocument) => {
           const state = get();
-          if (next === state.document) return;
+          if (input === state.document) return;
+          const next = autoLayout ? autoLayoutDocument(state.document, input, state.measured) : input;
           set({ document: next, documentVersion: state.documentVersion + 1 });
           if (batchDepth > 0 && !batchRecorded) {
             batchRecorded = true;
             (api as unknown as BoardStore).temporal.getState().pause();
           }
+        };
+        // A layout-only change: no history entry, no version bump.
+        const commitSilently = (next: BoardDocument) => {
+          if (next === get().document) return;
+          const history = (api as unknown as BoardStore).temporal.getState();
+          const tracking = history.isTracking;
+          if (tracking) history.pause();
+          set({ document: next });
+          if (tracking) history.resume();
+        };
+        const relayoutSilently = (ids: Iterable<string> | null) => {
+          if (!autoLayout) return;
+          const { document: doc, measured } = get();
+          commitSilently(relayoutRoots(doc, ids, measured));
         };
         const mapNodes = (fn: (node: BoardNode) => BoardNode) => {
           const doc = get().document;
@@ -143,6 +189,9 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
           selection: EMPTY_SELECTION,
           activeTool: 'select',
           editingNodeId: null,
+          editingSeed: null,
+          dropTargetId: null,
+          canvasApi: null,
           measured: {},
           readOnly: init?.readOnly ?? false,
 
@@ -162,6 +211,8 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
               savedTitle: opts?.title ?? state.savedTitle,
               selection: EMPTY_SELECTION,
               editingNodeId: null,
+              editingSeed: null,
+              dropTargetId: null,
               measured: {},
             });
             (api as unknown as BoardStore).temporal.getState().clear();
@@ -176,6 +227,7 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
             const state = get();
             let selection = state.selection;
             let measured = state.measured;
+            const resized: string[] = [];
             const positions = new Map<string, { x: number; y: number }>();
             const sizes = new Map<string, { w: number; h: number }>();
             const removed: string[] = [];
@@ -196,6 +248,7 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
                     const prev = measured[change.id];
                     if (!prev || prev.width !== change.dimensions.width || prev.height !== change.dimensions.height) {
                       measured = { ...measured, [change.id]: change.dimensions };
+                      resized.push(change.id);
                     }
                     // Only a user resize (NodeResizer) changes the stored size.
                     if (change.resizing && !state.readOnly && !locked.has(change.id)) {
@@ -206,7 +259,7 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
                 }
                 case 'position': {
                   if (state.readOnly || locked.has(change.id)) break;
-                  if (change.dragging && !batchDepth) dragStart = true;
+                  if (change.dragging && !dragBatch) dragStart = true;
                   if (change.dragging === false) dragEnd = true;
                   if (change.position) positions.set(change.id, change.position);
                   break;
@@ -220,7 +273,16 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
             }
 
             if (selection !== state.selection || measured !== state.measured) set({ selection, measured });
-            if (dragStart) get().beginBatch();
+            // Mind nodes that changed size push their neighbours around.
+            if (resized.length) {
+              const forest = getMindForest(state.document.nodes, state.document.edges);
+              const mind = resized.filter((id) => forest.nodes.has(id));
+              if (mind.length) relayoutSilently(mind);
+            }
+            if (dragStart) {
+              dragBatch = true;
+              get().beginBatch();
+            }
             if (positions.size || sizes.size) {
               mapNodes((node) => {
                 const position = positions.get(node.id);
@@ -231,7 +293,10 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
               });
             }
             if (removed.length) get().removeNodes(removed);
-            if (dragEnd && batchDepth) get().endBatch();
+            if (dragEnd && dragBatch) {
+              dragBatch = false;
+              get().endBatch();
+            }
           },
 
           updateEdges: (changes) => {
@@ -309,6 +374,26 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
             const doc = get().document;
             commit({ ...doc, theme: { ...doc.theme, ...patch } });
           },
+          toggleCollapsed: (id, value) => {
+            commit(setMindCollapsed(get().document, id, value));
+            // Selection inside a folded branch moves up to the folded node.
+            const { selection, document: doc } = get();
+            const forest = getMindForest(doc.nodes, doc.edges);
+            const hiddenSelected = selection.nodeIds.some((sel) => {
+              let p = forest.parent.get(sel);
+              while (p !== undefined) {
+                if (p === id) return true;
+                p = forest.parent.get(p);
+              }
+              return false;
+            });
+            if (hiddenSelected) set({ selection: { nodeIds: [id], edgeIds: [] } });
+          },
+          relayout: (ids) => {
+            if (!autoLayout) return;
+            const { document: doc, measured } = get();
+            commit(relayoutRoots(doc, ids ?? null, measured));
+          },
 
           setViewport: (viewport, opts) => {
             const prev = get().viewport;
@@ -320,7 +405,11 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
           select: (next) => set({ selection: { nodeIds: next.nodeIds ?? get().selection.nodeIds, edgeIds: next.edgeIds ?? get().selection.edgeIds } }),
           clearSelection: () => set({ selection: EMPTY_SELECTION }),
           setActiveTool: (tool) => set({ activeTool: tool }),
-          setEditingNode: (id) => set({ editingNodeId: id }),
+          setEditingNode: (id, opts) => set({ editingNodeId: id, editingSeed: id ? (opts?.seed ?? null) : null }),
+          setDropTarget: (id) => {
+            if (get().dropTargetId !== id) set({ dropTargetId: id });
+          },
+          setCanvasApi: (canvasApi) => set({ canvasApi }),
           markSaved: (sent) =>
             set({ savedVersion: sent.documentVersion, savedViewportVersion: sent.viewportVersion, savedTitle: sent.title }),
 
@@ -329,6 +418,8 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
             if (!history.pastStates.length) return;
             history.undo();
             set({ documentVersion: get().documentVersion + 1, editingNodeId: null });
+            // Sizes may have changed since that state was recorded.
+            relayoutSilently(null);
             pruneSelection();
           },
           redo: () => {
@@ -336,6 +427,7 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
             if (!history.futureStates.length) return;
             history.redo();
             set({ documentVersion: get().documentVersion + 1, editingNodeId: null });
+            relayoutSilently(null);
             pruneSelection();
           },
           beginBatch: () => {
