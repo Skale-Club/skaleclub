@@ -15,3 +15,4 @@ export * from "./schema/integrations.js";
 export * from "./schema/bootstrap.js";
 export * from "./schema/content.js";
 export * from "./schema/whiteboards.js";
+export * from "./schema/boards.js";
