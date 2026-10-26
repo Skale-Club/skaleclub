@@ -14,6 +14,7 @@ import type { Board, BoardDocument, MindNodeData } from "#shared/schema.js";
 import { createBoardsApp, installMemoryBoards, listen } from "../server/routes/__tests__/helpers/boardsHarness.js";
 import type { BoardsAiProvider, BoardsAiRequest } from "../server/routes/boardsAi.js";
 import { boardContentBounds } from "#shared/boards/bounds.js";
+import { effectiveZ } from "#shared/boards/canvasOps.js";
 
 const DIST = path.resolve(import.meta.dirname, "../dist/public");
 
@@ -57,6 +58,22 @@ async function startBoardsServer(opts: { ai?: BoardsAiProvider; beforeRoutes?: (
 function assertDownloadName(file: Download, expected: string) {
   const name = file.suggestedFilename();
   assert.ok(name === expected || name === expected.replace(/ /g, "_"), `download named ${JSON.stringify(name)}, expected ${JSON.stringify(expected)}`);
+}
+
+// Opens the ⋯ menu and one of its submenus (a click opens it; no hover timing involved).
+async function openMoreSub(target: Page, sub: "import" | "export") {
+  await target.getByTestId("board-more").click();
+  await target.getByTestId("board-more-menu").waitFor();
+  await target.getByTestId(`board-more-${sub}`).click();
+  await target.getByTestId(`board-more-${sub}-menu`).waitFor();
+}
+
+// Opens "More tools" on the rail and picks one of its tools.
+async function pickMoreTool(target: Page, tool: "connector" | "image" | "frame") {
+  await target.getByTestId("board-tool-more").click();
+  await target.getByTestId("board-tool-more-menu").waitFor();
+  await target.getByTestId(`board-tool-${tool}`).click();
+  await target.getByTestId("board-tool-more-menu").waitFor({ state: "detached" });
 }
 
 async function waitForSaved(target: Page) {
@@ -315,9 +332,44 @@ function boardsSuite(browserName: EngineName) {
       assert.equal((await page.getByTestId("board-save-status").textContent())?.trim(), "All changes saved", "opens clean");
     });
 
+    it("the side panel is a floating card: the Outline toggle opens it, its close button puts it away", async () => {
+      // Opened fresh from the reload: nothing is selected, so there is no panel.
+      assert.equal(await page.getByTestId("board-style-panel").count(), 0);
+      const viewport = page.viewportSize()!;
+      assert.equal((await page.getByTestId("board-canvas").boundingBox())!.width, viewport.width, "the canvas has the whole width");
+
+      await page.getByTestId("board-outline-toggle").click();
+      await page.getByTestId("board-style-panel").waitFor();
+      await page.getByTestId("outline-panel").waitFor();
+      assert.equal(await page.getByTestId("board-panel-tab-outline").getAttribute("data-state"), "active");
+      assert.equal(await page.getByTestId("board-outline-toggle").count(), 0, "the toggle gives way to the card");
+      const card = (await page.getByTestId("board-style-panel").boundingBox())!;
+      assert.ok(card.x + card.width <= viewport.width && card.x > viewport.width - 320, `card at the top right: ${JSON.stringify(card)}`);
+      assert.equal((await page.getByTestId("board-canvas").boundingBox())!.width, viewport.width, "the card takes no layout width");
+
+      // Picking a topic from the outline keeps the Outline tab; the Style tab is one click away.
+      await selectFromOutline("Ads");
+      assert.equal(await page.getByTestId("board-panel-tab-outline").getAttribute("data-state"), "active");
+      await page.getByTestId("board-panel-tab-style").click();
+      await page.getByTestId("mind-style-section").waitFor();
+      assert.equal(await page.getByTestId("board-palette-brand").count(), 0, "board settings are not in the panel");
+
+      await page.getByTestId("board-panel-close").click();
+      await page.getByTestId("board-style-panel").waitFor({ state: "detached" });
+      assert.equal(await page.locator(".react-flow__node.selected").count(), 0, "closing clears the selection");
+      await page.getByTestId("board-outline-toggle").waitFor();
+
+      // A new selection from the canvas brings the card back on the Style tab.
+      await select("Meta");
+      await page.getByTestId("mind-style-section").waitFor();
+      assert.equal(await page.getByTestId("board-panel-tab-style").getAttribute("data-state"), "active");
+      await page.getByTestId("board-panel-close").click();
+      await page.getByTestId("board-style-panel").waitFor({ state: "detached" });
+    });
+
     it("exports the outline as Markdown and imports text as a new map", async () => {
       const download = page.waitForEvent("download");
-      await page.getByTestId("board-more").click();
+      await openMoreSub(page, "export");
       await page.getByTestId("board-export-markdown").click();
       const file = await download;
       const stream = await file.createReadStream();
@@ -326,7 +378,7 @@ function boardsSuite(browserName: EngineName) {
       assert.equal(markdown, ["# Plano de marketing", "", "- Ads", "  - Google", "- Meta", "- SEO", ""].join("\n"));
 
       await page.getByTestId("board-more-menu").waitFor({ state: "detached" });
-      await page.getByTestId("board-more").click();
+      await openMoreSub(page, "import");
       await page.getByTestId("board-import-text").click();
       await page.getByTestId("board-import-textarea").fill("Eventos\n  Feira\n  Webinar");
       await page.getByTestId("board-import-confirm").click();
@@ -349,6 +401,47 @@ function boardsSuite(browserName: EngineName) {
       assert.equal(await mindNodes().count(), 11);
     });
 
+    it("a topic's panel: the icon sits in a popover and Details open by themselves when there is a note", async () => {
+      await select("SEO");
+      await page.getByTestId("mind-style-section").waitFor();
+      assert.equal(await page.getByTestId("mind-details-toggle").getAttribute("aria-expanded"), "false");
+      assert.equal(await page.getByTestId("mind-note-input").count(), 0, "details start closed on a plain topic");
+      assert.equal(await page.getByTestId("mind-icon-option").count(), 0, "the emoji grid is not on the panel");
+      assert.match((await page.getByTestId("mind-icon-button").textContent()) ?? "", /Add icon/);
+
+      await page.getByTestId("mind-icon-button").click();
+      await page.getByTestId("mind-icon-popover").waitFor();
+      assert.equal(await page.getByTestId("mind-icon-clear").count(), 0, "nothing to remove yet");
+      await page.getByTestId("mind-icon-option").nth(1).click();
+      await page.getByTestId("mind-icon-popover").waitFor({ state: "detached" });
+      assert.equal(((await page.getByTestId("mind-icon-button").textContent()) ?? "").trim(), "⭐");
+      await waitForSaveStatus("All changes saved");
+      const iconOf = () => (savedMind().doc.nodes.find((n) => (n.data as MindNodeData).text === "SEO")!.data as MindNodeData).icon;
+      assert.equal(iconOf(), "⭐");
+
+      await page.getByTestId("mind-icon-button").click();
+      await page.getByTestId("mind-icon-clear").click();
+      await page.getByTestId("mind-icon-popover").waitFor({ state: "detached" });
+      assert.match((await page.getByTestId("mind-icon-button").textContent()) ?? "", /Add icon/);
+
+      await page.getByTestId("mind-details-toggle").click();
+      await page.getByTestId("mind-note-input").fill("Check the audit");
+      await page.getByTestId("mind-details-toggle").click(); // blur commits the note
+      assert.equal(await page.getByTestId("mind-note-input").count(), 0, "details close again");
+      await waitForSaveStatus("All changes saved");
+      assert.equal(iconOf(), undefined, "the icon was removed");
+
+      // Another topic starts closed; this one opens by itself because it has a note.
+      await select("Feira");
+      assert.equal(await page.getByTestId("mind-details-toggle").getAttribute("aria-expanded"), "false");
+      await select("SEO");
+      assert.equal(await page.getByTestId("mind-details-toggle").getAttribute("aria-expanded"), "true");
+      assert.equal(await page.getByTestId("mind-note-input").inputValue(), "Check the audit");
+      await page.getByTestId("mind-note-input").fill("");
+      await page.getByTestId("mind-details-toggle").click();
+      await waitForSaveStatus("All changes saved");
+    });
+
     async function dragBy(locator: Locator, dx: number, dy: number) {
       const box = (await locator.boundingBox())!;
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -361,9 +454,13 @@ function boardsSuite(browserName: EngineName) {
     it("dragging a root moves its map; dropping a topic on another reparents it", async () => {
       await page.getByTestId("board-zoom-fit").click();
       await page.waitForTimeout(400);
+      // Room below the maps for the drags (the import lands on the first map's branches on a wide canvas).
+      await page.getByTestId("board-zoom-out").click();
+      await page.waitForTimeout(400);
       const before = (await mindNode("Feira").boundingBox())!;
       const rootBefore = (await mindNode("Eventos").boundingBox())!;
-      await dragBy(mindNode("Eventos").locator(".mind-node-body"), 0, 160);
+      // Far enough down to clear the first map's branches (a drop lands on the smallest topic under the pointer).
+      await dragBy(mindNode("Eventos").locator(".mind-node-body"), 0, 200);
       await settle();
       const after = (await mindNode("Feira").boundingBox())!;
       const rootAfter = (await mindNode("Eventos").boundingBox())!;
@@ -373,7 +470,7 @@ function boardsSuite(browserName: EngineName) {
 
       // A branch dropped on empty canvas snaps back into the layout.
       const webinar = (await mindNode("Webinar").boundingBox())!;
-      await dragBy(mindNode("Webinar").locator(".mind-node-body"), 0, 220);
+      await dragBy(mindNode("Webinar").locator(".mind-node-body"), 0, 150);
       await settle();
       const back = (await mindNode("Webinar").boundingBox())!;
       assert.ok(Math.abs(back.y - webinar.y) < 3 && Math.abs(back.x - webinar.x) < 3, "snapped back");
@@ -542,6 +639,20 @@ function canvasSuite(browserName: EngineName) {
       // takes clicks and, in WebKit (which never focuses a clicked button), its
       // title field still has focus and takes the shortcut key.
       await page.getByTestId("board-create-dialog").waitFor({ state: "detached" });
+      // A blank board offers a way in near the top, out of the way of the canvas.
+      await byTestId("board-empty-state").waitFor();
+      const hint = (await byTestId("board-empty-state").boundingBox())!;
+      assert.ok(hint.y < 200 && Math.abs(hint.x + hint.width / 2 - 720) < 40, `empty-state card at the top centre: ${JSON.stringify(hint)}`);
+      assert.equal(await byTestId("board-empty-ai").count(), 0, "no AI button without a provider");
+      await byTestId("board-empty-template").click();
+      await byTestId("board-template-picker").waitFor();
+      await page.keyboard.press("Escape");
+      await byTestId("board-template-picker").waitFor({ state: "detached" });
+      await byTestId("board-empty-import").click();
+      await byTestId("board-import-dialog").waitFor();
+      await page.keyboard.press("Escape");
+      await byTestId("board-import-dialog").waitFor({ state: "detached" });
+
       await page.keyboard.press("m");
       await page.waitForFunction(() => document.querySelector('[data-testid="board-canvas"]')?.getAttribute("data-tool") === "mind");
       await page.mouse.click(700, 650);
@@ -551,6 +662,7 @@ function canvasSuite(browserName: EngineName) {
       await page.keyboard.press("Control+z");
       await page.waitForTimeout(150);
       assert.equal(await byTestId("board-node-mind").count(), 0, "undo does not bring the cancelled topic back");
+      await byTestId("board-empty-state").waitFor();
     });
 
     it("places a sticky note and types into it", async () => {
@@ -562,6 +674,7 @@ function canvasSuite(browserName: EngineName) {
       await byTestId("sticky-editor").waitFor({ state: "detached" });
       assert.equal((await byTestId("sticky-text").textContent())?.trim(), "Hello sticky");
       assert.equal(await page.getByTestId("board-tool-select").getAttribute("data-active"), "true", "back to Select");
+      await byTestId("board-empty-state").waitFor({ state: "detached" });
     });
 
     it("draws a shape by dragging", async () => {
@@ -572,8 +685,55 @@ function canvasSuite(browserName: EngineName) {
       assert.ok(Math.abs(box.width - 180) <= 2 && Math.abs(box.height - 100) <= 2, `drawn size ${box.width}x${box.height}`);
     });
 
+    it("the style panel floats over the canvas, only while something is selected", async () => {
+      const viewport = page.viewportSize()!;
+      await page.mouse.click(1000, 780); // deselect
+      await byTestId("board-style-panel").waitFor({ state: "detached" });
+      assert.equal((await byTestId("board-canvas").boundingBox())!.width, viewport.width);
+
+      const shape = await center(byTestId("board-node-shape"));
+      await page.mouse.click(shape.x, shape.y);
+      await byTestId("board-style-panel").waitFor();
+      await byTestId("board-canvas-style").waitFor();
+      const card = (await byTestId("board-style-panel").boundingBox())!;
+      assert.ok(card.x + card.width <= viewport.width && card.x > viewport.width - 320, `card at the top right: ${JSON.stringify(card)}`);
+      assert.equal((await byTestId("board-canvas").boundingBox())!.width, viewport.width, "the card takes no layout width");
+
+      // Arrange keeps the everyday actions; lock and the single-step z-order moved to the context menu.
+      for (const id of ["board-arrange-duplicate", "board-arrange-delete", "board-arrange-front", "board-arrange-back"]) await byTestId(id).waitFor();
+      for (const id of ["board-arrange-lock", "board-arrange-forward", "board-arrange-backward", "board-palette-brand", "board-snap-toggle"]) {
+        assert.equal(await byTestId(id).count(), 0, `${id} is not on the panel`);
+      }
+
+      await byTestId("board-panel-close").click();
+      await byTestId("board-style-panel").waitFor({ state: "detached" });
+      assert.equal(await page.locator(".react-flow__node.selected").count(), 0, "closing clears the selection");
+    });
+
+    it("More tools holds the occasional tools; their single keys still work", async () => {
+      for (const id of ["board-tool-select", "board-tool-mind", "board-tool-sticky", "board-tool-shape", "board-tool-text", "board-tool-pen"]) await byTestId(id).waitFor();
+      for (const id of ["board-tool-templates", "board-tool-ai", "board-tool-connector", "board-tool-image", "board-tool-frame"]) {
+        assert.equal(await byTestId(id).count(), 0, `${id} is not on the rail`);
+      }
+      await byTestId("board-tool-more").click();
+      await byTestId("board-tool-more-menu").waitFor();
+      for (const id of ["board-tool-connector", "board-tool-image", "board-tool-frame"]) await byTestId(id).waitFor();
+      await page.keyboard.press("Escape");
+      await byTestId("board-tool-more-menu").waitFor({ state: "detached" });
+      assert.equal(await byTestId("board-tool-more").getAttribute("data-active"), null);
+
+      await page.mouse.move(700, 500);
+      await page.keyboard.press("c");
+      await page.waitForFunction(() => document.querySelector('[data-testid="board-tool-more"]')?.getAttribute("data-tool") === "connector");
+      assert.equal(await byTestId("board-tool-more").getAttribute("data-active"), "true", "More tools shows that a tool inside it is on");
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(() => document.querySelector('[data-testid="board-tool-more"]')?.getAttribute("data-active") === null);
+      assert.equal(await byTestId("board-tool-select").getAttribute("data-active"), "true");
+    });
+
     it("draws a frame; a sticky dropped in it becomes a child and moves with the frame", async () => {
-      await page.getByTestId("board-tool-frame").click();
+      await pickMoreTool(page, "frame");
+      assert.equal(await page.getByTestId("board-tool-more").getAttribute("data-tool"), "frame", "More tools wears the active tool");
       await drag({ x: 150, y: 420 }, { x: 600, y: 760 });
       await byTestId("board-node-frame").waitFor();
       await page.mouse.click(1000, 780); // deselect
@@ -632,6 +792,42 @@ function canvasSuite(browserName: EngineName) {
       await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-shape"]').length === 2);
     });
 
+    it("the context menu locks an item and steps it forward or backward", async () => {
+      const rank = (id: string) =>
+        board()
+          .document.nodes.filter((n) => n.data.type !== "frame")
+          .map((n, index) => ({ n, index }))
+          .sort((a, b) => effectiveZ(a.n) - effectiveZ(b.n) || a.index - b.index)
+          .findIndex(({ n }) => n.id === id);
+      const shape = byTestId("board-node-shape").nth(1);
+      const id = nodesOf("shape")[1].id;
+      const menuItem = async (testId: string) => {
+        await shape.click({ button: "right" });
+        await byTestId("canvas-context-menu").waitFor();
+        await byTestId(testId).click();
+        await byTestId("canvas-context-menu").waitFor({ state: "detached" });
+        await waitForSaved(page);
+      };
+
+      const before = rank(id);
+      assert.ok(before > 0, "not already at the back");
+      await menuItem("canvas-menu-backward");
+      assert.equal(rank(id), before - 1, "sent one step backward");
+      await menuItem("canvas-menu-forward");
+      assert.equal(rank(id), before, "brought one step forward");
+
+      await menuItem("canvas-menu-lock");
+      assert.equal(nodesOf("shape").find((n) => n.id === id)?.locked, true);
+      await shape.click({ button: "right" });
+      await byTestId("canvas-context-menu").waitFor();
+      assert.match((await byTestId("canvas-menu-lock").textContent()) ?? "", /Unlock/);
+      await byTestId("canvas-menu-lock").click();
+      await byTestId("canvas-context-menu").waitFor({ state: "detached" });
+      await waitForSaved(page);
+      assert.equal(nodesOf("shape").find((n) => n.id === id)?.locked, undefined, "unlocked again");
+      await page.keyboard.press("Escape");
+    });
+
     it("a pen stroke is saved and is there after a reload", async () => {
       await page.keyboard.press("p");
       await byTestId("board-pen-overlay").waitFor();
@@ -653,7 +849,8 @@ function canvasSuite(browserName: EngineName) {
     });
 
     it("the SWOT template inserts four titled frames", async () => {
-      await page.getByTestId("board-tool-templates").click();
+      await page.getByTestId("board-more").click();
+      await page.getByTestId("board-more-templates").click();
       await page.getByTestId("board-template-picker").waitFor();
       await page.getByTestId("board-template-swot").click();
       await page.getByTestId("board-template-picker").waitFor({ state: "detached" });
@@ -661,6 +858,53 @@ function canvasSuite(browserName: EngineName) {
       await waitForSaved(page);
       const titles = nodesOf("frame").map((n) => (n.data as { title?: string }).title);
       for (const t of ["Strengths", "Weaknesses", "Opportunities", "Threats"]) assert.ok(titles.includes(t), `${t} frame`);
+    });
+
+    it("Board settings: branch colors, background, snap to grid and the minimap", async () => {
+      const open = async () => {
+        await page.getByTestId("board-more").click();
+        await byTestId("board-more-settings").click();
+        await byTestId("board-settings-dialog").waitFor();
+      };
+      const close = async () => {
+        await page.keyboard.press("Escape");
+        await byTestId("board-settings-dialog").waitFor({ state: "detached" });
+      };
+      const theme = () => board().document.theme;
+
+      await open();
+      assert.equal(await byTestId("board-snap-toggle").getAttribute("data-state"), "unchecked");
+      assert.equal(await byTestId("board-minimap-toggle").getAttribute("data-state"), "unchecked", "the minimap is off by default");
+      assert.equal(await page.locator(".react-flow__minimap").count(), 0);
+      await byTestId("board-palette-pastel").click();
+      await byTestId("board-background-grid").click();
+      await byTestId("board-snap-toggle").click();
+      await byTestId("board-minimap-toggle").click();
+      assert.equal(await byTestId("board-palette-pastel").getAttribute("aria-pressed"), "true");
+      assert.equal(await byTestId("board-background-grid").getAttribute("aria-pressed"), "true");
+      assert.equal(await byTestId("board-snap-toggle").getAttribute("data-state"), "checked");
+      assert.equal(await byTestId("board-minimap-toggle").getAttribute("data-state"), "checked");
+      await close();
+      await page.locator(".react-flow__minimap").waitFor();
+      await waitForSaved(page);
+      assert.equal(theme().palette, "pastel");
+      assert.equal(theme().background, "grid");
+
+      // The minimap is a per-browser preference: it is still on after a reload.
+      await page.reload();
+      await page.getByTestId("board-editor").waitFor();
+      await page.locator(".react-flow__minimap").waitFor({ timeout: 30_000 });
+
+      await open();
+      assert.equal(await byTestId("board-minimap-toggle").getAttribute("data-state"), "checked");
+      await byTestId("board-palette-brand").click();
+      await byTestId("board-background-dots").click();
+      await byTestId("board-minimap-toggle").click();
+      await close();
+      await page.locator(".react-flow__minimap").waitFor({ state: "detached" });
+      await waitForSaved(page);
+      assert.equal(theme().palette, "brand");
+      assert.equal(theme().background, "dots");
     });
 
     it("the public page renders the canvas on a phone", async () => {
@@ -689,6 +933,28 @@ function canvasSuite(browserName: EngineName) {
       }
     });
 
+    it("the style card slides the board away from an item it would cover", async () => {
+      await page.mouse.click(1000, 780); // deselect
+      await byTestId("board-style-panel").waitFor({ state: "detached" });
+      const start = await center(byTestId("board-node-shape").first());
+      const camera = await page.locator(".react-flow__viewport").getAttribute("style");
+      // Dropped where the card is about to appear.
+      await drag(start, { x: 1250, y: start.y });
+      await byTestId("board-style-panel").waitFor();
+      await page.waitForFunction(
+        () => {
+          const card = document.querySelector('[data-testid="board-style-panel"]')!.getBoundingClientRect();
+          const item = document.querySelector(".react-flow__node.selected")!.getBoundingClientRect();
+          return item.right <= card.left - 12;
+        },
+        null,
+        { timeout: 5_000 },
+      );
+      assert.notEqual(await page.locator(".react-flow__viewport").getAttribute("style"), camera, "the camera panned");
+      await page.keyboard.press("Control+z");
+      await waitForSaved(page);
+    });
+
     it("on a phone the editor has a bottom toolbar, a style sheet, and touch drags move nodes", async () => {
       await page.close();
       const phoneContext = await browser.newContext({ ...PHONES[browserName], hasTouch: true });
@@ -699,6 +965,9 @@ function canvasSuite(browserName: EngineName) {
         await phone.waitForFunction(() => document.querySelector('[data-testid="board-toolbar"]')?.getAttribute("data-orientation") === "horizontal");
         const bar = (await phone.getByTestId("board-toolbar").boundingBox())!;
         assert.ok(bar.y + bar.height > phone.viewportSize()!.height - 40, "toolbar at the bottom");
+        await phone.getByTestId("board-tool-more").waitFor();
+        assert.equal(await phone.getByTestId("board-style-sheet-open").count(), 0, "Style only shows with a selection");
+        await phone.keyboard.press("Control+a");
         await phone.getByTestId("board-style-sheet-open").click();
         await phone.getByTestId("board-style-sheet").waitFor();
         await phone.keyboard.press("Escape");
@@ -789,7 +1058,7 @@ function finishingSuite(browserName: EngineName) {
   }
   async function exportViaMenu(testId: string) {
     const file = await download(async () => {
-      await openMore();
+      await openMoreSub(page, "export");
       await byTestId(testId).click();
     });
     // The menu fades out after the click; keys and clicks during that are swallowed.
@@ -847,7 +1116,18 @@ function finishingSuite(browserName: EngineName) {
       await openMore();
       assert.equal(await byTestId("board-more-ai-generate").count(), 0);
       assert.equal(await byTestId("board-more-ai-summarize").count(), 0);
+      assert.equal(await byTestId("board-more-present").count(), 0, "Present lives in the header only");
+      // Shortcuts moved from the header and the zoom bar into the menu ("?" still works).
+      await byTestId("board-more-shortcuts").click();
+      await byTestId("board-shortcuts-dialog").waitFor();
       await closeOverlays();
+      await page.mouse.click(1000, 780);
+      await page.keyboard.press("?");
+      await byTestId("board-shortcuts-dialog").waitFor();
+      await closeOverlays();
+      for (const id of ["board-shortcuts", "board-zoom-shortcuts", "board-snap-toggle", "board-save"]) {
+        assert.equal(await byTestId(id).count(), 0, `${id} is not on screen`);
+      }
       assert.equal(await byTestId("board-node-frame").count(), 3);
     });
 
@@ -879,10 +1159,10 @@ function finishingSuite(browserName: EngineName) {
       assert.match(text, /Hello/, "node content is in the SVG");
       assert.match(text, /board-stroke|<path/, "the pen stroke is in the SVG");
 
-      // The Share menu offers the same exports.
+      // The Share popover is only about sharing now; exports live in the ⋯ menu.
       await byTestId("board-share").click();
-      const viaShare = await download(() => byTestId("board-share-export-png").click());
-      assertDownloadName(viaShare, "Quarterly Review.png");
+      await byTestId("board-share-menu").waitFor();
+      assert.equal(await byTestId("board-share-export-png").count(), 0);
       await closeOverlays();
     });
 
@@ -940,7 +1220,7 @@ function finishingSuite(browserName: EngineName) {
       await page.keyboard.press("Delete");
       await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-frame"]').length === 2);
 
-      await openMore();
+      await openMoreSub(page, "import");
       await Promise.all([page.waitForEvent("filechooser").then((chooser) => chooser.setFiles(path)), byTestId("board-import-json").click()]);
       await byTestId("board-import-json-confirm").click();
       await byTestId("board-import-json-confirm-dialog").waitFor({ state: "detached" });
@@ -966,9 +1246,11 @@ function finishingSuite(browserName: EngineName) {
       await waitForSaved(page);
       await page.reload();
       await byTestId("board-node-frame").first().waitFor({ timeout: 30_000 });
-      await byTestId("board-tool-ai").waitFor();
+      await openMore();
+      await byTestId("board-more-ai-generate").waitFor();
+      assert.equal(await byTestId("board-tool-ai").count(), 0, "the rail has no AI button");
 
-      await byTestId("board-tool-ai").click();
+      await byTestId("board-more-ai-generate").click();
       await byTestId("board-ai-generate-dialog").waitFor();
       assert.equal(await byTestId("board-ai-generate").isDisabled(), true, "a topic is required");
       await byTestId("board-ai-topic").fill("Launching a podcast");
@@ -987,6 +1269,38 @@ function finishingSuite(browserName: EngineName) {
       await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-mind"]').length === 0);
       await page.keyboard.press("Control+y");
       await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-mind"]').length === 3);
+    });
+
+    it("a blank board offers Template, Generate with AI and Paste text, each opening its dialog", async () => {
+      const created = await fetch(`${baseUrl}/api/boards`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: "Blank one", kind: "canvas" }),
+      });
+      const blank = (await created.json()) as Board;
+      const other = await page.context().newPage();
+      try {
+        const status = other.waitForResponse((res) => res.url().includes("/api/boards/ai/status"), { timeout: 30_000 });
+        await other.goto(`${baseUrl}/admin/boards/${blank.id}`);
+        await byTestId("board-empty-state", other).waitFor({ timeout: 30_000 });
+        await status;
+        await byTestId("board-empty-ai", other).waitFor();
+
+        await byTestId("board-empty-ai", other).click();
+        await byTestId("board-ai-generate-dialog", other).waitFor();
+        await closeOverlays(other);
+        await byTestId("board-empty-import", other).click();
+        await byTestId("board-import-dialog", other).waitFor();
+        await closeOverlays(other);
+        assert.equal(await byTestId("board-empty-state", other).count(), 1, "still blank");
+
+        await byTestId("board-empty-template", other).click();
+        await byTestId("board-template-swot", other).click();
+        await byTestId("board-empty-state", other).waitFor({ state: "detached" });
+        await other.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-frame"]').length === 4);
+      } finally {
+        await other.close();
+      }
     });
 
     it("expands a topic with AI in one undo step, with a spinner while it thinks", async () => {
@@ -1135,13 +1449,19 @@ function resilienceSuite(browserName: EngineName) {
   const blockSaves = () => {
     dropSaves = true;
   };
+  let rejectSaves = false;
+  const rejectBrowserSaves = (app: express.Express) =>
+    app.use((req, res, next) => {
+      if (rejectSaves && req.method === "PUT" && SAVE_PATH.test(req.path) && !req.get("x-test-elsewhere")) res.status(400).json({ message: "rejected" });
+      else next();
+    });
   const unblockSaves = () => {
     dropSaves = false;
   };
 
   describe(`boards saving: offline, conflict, local snapshot (${browserName})`, { timeout: 150_000 }, () => {
     before(async () => {
-      ({ server, baseUrl, rows } = await startBoardsServer({ beforeRoutes: dropBrowserSaves }));
+      ({ server, baseUrl, rows } = await startBoardsServer({ beforeRoutes: (app) => (rejectBrowserSaves(app), dropBrowserSaves(app)) }));
       browser = await ENGINES[browserName].launch();
       context = await browser.newContext({ viewport: { width: 1440, height: 860 } });
       page = await context.newPage();
@@ -1160,9 +1480,11 @@ function resilienceSuite(browserName: EngineName) {
       await addSticky("while offline", 400, 300);
       await waitForStatus("offline");
       assert.match((await byTestId("board-save-status").textContent()) ?? "", /Offline/);
+      await byTestId("board-save").waitFor(); // saving by hand is offered only when autosave cannot reach the server
       assert.deepEqual(stickyTexts(board().document), []);
       await context.setOffline(false);
       await waitForStatus("saved");
+      await byTestId("board-save").waitFor({ state: "detached" });
       assert.deepEqual(stickyTexts(board().document), ["while offline"]);
     });
 
@@ -1289,6 +1611,24 @@ function resilienceSuite(browserName: EngineName) {
       assert.equal(await byTestId("board-editor").count(), 0, "browser Back did not reopen the editor");
       assert.ok(page.url().endsWith("/admin/boards"), page.url());
       assert.ok(stickyTexts(board().document).includes("history 2"));
+    });
+
+    it("a save the server refuses (400) leaves the board unsaved and offers Save now, which works once the server accepts", async () => {
+      await page.goto(`${baseUrl}/admin/boards`);
+      await openBoard();
+      rejectSaves = true;
+      try {
+        await addSticky("refused", 900, 650);
+        await byTestId("board-save").waitFor({ timeout: 15_000 });
+        assert.equal(await byTestId("board-save-status").getAttribute("data-status"), "dirty", "not offline: the server answered");
+        assert.ok(!stickyTexts(board().document).includes("refused"));
+      } finally {
+        rejectSaves = false;
+      }
+      await byTestId("board-save").click();
+      await waitForStatus("saved");
+      assert.ok(stickyTexts(board().document).includes("refused"), "saved by hand once the server accepted");
+      await byTestId("board-save").waitFor({ state: "detached" });
     });
   });
 }

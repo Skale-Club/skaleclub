@@ -1,4 +1,4 @@
-import { ArrowDownToLine, ArrowUpToLine, Copy, Lock, PencilLine, Trash2, Unlock } from 'lucide-react';
+import { ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpToLine, Copy, Lock, PencilLine, Trash2, Unlock } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +55,14 @@ export function CanvasContextMenu({ menu, onClose }: { menu: CanvasContextMenuSt
             <DropdownMenuItem onSelect={() => reorderSelection(store, 'front')} data-testid="canvas-menu-front">
               <ArrowUpToLine className="mr-2 h-4 w-4" />
               {t('Bring to front')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => reorderSelection(store, 'forward')} data-testid="canvas-menu-forward">
+              <ArrowUp className="mr-2 h-4 w-4" />
+              {t('Bring forward')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => reorderSelection(store, 'backward')} data-testid="canvas-menu-backward">
+              <ArrowDown className="mr-2 h-4 w-4" />
+              {t('Send backward')}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => reorderSelection(store, 'back')} data-testid="canvas-menu-back">
               <ArrowDownToLine className="mr-2 h-4 w-4" />

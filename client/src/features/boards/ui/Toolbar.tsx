@@ -1,5 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
-import { Circle, Diamond, Eraser, Frame, ImageIcon, LayoutTemplate, MousePointer2, Network, PenLine, RectangleHorizontal, Sparkles, Spline, Square, StickyNote, Triangle, Type } from 'lucide-react';
+import { useState } from 'react';
+import { Circle, Diamond, Eraser, Frame, ImageIcon, MousePointer2, Network, PenLine, Plus, RectangleHorizontal, Spline, Square, StickyNote, Triangle, Type } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/hooks/useTranslation';
 import { cn } from '@/lib/utils';
@@ -40,15 +42,17 @@ export const SHAPE_OPTIONS: { id: ShapeNodeData['shape']; label: string; icon: L
   { id: 'triangle', label: 'Triangle', icon: Triangle },
 ];
 
+const TOOL_BUTTON_CLASS = 'flex h-10 w-10 items-center justify-center rounded-xl transition-colors';
+
+// Always on the rail; the rest live behind "More tools".
+const MORE_TOOL_IDS: BoardTool[] = ['connector', 'image', 'frame'];
+
 type Orientation = 'vertical' | 'horizontal';
 
 interface ToolbarProps {
   activeTool: BoardTool;
   onSelectTool: (tool: BoardTool) => void;
   tools?: ToolDefinition[];
-  onOpenTemplates?: () => void;
-  /** Opens "Generate mind map from a topic"; the button only exists when given (an AI provider is configured). */
-  onOpenAi?: () => void;
   /** Vertical rail (desktop) or a horizontal, scrollable bar (phones). */
   orientation?: Orientation;
   className?: string;
@@ -89,7 +93,7 @@ function ToolButton({
             data-testid={testId}
             data-active={active ? 'true' : undefined}
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-xl transition-colors',
+              TOOL_BUTTON_CLASS,
               active ? 'bg-[#5173D6] text-white shadow-sm' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
               disabled && 'pointer-events-none opacity-40',
             )}
@@ -109,12 +113,86 @@ function ToolButton({
   );
 }
 
+// "More tools": the occasional tools in a popover. The button wears the active
+// tool's icon and style while one of them is on, so it is never a mystery.
+function MoreTools({ tools, activeTool, onSelectTool, side }: { tools: ToolDefinition[]; activeTool: BoardTool; onSelectTool: (tool: BoardTool) => void; side: 'right' | 'top' }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const activeMore = tools.find((tool) => tool.id === activeTool);
+  const Icon = activeMore?.icon ?? Plus;
+  const label = t('More tools');
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {/* A wrapper keeps the tooltip from fighting the popover for the button's ref. */}
+          <span className="inline-flex shrink-0">
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label={label}
+                aria-pressed={!!activeMore}
+                data-testid="board-tool-more"
+                data-active={activeMore ? 'true' : undefined}
+                data-tool={activeMore?.id}
+                className={cn(TOOL_BUTTON_CLASS, activeMore ? 'bg-[#5173D6] text-white shadow-sm' : 'text-muted-foreground hover:bg-muted hover:text-foreground', open && !activeMore && 'bg-muted text-foreground')}
+              >
+                <Icon className="h-[18px] w-[18px]" />
+              </button>
+            </PopoverTrigger>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side={side}>{activeMore ? `${label}: ${t(activeMore.label)}` : label}</TooltipContent>
+      </Tooltip>
+      <PopoverContent
+        side={side}
+        align={side === 'right' ? 'start' : 'center'}
+        sideOffset={10}
+        className="w-64 rounded-2xl p-1.5"
+        data-testid="board-tool-more-menu"
+        // The tool keys are global: don't park focus (and a tooltip) on the button.
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
+        {tools.map((tool) => {
+          const active = activeTool === tool.id;
+          return (
+            <button
+              key={tool.id}
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onSelectTool(active ? 'select' : tool.id);
+              }}
+              disabled={!tool.enabled}
+              aria-pressed={active}
+              data-testid={`board-tool-${tool.id}`}
+              data-active={active ? 'true' : undefined}
+              className={cn('flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-colors', active ? 'bg-[#5173D6] text-white' : 'hover:bg-muted', !tool.enabled && 'pointer-events-none opacity-40')}
+            >
+              <tool.icon className="h-[18px] w-[18px] shrink-0" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium">{t(tool.label)}</span>
+                {(tool.enabled ? tool.description : 'Coming soon') && (
+                  <span className={cn('block truncate text-xs', active ? 'text-white/80' : 'text-muted-foreground')}>{t(tool.enabled ? tool.description! : 'Coming soon')}</span>
+                )}
+              </span>
+              {tool.enabled && <kbd className={cn('rounded border px-1 font-sans text-[10px]', active ? 'border-white/40 text-white/90' : 'bg-muted text-muted-foreground')}>{tool.shortcut}</kbd>}
+            </button>
+          );
+        })}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // Miro-like tool rail: vertical on the left of the editor, a horizontal
 // scrollable bar at the bottom on phones.
-export function Toolbar({ activeTool, onSelectTool, tools = TOOL_DEFINITIONS, onOpenTemplates, onOpenAi, orientation = 'vertical', className }: ToolbarProps) {
+export function Toolbar({ activeTool, onSelectTool, tools = TOOL_DEFINITIONS, orientation = 'vertical', className }: ToolbarProps) {
   const { t } = useTranslation();
   const vertical = orientation === 'vertical';
   const side = vertical ? 'right' : 'top';
+  const primary = tools.filter((tool) => !MORE_TOOL_IDS.includes(tool.id));
+  const more = tools.filter((tool) => MORE_TOOL_IDS.includes(tool.id));
   return (
     <nav
       className={cn(
@@ -127,7 +205,7 @@ export function Toolbar({ activeTool, onSelectTool, tools = TOOL_DEFINITIONS, on
       data-testid="board-toolbar"
       data-orientation={orientation}
     >
-      {tools.map((tool) => (
+      {primary.map((tool) => (
         <ToolButton
           key={tool.id}
           label={t(tool.label)}
@@ -141,28 +219,7 @@ export function Toolbar({ activeTool, onSelectTool, tools = TOOL_DEFINITIONS, on
           side={side}
         />
       ))}
-      <div className={cn('shrink-0 bg-border', vertical ? 'my-1 h-px w-6' : 'mx-1 h-6 w-px')} />
-      <ToolButton
-        label={t('Templates')}
-        hint=""
-        description={onOpenTemplates ? t('SWOT, Kanban, retrospective…') : t('Coming soon')}
-        icon={LayoutTemplate}
-        disabled={!onOpenTemplates}
-        onClick={onOpenTemplates}
-        testId="board-tool-templates"
-        side={side}
-      />
-      {onOpenAi && (
-        <ToolButton
-          label={t('AI assist')}
-          hint=""
-          description={t('Generate a mind map from a topic')}
-          icon={Sparkles}
-          onClick={onOpenAi}
-          testId="board-tool-ai"
-          side={side}
-        />
-      )}
+      {more.length > 0 && <MoreTools tools={more} activeTool={activeTool} onSelectTool={onSelectTool} side={side} />}
     </nav>
   );
 }
