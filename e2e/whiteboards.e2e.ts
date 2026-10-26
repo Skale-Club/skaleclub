@@ -116,11 +116,15 @@ function whiteboardSuite(browserName: EngineName) {
   }
 
   async function waitForSaveStatus(expected: string, target: Page = page) {
-    await target.waitForFunction(
-      (text) => document.querySelector('[data-testid="whiteboard-save-status"]')?.textContent?.trim() === text,
-      expected,
-      { timeout: 10_000 },
-    );
+    try {
+      await target.waitForFunction(
+        (text) => document.querySelector('[data-testid="whiteboard-save-status"]')?.textContent?.trim() === text,
+        expected,
+        { timeout: 15_000 },
+      );
+    } catch (err) {
+      throw new Error(`save status stayed "${await saveStatus(target)}", expected "${expected}"`, { cause: err });
+    }
   }
 
   async function canvasBox(target: Page = page) {
@@ -164,12 +168,23 @@ function whiteboardSuite(browserName: EngineName) {
   // screen. Read from a screenshot, not the canvas: in dark theme the canvas
   // holds pre-inverted colours that a CSS filter turns back.
   async function redPixelsOnScreen(target: Page) {
-    const { data, info } = await sharp(await target.screenshot()).raw().toBuffer({ resolveWithObject: true });
+    return countRed(await target.screenshot());
+  }
+
+  async function countRed(image: Buffer) {
+    const { data, info } = await sharp(image).raw().toBuffer({ resolveWithObject: true });
     let red = 0;
     for (let i = 0; i < data.length; i += info.channels) {
       if (data[i] > data[i + 1] + 60 && data[i] > data[i + 2] + 60) red++;
     }
     return red;
+  }
+
+  // The stored thumbnail, decoded here rather than in the page: WebKit can hand
+  // back a blank canvas when a just-decoded image is drawn and read at once.
+  function thumbnailBytes() {
+    const url = board().thumbnailUrl ?? "";
+    return Buffer.from(url.slice(url.indexOf(",") + 1), "base64");
   }
 
   describe(`whiteboards (${browserName})`, { timeout: 300_000 }, () => {
@@ -230,25 +245,14 @@ function whiteboardSuite(browserName: EngineName) {
     });
 
     it("the thumbnail is a 16:9 picture of the drawing", async () => {
-      const thumbnail = board().thumbnailUrl!;
-      const stats = await page.evaluate(async (src) => {
-        const image = new Image();
-        image.src = src;
-        await image.decode();
-        const canvas = document.createElement("canvas");
-        canvas.width = image.naturalWidth;
-        canvas.height = image.naturalHeight;
-        const ctx = canvas.getContext("2d")!;
-        ctx.drawImage(image, 0, 0);
-        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        let ink = 0;
-        for (let i = 0; i < data.length; i += 4) if (data[i] < 160) ink++;
-        return { width: image.naturalWidth, height: image.naturalHeight, inkRatio: ink / (data.length / 4) };
-      }, thumbnail);
-      assert.equal(stats.width, 640);
-      assert.equal(stats.height, 360);
-      assert.ok(stats.inkRatio > 0.005, `thumbnail shows the drawing (ink ${stats.inkRatio})`);
-      assert.ok(stats.inkRatio < 0.5, `thumbnail is not a solid block (ink ${stats.inkRatio})`);
+      const { data, info } = await sharp(thumbnailBytes()).raw().toBuffer({ resolveWithObject: true });
+      let ink = 0;
+      for (let i = 0; i < data.length; i += info.channels) if (data[i] < 160) ink++;
+      const inkRatio = ink / (info.width * info.height);
+      assert.equal(info.width, 640);
+      assert.equal(info.height, 360);
+      assert.ok(inkRatio > 0.005, `thumbnail shows the drawing (ink ${inkRatio})`);
+      assert.ok(inkRatio < 0.5, `thumbnail is not a solid block (ink ${inkRatio})`);
     });
 
     // Holds the next save on the server (a slow network, in any browser) until
@@ -511,20 +515,7 @@ function whiteboardSuite(browserName: EngineName) {
       assert.match(String(file?.dataURL ?? ""), /^data:image\//, "with its picture embedded");
       assert.ok(Object.keys(board().scene.files ?? {}).length >= 1);
 
-      const thumbnailRed = await page.evaluate(async (src) => {
-        const img = new Image();
-        img.src = src;
-        await img.decode();
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext("2d")!;
-        ctx.drawImage(img, 0, 0);
-        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        let red = 0;
-        for (let i = 0; i < data.length; i += 4) if (data[i] > data[i + 1] + 60 && data[i] > data[i + 2] + 60) red++;
-        return red;
-      }, board().thumbnailUrl!);
+      const thumbnailRed = await countRed(thumbnailBytes());
       assert.ok(thumbnailRed > 50, `thumbnail shows the image (${thumbnailRed} red pixels)`);
 
       const viewer = await context.newPage();

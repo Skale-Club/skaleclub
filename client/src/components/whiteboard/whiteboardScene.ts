@@ -1,22 +1,30 @@
-import { exportToCanvas } from '@excalidraw/excalidraw';
+import { exportToCanvas, getSceneVersion } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI, ExcalidrawInitialDataState } from '@excalidraw/excalidraw/types';
 import type { WhiteboardScene } from '@shared/schema';
 
 // A pasted or dropped image is on the canvas before its file has loaded; saving
-// in that window would store the image without its picture. Resolves once every
-// image element's file is in, or rejects after `timeoutMs`.
+// in that window would store the image without its picture. Even once the file
+// is in, Excalidraw still decodes it and then resizes the element, so this also
+// waits for the scene to stop changing (one quiet poll). Resolves then, or
+// rejects after `timeoutMs`.
 export async function waitForImageFiles(api: ExcalidrawImperativeAPI, timeoutMs = 10_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
+  let settledVersion: number | null = null;
   for (;;) {
     const files = api.getFiles();
+    const elements = api.getSceneElements();
+    const images = elements.filter((element) => element.type === 'image');
+    if (images.length === 0) return;
     // A placeholder has no fileId yet; a failed image is marked "error" and is
     // not waited for.
-    const loading = api
-      .getSceneElements()
-      .some((element) => element.type === 'image' && element.status !== 'error' && (!element.fileId || !files[element.fileId]));
-    if (!loading) return;
+    const loading = images.some(
+      (element) => element.status !== 'error' && (!element.fileId || !files[element.fileId]),
+    );
+    const version = getSceneVersion(elements);
+    if (!loading && version === settledVersion) return;
+    settledVersion = loading ? null : version;
     if (Date.now() > deadline) throw new Error('An image is still loading. Try saving again in a moment.');
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 150));
   }
 }
 

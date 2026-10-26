@@ -69,6 +69,9 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
   const [conflict, setConflict] = useState(false);
   // Remounts Excalidraw when the latest saved version is loaded over local edits.
   const [sceneKey, setSceneKey] = useState(0);
+  // Bumped with sceneKey but synchronously: the instance being replaced can
+  // still fire onChange before it unmounts, and must not set the new baseline.
+  const sceneKeyRef = useRef(0);
 
   const { data: board, isLoading, isError } = useQuery<Whiteboard>({
     queryKey: ['/api/whiteboards', id],
@@ -94,7 +97,8 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
   const initialData = useMemo(() => (board ? toInitialData(board.scene) : null), [board]);
   const hasUnsavedChanges = isDirty || title.trim() !== savedTitle;
 
-  const handleChange = useCallback((...[elements, appState, files]: ChangeArgs) => {
+  const handleChange = useCallback((key: number, ...[elements, appState, files]: ChangeArgs) => {
+    if (key !== sceneKeyRef.current) return;
     const signature = sceneSignature(elements, appState, files);
     // The first onChange reflects the loaded scene: that is the saved baseline.
     if (savedSignatureRef.current === null) savedSignatureRef.current = signature;
@@ -151,12 +155,13 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
       const latest = (await apiRequest('GET', `/api/whiteboards/${id}`).then((r) => r.json())) as Whiteboard;
       queryClient.setQueryData(['/api/whiteboards', id], latest);
       baseVersionRef.current = latest.version;
+      sceneKeyRef.current += 1;
       savedSignatureRef.current = null;
       setIsDirty(false);
       setTitle(latest.title);
       setSavedTitle(latest.title);
       setConflict(false);
-      setSceneKey((key) => key + 1);
+      setSceneKey(sceneKeyRef.current);
     } catch (err: any) {
       toast({ title: t('Failed to load whiteboard'), description: err.message, variant: 'destructive' });
     }
@@ -297,7 +302,7 @@ export function WhiteboardEditor({ id, onClose }: WhiteboardEditorProps) {
             excalidrawAPI={(api) => {
               apiRef.current = api;
             }}
-            onChange={handleChange}
+            onChange={(...args) => handleChange(sceneKey, ...args)}
             langCode={language === 'pt' ? 'pt-BR' : 'en'}
             name={title}
             UIOptions={{ canvasActions: { loadScene: true, saveToActiveFile: false, toggleTheme: true } }}
