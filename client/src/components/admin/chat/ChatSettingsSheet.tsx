@@ -1,6 +1,7 @@
 import type { Dispatch, RefObject, SetStateAction, ChangeEvent } from 'react';
 import { LayoutGrid, Settings, User } from 'lucide-react';
-import { SiGoogle, SiOpenai } from 'react-icons/si';
+import { SiGoogle } from 'react-icons/si';
+import { RiOpenaiFill } from 'react-icons/ri';
 import { Link } from 'wouter';
 import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -159,7 +160,7 @@ export function ChatSettingsSheet({
                   <SelectContent>
                     <SelectItem value="openai">
                       <div className="flex items-center gap-2">
-                        <SiOpenai className="w-4 h-4" />
+                        <RiOpenaiFill className="w-4 h-4" />
                         <span>OpenAI (GPT)</span>
                       </div>
                     </SelectItem>
@@ -209,7 +210,7 @@ export function ChatSettingsSheet({
 
               <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
                 <div className="flex items-center gap-2">
-                  <SiOpenai className={clsx("w-5 h-5", openaiSettings?.enabled ? "text-green-600" : "text-slate-400")} />
+                  <RiOpenaiFill className={clsx("w-5 h-5", openaiSettings?.enabled ? "text-green-600" : "text-slate-400")} />
                   <div className="space-y-0.5">
                     <span className="text-sm font-medium">OpenAI Integration</span>
                     <p className="text-xs text-muted-foreground">{openaiSettings?.enabled ? 'Active and connected' : 'Not configured'}</p>

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Check,
 } from 'lucide-react';
-import { SiTwilio } from 'react-icons/si';
+import { TbBrandTwilio } from 'react-icons/tb';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -284,7 +284,7 @@ export function TwilioSection() {
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-[#F22F46] dark:bg-[#F22F46] flex items-center justify-center">
-                <SiTwilio className="w-5 h-5 text-white" />
+                <TbBrandTwilio className="w-5 h-5 text-white" />
               </div>
               <div>
                 <CardTitle className="text-lg">Twilio SMS</CardTitle>

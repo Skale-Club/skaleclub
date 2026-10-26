@@ -6,7 +6,8 @@ import {
   ChevronDown,
   LayoutGrid,
 } from 'lucide-react';
-import { SiGoogle, SiOpenai } from 'react-icons/si';
+import { SiGoogle } from 'react-icons/si';
+import { RiOpenaiFill } from 'react-icons/ri';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -537,7 +538,7 @@ export function AIAssistantCard() {
                   isActive ? 'bg-white dark:bg-card border-border shadow-sm' : 'bg-transparent border-transparent hover:bg-white/50 dark:hover:bg-card/50'
                 }`}
               >
-                {provider === 'openai' && <SiOpenai className="w-4 h-4" />}
+                {provider === 'openai' && <RiOpenaiFill className="w-4 h-4" />}
                 {provider === 'gemini' && <SiGoogle className="w-4 h-4" />}
                 {provider === 'openrouter' && <LayoutGrid className="w-4 h-4" />}
                 {provider === 'groq' && <Bot className="w-4 h-4" />}
