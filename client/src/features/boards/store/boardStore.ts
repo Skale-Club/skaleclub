@@ -44,6 +44,8 @@ export interface MeasuredSize {
 export interface BoardCanvasApi {
   /** Pans (keeping the zoom) so the node is centred; `ifOffscreen` only when it is not fully visible. */
   focusNode: (id: string, opts?: { ifOffscreen?: boolean }) => void;
+  /** Pans sideways (smoothly) just enough that the selection clears `rect` (client coordinates) by `margin`; does nothing when it already does. */
+  panClearOf: (rect: { left: number; right: number; top: number; bottom: number }, margin?: number) => void;
   /** The flow-space point at the centre of the visible canvas. */
   getViewportCenter: () => { x: number; y: number };
   /** Frames everything on the board (nodes and pen strokes). */

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useStore } from 'zustand';
-import { AlertTriangle, ArrowLeft, CloudOff, FileDown, FileJson, FileUp, ImageDown, Keyboard, LayoutTemplate, Loader2 as Spinner, MoreHorizontal, Paintbrush, Play, Save, Shapes, Sparkles } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CloudOff, Download, FileDown, FileJson, FileText, ImageDown, Keyboard, LayoutTemplate, ListTree, Loader2 as Spinner, MoreHorizontal, Paintbrush, Play, Save, Settings2, Shapes, Sparkles, Upload } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,8 +26,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
@@ -49,7 +52,9 @@ import { clearSnapshot, conflictCode, isSnapshotNewer, readSnapshot, useBoardAut
 import { ToolOptions, Toolbar } from './ui/Toolbar';
 import { TemplatePicker } from './ui/TemplatePicker';
 import { insertTemplate } from './canvas/actions';
-import { StylePanel } from './ui/StylePanel';
+import { StylePanel, type PanelTab } from './ui/StylePanel';
+import { BoardSettingsDialog, useMinimapPreference } from './ui/BoardSettingsDialog';
+import { EmptyBoardCard } from './ui/EmptyBoardCard';
 import { ShareMenu } from './ui/ShareMenu';
 import { ShortcutsDialog } from './ui/ShortcutsDialog';
 import { exportOutline, importOutlineText } from './mindmap/actions';
@@ -62,6 +67,8 @@ import { PresentOverlay } from './present/PresentOverlay';
 import { usePresentMode } from './present/usePresentMode';
 import { countOutlineItems, parseIndentedText } from '@shared/boards/outline';
 import { isTypingTarget } from './canvas/interaction';
+
+const PANEL_BUTTON = 'gap-2 rounded-xl bg-background/95 shadow-md backdrop-blur';
 
 interface BoardEditorProps {
   id: string;
@@ -206,6 +213,11 @@ function EditorShell({
   const [importOpen, setImportOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [styleSheetOpen, setStyleSheetOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [minimap, setMinimap] = useMinimapPreference();
+  const [panelTab, setPanelTab] = useState<PanelTab>('style');
+  // The Outline tab is open on purpose: the panel stays even with nothing selected.
+  const [outlineOpen, setOutlineOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [pendingImport, setPendingImport] = useState<{ document: BoardDocument; repaired: number } | null>(null);
   const [aiGenerateOpen, setAiGenerateOpen] = useState(false);
@@ -228,6 +240,8 @@ function EditorShell({
   });
   const selectedFrame = selectedFrameId ? { id: selectedFrameId, title: selectedFrameTitle } : null;
   const canPresent = useStore(store, (s) => s.document.nodes.length > 0 || s.document.strokes.length > 0);
+  const hasMindNodes = useStore(store, (s) => s.document.nodes.some((n) => n.data.type === 'mind'));
+  const showCard = isWide && !presenting && (hasSelection || outlineOpen);
 
   function exportMarkdown() {
     const markdown = exportOutline(store);
@@ -266,11 +280,6 @@ function EditorShell({
   function exportJson() {
     const json = serializeBoardJson(getDocumentForSave(store.getState()));
     downloadBlob(fileNameFor(store.getState().title, 'json'), new Blob([json], { type: 'application/json;charset=utf-8' }));
-  }
-
-  function handleExport(kind: 'png' | 'svg' | 'json') {
-    if (kind === 'json') exportJson();
-    else void exportImage(kind);
   }
 
   // The imported document replaces the board as one undoable edit (Ctrl+Z brings the old one back).
@@ -330,7 +339,7 @@ function EditorShell({
       toast({ title: t('Failed to save board'), description: err.message, variant: 'destructive' });
     },
   });
-  const { status, isDirty } = autosave;
+  const { status, isDirty, lastSaveFailed } = autosave;
 
   // Seed the store once from the server copy: later cache updates (after a
   // save) must not overwrite what is being edited.
@@ -500,6 +509,79 @@ function EditorShell({
     return () => window.removeEventListener('popstate', onPopState);
   }, [t]);
 
+  // A fresh selection shows the Style tab, unless the Outline was opened on purpose.
+  const hadSelectionRef = useRef(false);
+  useEffect(() => {
+    if (hasSelection && !hadSelectionRef.current && !outlineOpen) setPanelTab('style');
+    hadSelectionRef.current = hasSelection;
+  }, [hasSelection, outlineOpen]);
+
+  // Choosing the Outline keeps the card open; only its X button or the sheet closing lets go.
+  function changePanelTab(tab: PanelTab) {
+    setPanelTab(tab);
+    if (tab === 'outline') setOutlineOpen(true);
+  }
+
+  function openOutline() {
+    changePanelTab('outline');
+    if (!isWide) setStyleSheetOpen(true);
+  }
+
+  function closePanel() {
+    setPanelTab('style');
+    setOutlineOpen(false);
+    store.getState().clearSelection();
+  }
+
+  // The card floats over the canvas: when it would hide what was just selected, slide the board left
+  // (never mid-drag: then it waits for the pointer to come up).
+  const selectionKey = useStore(store, (s) => `${s.selection.nodeIds.join(',')}|${s.selection.edgeIds.join(',')}`);
+  const pointerDownRef = useRef(false);
+  useEffect(() => {
+    const down = () => {
+      pointerDownRef.current = true;
+    };
+    const up = () => {
+      pointerDownRef.current = false;
+    };
+    window.addEventListener('pointerdown', down, true);
+    window.addEventListener('pointerup', up, true);
+    window.addEventListener('pointercancel', up, true);
+    return () => {
+      window.removeEventListener('pointerdown', down, true);
+      window.removeEventListener('pointerup', up, true);
+      window.removeEventListener('pointercancel', up, true);
+    };
+  }, []);
+  useEffect(() => {
+    if (!showCard || !hasSelection) return;
+    let frame = 0;
+    const reveal = () => {
+      const card = rootRef.current?.querySelector<HTMLElement>('[data-testid="board-style-panel"]');
+      const parent = card?.offsetParent?.getBoundingClientRect();
+      if (!card || !parent) return;
+      // Layout box, so the card's slide-in transform does not matter.
+      const left = parent.left + card.offsetLeft;
+      const top = parent.top + card.offsetTop;
+      store.getState().canvasApi?.panClearOf({ left, right: left + card.offsetWidth, top, bottom: top + card.offsetHeight }, 16);
+    };
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(() => {
+          // Mid-drag: look again once the pointer is released (the item may have been dropped under the card).
+          if (pointerDownRef.current) window.addEventListener('pointerup', schedule, { capture: true, once: true });
+          else reveal();
+        });
+      });
+    };
+    schedule();
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('pointerup', schedule, true);
+    };
+  }, [showCard, hasSelection, selectionKey, store]);
+
   const [closing, setClosing] = useState(false);
   async function handleClose() {
     if (closing) return;
@@ -569,8 +651,14 @@ function EditorShell({
             </Button>
           )}
           <div className="ml-auto flex items-center gap-2">
+            {(status === 'offline' || (isDirty && lastSaveFailed)) && (
+              <Button variant="ghost" size="sm" className="gap-2" onClick={saveNow} disabled={!loaded} data-testid="board-save">
+                <Save className="h-4 w-4" />
+                {t('Save now')}
+              </Button>
+            )}
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               className="gap-2"
               onClick={() => void startPresent()}
@@ -581,16 +669,6 @@ function EditorShell({
               <Play className="h-4 w-4" />
               <span className="hidden md:inline">{t('Present')}</span>
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hidden sm:inline-flex"
-              onClick={() => setShortcutsOpen(true)}
-              aria-label={t('Keyboard shortcuts')}
-              data-testid="board-shortcuts"
-            >
-              <Keyboard className="h-4 w-4" />
-            </Button>
             {board && slug && (
               <ShareMenu
                 slug={slug}
@@ -598,9 +676,6 @@ function EditorShell({
                 onVisibilityChange={(v) => void changeVisibility(v)}
                 pending={visibilityPending}
                 disabled={!loaded}
-                onExport={handleExport}
-                exporting={exporting}
-                frameSelected={!!selectedFrame}
               />
             )}
             <DropdownMenu>
@@ -610,42 +685,60 @@ function EditorShell({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-60 rounded-xl" data-testid="board-more-menu">
-                <DropdownMenuLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('Mind map')}</DropdownMenuLabel>
-                <DropdownMenuItem onSelect={exportMarkdown} data-testid="board-export-markdown">
-                  <FileDown className="mr-2 h-4 w-4" />
-                  {t('Export outline (Markdown)')}
+                <DropdownMenuItem onSelect={() => setTemplatesOpen(true)} data-testid="board-more-templates">
+                  <LayoutTemplate className="mr-2 h-4 w-4" />
+                  {t('Insert template')}
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setImportOpen(true)} data-testid="board-import-text">
-                  <FileUp className="mr-2 h-4 w-4" />
-                  {t('Import from text')}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {selectedFrame ? t('Export (selected frame)') : t('Export')}
-                </DropdownMenuLabel>
-                <DropdownMenuItem onSelect={() => void exportImage('png')} disabled={exporting} data-testid="board-export-png">
-                  <ImageDown className="mr-2 h-4 w-4" />
-                  {t('Export as PNG')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => void exportImage('svg')} disabled={exporting} data-testid="board-export-svg">
-                  <Shapes className="mr-2 h-4 w-4" />
-                  {t('Export as SVG')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={exportJson} data-testid="board-export-json">
-                  <FileJson className="mr-2 h-4 w-4" />
-                  {t('Export as JSON')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => jsonInputRef.current?.click()} data-testid="board-import-json">
-                  <FileUp className="mr-2 h-4 w-4" />
-                  {t('Import JSON')}
-                </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger data-testid="board-more-import">
+                    <Upload className="mr-2 h-4 w-4" />
+                    {t('Import')}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent className="w-56 rounded-xl" data-testid="board-more-import-menu">
+                      <DropdownMenuItem onSelect={() => setImportOpen(true)} data-testid="board-import-text">
+                        <FileText className="mr-2 h-4 w-4" />
+                        {t('From text')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => jsonInputRef.current?.click()} data-testid="board-import-json">
+                        <FileJson className="mr-2 h-4 w-4" />
+                        {t('JSON file')}
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger data-testid="board-more-export">
+                    <Download className="mr-2 h-4 w-4" />
+                    {t('Export')}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent className="w-60 rounded-xl" data-testid="board-more-export-menu">
+                      <DropdownMenuItem onSelect={() => void exportImage('png')} disabled={exporting} data-testid="board-export-png">
+                        <ImageDown className="mr-2 h-4 w-4" />
+                        {selectedFrame ? t('PNG (selected frame)') : t('PNG')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => void exportImage('svg')} disabled={exporting} data-testid="board-export-svg">
+                        <Shapes className="mr-2 h-4 w-4" />
+                        {selectedFrame ? t('SVG (selected frame)') : t('SVG')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={exportMarkdown} data-testid="board-export-markdown">
+                        <FileDown className="mr-2 h-4 w-4" />
+                        {t('Outline as Markdown')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={exportJson} data-testid="board-export-json">
+                        <FileJson className="mr-2 h-4 w-4" />
+                        {t('JSON')}
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
                 {aiEnabled && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('AI')}</DropdownMenuLabel>
                     <DropdownMenuItem onSelect={() => setAiGenerateOpen(true)} data-testid="board-more-ai-generate">
                       <Sparkles className="mr-2 h-4 w-4 text-[#5173D6]" />
-                      {t('Generate mind map from a topic')}
+                      {t('Generate mind map with AI')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => void summarize()} data-testid="board-more-ai-summarize">
                       <Sparkles className="mr-2 h-4 w-4 text-[#5173D6]" />
@@ -654,30 +747,16 @@ function EditorShell({
                   </>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => void startPresent()} disabled={!canPresent} data-testid="board-more-present">
-                  <Play className="mr-2 h-4 w-4" />
-                  {t('Present')}
+                <DropdownMenuItem onSelect={() => setSettingsOpen(true)} data-testid="board-more-settings">
+                  <Settings2 className="mr-2 h-4 w-4" />
+                  {t('Board settings…')}
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setTemplatesOpen(true)} data-testid="board-more-templates">
-                  <LayoutTemplate className="mr-2 h-4 w-4" />
-                  {t('Insert template')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setShortcutsOpen(true)}>
+                <DropdownMenuItem onSelect={() => setShortcutsOpen(true)} data-testid="board-more-shortcuts">
                   <Keyboard className="mr-2 h-4 w-4" />
                   {t('Keyboard shortcuts')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button
-              size="sm"
-              className="gap-2"
-              onClick={saveNow}
-              disabled={!loaded || status === 'saving' || (!isDirty && status !== 'offline')}
-              data-testid="board-save"
-            >
-              {status === 'saving' ? <Spinner className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {t('Save')}
-            </Button>
           </div>
         </header>
 
@@ -697,7 +776,7 @@ function EditorShell({
                   key={canvasKey}
                   thumbnailRef={thumbnailRef}
                   zoomBarClassName={isPhone ? '!mb-[84px]' : undefined}
-                  onShowShortcuts={() => setShortcutsOpen(true)}
+                  showMiniMap={minimap}
                   presenting={presenting}
                 >
                   <PresentOverlay active={presenting} onExit={stopPresent} />
@@ -705,37 +784,63 @@ function EditorShell({
                 {presenting ? null : isPhone ? (
                   <div className="pointer-events-none absolute inset-x-3 bottom-3 z-10 flex flex-col items-center gap-2">
                     <ToolOptions orientation="horizontal" className="pointer-events-auto max-w-full" />
-                    <Toolbar
-                      activeTool={activeTool}
-                      onSelectTool={setActiveTool}
-                      onOpenTemplates={() => setTemplatesOpen(true)}
-                      onOpenAi={aiEnabled ? () => setAiGenerateOpen(true) : undefined}
-                      orientation="horizontal"
-                      className="pointer-events-auto max-w-full"
-                    />
+                    <Toolbar activeTool={activeTool} onSelectTool={setActiveTool} orientation="horizontal" className="pointer-events-auto max-w-full" />
                   </div>
                 ) : (
                   <div className="pointer-events-none absolute inset-y-0 left-3 z-10 flex items-center gap-2">
-                    <Toolbar activeTool={activeTool} onSelectTool={setActiveTool} onOpenTemplates={() => setTemplatesOpen(true)} onOpenAi={aiEnabled ? () => setAiGenerateOpen(true) : undefined} className="pointer-events-auto max-h-full overflow-y-auto" />
+                    <Toolbar activeTool={activeTool} onSelectTool={setActiveTool} className="pointer-events-auto max-h-full overflow-y-auto" />
                     <ToolOptions className="pointer-events-auto" />
                   </div>
                 )}
-                {!isWide && !presenting && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn('absolute right-3 top-3 z-10 gap-2 rounded-xl bg-background/95 shadow-md backdrop-blur', hasSelection && 'border-[#5173D6] text-[#5173D6]')}
-                    onClick={() => setStyleSheetOpen(true)}
-                    data-testid="board-style-sheet-open"
-                  >
-                    <Paintbrush className="h-4 w-4" />
-                    {t('Style')}
+                {!presenting && !canPresent && (
+                  <EmptyBoardCard
+                    isPhone={isPhone}
+                    onTemplate={() => setTemplatesOpen(true)}
+                    onAi={aiEnabled ? () => setAiGenerateOpen(true) : undefined}
+                    onImport={() => setImportOpen(true)}
+                  />
+                )}
+                {!isWide && !presenting && (hasSelection || hasMindNodes) && (
+                  <div className="absolute right-3 top-3 z-10 flex gap-2">
+                    {hasMindNodes && (
+                      <Button variant="outline" size="sm" className={PANEL_BUTTON} onClick={openOutline} data-testid="board-outline-toggle">
+                        <ListTree className="h-4 w-4" />
+                        {t('Outline')}
+                      </Button>
+                    )}
+                    {hasSelection && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(PANEL_BUTTON, 'border-[#5173D6] text-[#5173D6]')}
+                        onClick={() => {
+                          changePanelTab('style');
+                          setStyleSheetOpen(true);
+                        }}
+                        data-testid="board-style-sheet-open"
+                      >
+                        <Paintbrush className="h-4 w-4" />
+                        {t('Style')}
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {isWide && !presenting && !showCard && hasMindNodes && (
+                  <Button variant="outline" size="sm" className={cn(PANEL_BUTTON, 'absolute right-3 top-3 z-10')} onClick={openOutline} data-testid="board-outline-toggle">
+                    <ListTree className="h-4 w-4" />
+                    {t('Outline')}
                   </Button>
                 )}
+                {showCard && <StylePanel tab={panelTab} onTabChange={changePanelTab} onClose={closePanel} />}
               </div>
-              {isWide && !presenting && <StylePanel />}
               {!isWide && !presenting && (
-                <Sheet open={styleSheetOpen} onOpenChange={setStyleSheetOpen}>
+                <Sheet
+                  open={styleSheetOpen}
+                  onOpenChange={(open) => {
+                    setStyleSheetOpen(open);
+                    if (!open) setOutlineOpen(false);
+                  }}
+                >
                   <SheetContent
                     side={isPhone ? 'bottom' : 'right'}
                     className={cn('p-0', isPhone ? 'h-[62vh] rounded-t-2xl' : 'w-80')}
@@ -744,7 +849,7 @@ function EditorShell({
                   >
                     <SheetTitle className="sr-only">{t('Style')}</SheetTitle>
                     <SheetDescription className="sr-only">{t('Style the selection and the board')}</SheetDescription>
-                    <StylePanel variant="sheet" />
+                    <StylePanel variant="sheet" tab={panelTab} onTabChange={changePanelTab} />
                   </SheetContent>
                 </Sheet>
               )}
@@ -765,6 +870,7 @@ function EditorShell({
           }}
         />
         <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+        <BoardSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} minimap={minimap} onMinimapChange={setMinimap} />
         <AiGenerateDialog
           open={aiGenerateOpen}
           onOpenChange={setAiGenerateOpen}
