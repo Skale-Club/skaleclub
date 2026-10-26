@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { isClipboardText } from '@shared/boards/canvasOps';
 import type { BoardStore } from '../store/boardStore';
 import {
   addChild,
@@ -113,7 +114,8 @@ export function useMindmapKeyboard(store: BoardStore, opts: { readOnly: boolean;
       if (readOnly || isTypingTarget(event.target) || isInOverlay(containerRef.current) || store.getState().editingNodeId) return;
       const id = selectedMindNodeId(store);
       const text = event.clipboardData?.getData('text/plain');
-      if (!id || !text?.trim()) return;
+      // Board content copied with Ctrl/Cmd+C is pasted by the canvas instead.
+      if (!id || !text?.trim() || isClipboardText(text)) return;
       event.preventDefault();
       pasteOutlineUnder(store, id, text);
     };

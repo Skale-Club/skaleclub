@@ -3,7 +3,7 @@ import { Check, Link2, Plus, StickyNote } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { BOARD_LIMITS } from '@shared/schema/boards';
 import { useBoardStore, useBoardStoreApi } from '../../store/boardStore';
-import { addChild, outdent, toggleCollapse } from '../../mindmap/actions';
+import { addChild, cancelNewTopic, outdent, toggleCollapse } from '../../mindmap/actions';
 import { cn, type BoardNodeProps } from './nodeUtils';
 import { NodeHandles } from './NodeHandles';
 import { CTA_BLUE } from '../palette';
@@ -49,7 +49,12 @@ function MindTextEditor({ id, initial, seed, isRoot }: { id: string; initial: st
   const onKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     event.stopPropagation();
     if (event.nativeEvent.isComposing) return;
-    if (event.key === 'Escape' || (event.key === 'Enter' && !event.shiftKey)) {
+    if (event.key === 'Escape' && !value.trim() && store.getState().editingNew) {
+      // Escape on a brand-new, still empty topic cancels it.
+      event.preventDefault();
+      done.current = true;
+      cancelNewTopic(store, id);
+    } else if (event.key === 'Escape' || (event.key === 'Enter' && !event.shiftKey)) {
       event.preventDefault();
       commit();
     } else if (event.key === 'Tab') {
@@ -84,6 +89,10 @@ function MindTextEditor({ id, initial, seed, isRoot }: { id: string; initial: st
     </span>
   );
 }
+
+// Connector handles stay off the sides where the tree grows (and its buttons sit).
+const MIND_HANDLES_HORIZONTAL = ['top', 'bottom'] as const;
+const MIND_HANDLES_VERTICAL = ['left', 'right'] as const;
 
 function CollapseToggle({
   id,
@@ -280,7 +289,7 @@ export const MindNode = memo(function MindNode({ id, data, selected }: BoardNode
         <CollapseToggle id={id} collapsed={collapsed} hiddenCount={meta.hiddenCount ?? 0} color={color} direction={direction} alwaysVisible={readOnly} />
       )}
       {!readOnly && !editing && <AddChildButton id={id} direction={direction} offset={childCount > 0 && (!isRoot || collapsed)} />}
-      <NodeHandles hidden />
+      <NodeHandles hidden={readOnly || editing} connectable={direction === 'down' ? MIND_HANDLES_VERTICAL : MIND_HANDLES_HORIZONTAL} />
     </div>
   );
 });

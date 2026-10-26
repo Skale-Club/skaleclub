@@ -2,9 +2,10 @@ import { createContext, createElement, useContext, useState, type ReactNode } fr
 import { createStore, useStore, type StoreApi } from 'zustand';
 import { temporal, type TemporalState } from 'zundo';
 import type { EdgeChange, NodeChange, Viewport } from '@xyflow/react';
-import type { BoardDocument, BoardEdge, BoardNode, BoardNodeData, BoardTheme } from '@shared/schema';
+import type { BoardDocument, BoardEdge, BoardNode, BoardNodeData, BoardStroke, BoardTheme } from '@shared/schema';
 import { createEmptyDocument, removeEdgesById, removeNodesCascade } from '@shared/boards/document';
 import { setMindCollapsed } from '@shared/boards/mindOps';
+import { BOARD_LIMITS } from '@shared/schema/boards';
 import { autoLayoutDocument, getMindForest, relayoutRoots } from '../mindmap/autoLayout';
 
 // The single source of truth for an open board. React Flow renders nodes and
@@ -21,6 +22,13 @@ import { autoLayoutDocument, getMindForest, relayoutRoots } from '../mindmap/aut
 // positions simply ride along with the next save.
 
 export type BoardTool = 'select' | 'mind' | 'sticky' | 'shape' | 'text' | 'connector' | 'pen' | 'image' | 'frame';
+
+export interface PenOptions {
+  color: string;
+  size: number;
+  /** `erase` removes whole strokes under the pointer. */
+  mode: 'draw' | 'erase';
+}
 
 export interface BoardSelection {
   nodeIds: string[];
@@ -57,6 +65,15 @@ export interface BoardState {
   editingNodeId: string | null;
   /** Text that replaces the node's text when editing starts by typing a character. */
   editingSeed: string | null;
+  /** The node being edited was just created: cancelling an empty edit removes it. */
+  editingNew: boolean;
+  /** Connector whose label is being edited inline. */
+  editingEdgeId: string | null;
+  /** Connector tool: the node clicked first (the next node clicked becomes the target). */
+  connectorSourceId: string | null;
+  pen: PenOptions;
+  /** Snap node drags to a 16px grid. */
+  snapToGrid: boolean;
   /** Mind node highlighted as the drop target while a branch is dragged. */
   dropTargetId: string | null;
   canvasApi: BoardCanvasApi | null;
@@ -82,6 +99,10 @@ export interface BoardState {
   updateEdgeData: (id: string, patch: NonNullable<BoardEdge['data']>) => void;
   removeEdges: (ids: string[]) => void;
   removeSelection: () => void;
+  addStroke: (stroke: BoardStroke) => void;
+  removeStrokes: (ids: string[]) => void;
+  /** Removes a node created for an edit that was cancelled empty (its creation leaves no history). */
+  cancelNewNode: (id: string) => void;
   setTheme: (patch: Partial<BoardTheme>) => void;
   /** Collapses / expands a mind node (toggles without `value`). Works read-only too: the viewer can fold branches. */
   toggleCollapsed: (id: string, value?: boolean) => void;
@@ -94,7 +115,11 @@ export interface BoardState {
   select: (selection: Partial<BoardSelection>) => void;
   clearSelection: () => void;
   setActiveTool: (tool: BoardTool) => void;
-  setEditingNode: (id: string | null, opts?: { seed?: string }) => void;
+  setEditingNode: (id: string | null, opts?: { seed?: string; isNew?: boolean }) => void;
+  setEditingEdge: (id: string | null) => void;
+  setConnectorSource: (id: string | null) => void;
+  setPenOptions: (patch: Partial<PenOptions>) => void;
+  setSnapToGrid: (value: boolean) => void;
   setDropTarget: (id: string | null) => void;
   setCanvasApi: (api: BoardCanvasApi | null) => void;
   /** Called after a successful save with what was sent. */
@@ -111,6 +136,7 @@ type HistoryState = Pick<BoardState, 'document'>;
 export type BoardStore = StoreApi<BoardState> & { temporal: StoreApi<TemporalState<HistoryState>> };
 
 const EMPTY_SELECTION: BoardSelection = { nodeIds: [], edgeIds: [] };
+export const DEFAULT_PEN: PenOptions = { color: '#0A162E', size: 4, mode: 'draw' };
 const HISTORY_LIMIT = 200;
 
 function sameIds(a: string[], b: string[]) {
@@ -175,6 +201,9 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
             edgeIds: selection.edgeIds.filter((id) => edgeIds.has(id)),
           };
           if (!sameIds(next.nodeIds, selection.nodeIds) || !sameIds(next.edgeIds, selection.edgeIds)) set({ selection: next });
+          const { editingEdgeId, connectorSourceId } = get();
+          if (editingEdgeId && !edgeIds.has(editingEdgeId)) set({ editingEdgeId: null });
+          if (connectorSourceId && !nodeIds.has(connectorSourceId)) set({ connectorSourceId: null });
         };
 
         return {
@@ -190,6 +219,11 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
           activeTool: 'select',
           editingNodeId: null,
           editingSeed: null,
+          editingNew: false,
+          editingEdgeId: null,
+          connectorSourceId: null,
+          pen: DEFAULT_PEN,
+          snapToGrid: false,
           dropTargetId: null,
           canvasApi: null,
           measured: {},
@@ -212,6 +246,9 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
               selection: EMPTY_SELECTION,
               editingNodeId: null,
               editingSeed: null,
+              editingNew: false,
+              editingEdgeId: null,
+              connectorSourceId: null,
               dropTargetId: null,
               measured: {},
             });
@@ -370,6 +407,37 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
             if (nodeIds.length) get().removeNodes(nodeIds);
             get().endBatch();
           },
+          addStroke: (stroke) => {
+            const doc = get().document;
+            if (doc.strokes.length >= BOARD_LIMITS.strokes || stroke.points.length < 3) return;
+            commit({ ...doc, strokes: [...doc.strokes, stroke] });
+          },
+          removeStrokes: (ids) => {
+            if (!ids.length) return;
+            const drop = new Set(ids);
+            const doc = get().document;
+            const strokes = doc.strokes.filter((s) => !drop.has(s.id));
+            if (strokes.length !== doc.strokes.length) commit({ ...doc, strokes });
+          },
+          cancelNewNode: (id) => {
+            set({ editingNodeId: null, editingSeed: null, editingNew: false });
+            const temporal = (api as unknown as BoardStore).temporal;
+            const history = temporal.getState();
+            const last = history.pastStates[history.pastStates.length - 1];
+            const exists = get().document.nodes.some((n) => n.id === id);
+            if (!exists) return;
+            // The creation was the last step: step back over it and forget it, so
+            // neither undo nor redo ever shows the empty node.
+            if (last?.document && !last.document.nodes.some((n) => n.id === id) && history.isTracking && batchDepth === 0) {
+              history.undo();
+              temporal.setState({ futureStates: [] });
+              set({ documentVersion: get().documentVersion + 1 });
+              relayoutSilently(null);
+              pruneSelection();
+              return;
+            }
+            get().removeNodes([id]);
+          },
           setTheme: (patch) => {
             const doc = get().document;
             commit({ ...doc, theme: { ...doc.theme, ...patch } });
@@ -404,8 +472,15 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
           setTitle: (title) => set({ title }),
           select: (next) => set({ selection: { nodeIds: next.nodeIds ?? get().selection.nodeIds, edgeIds: next.edgeIds ?? get().selection.edgeIds } }),
           clearSelection: () => set({ selection: EMPTY_SELECTION }),
-          setActiveTool: (tool) => set({ activeTool: tool }),
-          setEditingNode: (id, opts) => set({ editingNodeId: id, editingSeed: id ? (opts?.seed ?? null) : null }),
+          setActiveTool: (tool) => set({ activeTool: tool, connectorSourceId: null }),
+          setEditingNode: (id, opts) =>
+            set({ editingNodeId: id, editingSeed: id ? (opts?.seed ?? null) : null, editingNew: id ? !!opts?.isNew : false, ...(id ? { editingEdgeId: null } : {}) }),
+          setEditingEdge: (id) => set({ editingEdgeId: id, ...(id ? { editingNodeId: null, editingSeed: null, editingNew: false } : {}) }),
+          setConnectorSource: (id) => {
+            if (get().connectorSourceId !== id) set({ connectorSourceId: id });
+          },
+          setPenOptions: (patch) => set({ pen: { ...get().pen, ...patch } }),
+          setSnapToGrid: (value) => set({ snapToGrid: value }),
           setDropTarget: (id) => {
             if (get().dropTargetId !== id) set({ dropTargetId: id });
           },
@@ -417,7 +492,7 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
             const history = (api as unknown as BoardStore).temporal.getState();
             if (!history.pastStates.length) return;
             history.undo();
-            set({ documentVersion: get().documentVersion + 1, editingNodeId: null });
+            set({ documentVersion: get().documentVersion + 1, editingNodeId: null, editingEdgeId: null });
             // Sizes may have changed since that state was recorded.
             relayoutSilently(null);
             pruneSelection();
@@ -426,7 +501,7 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
             const history = (api as unknown as BoardStore).temporal.getState();
             if (!history.futureStates.length) return;
             history.redo();
-            set({ documentVersion: get().documentVersion + 1, editingNodeId: null });
+            set({ documentVersion: get().documentVersion + 1, editingNodeId: null, editingEdgeId: null });
             relayoutSilently(null);
             pruneSelection();
           },

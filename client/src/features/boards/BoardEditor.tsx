@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useStore } from 'zustand';
-import { AlertTriangle, ArrowLeft, CloudOff, FileDown, FileUp, Keyboard, Loader2 as Spinner, MoreHorizontal, Save } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CloudOff, FileDown, FileUp, Keyboard, LayoutTemplate, Loader2 as Spinner, MoreHorizontal, Paintbrush, Save } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +31,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from '@/components/ui/loader';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -43,7 +45,9 @@ import { BOARD_LIMITS, type Board, type BoardVisibility } from '@shared/schema/b
 import { BoardStoreProvider, useCreateBoardStore, type BoardStore } from './store/boardStore';
 import { BoardCanvas, type ThumbnailRenderer } from './engine/BoardCanvas';
 import { clearSnapshot, conflictCode, isSnapshotNewer, readSnapshot, useBoardAutosave, type BoardSnapshot, type SaveStatus } from './io/autosave';
-import { Toolbar } from './ui/Toolbar';
+import { ToolOptions, Toolbar } from './ui/Toolbar';
+import { TemplatePicker } from './ui/TemplatePicker';
+import { insertTemplate } from './canvas/actions';
 import { StylePanel } from './ui/StylePanel';
 import { ShareMenu } from './ui/ShareMenu';
 import { ShortcutsDialog } from './ui/ShortcutsDialog';
@@ -194,6 +198,12 @@ function EditorShell({
   const [conflictOpen, setConflictOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [styleSheetOpen, setStyleSheetOpen] = useState(false);
+  // Phones get a bottom toolbar; below lg the style panel is a sheet.
+  const isPhone = useMediaQuery('(max-width: 767px)');
+  const isWide = useMediaQuery('(min-width: 1024px)');
+  const hasSelection = useStore(store, (s) => s.selection.nodeIds.length + s.selection.edgeIds.length > 0);
 
   function exportMarkdown() {
     const markdown = exportOutline(store);
@@ -450,6 +460,10 @@ function EditorShell({
                   {t('Import from text')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => setTemplatesOpen(true)} data-testid="board-more-templates">
+                  <LayoutTemplate className="mr-2 h-4 w-4" />
+                  {t('Insert template')}
+                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setShortcutsOpen(true)}>
                   <Keyboard className="mr-2 h-4 w-4" />
                   {t('Keyboard shortcuts')}
@@ -481,18 +495,67 @@ function EditorShell({
           {loaded && (
             <>
               <div className="relative min-w-0 flex-1">
-                <BoardCanvas key={canvasKey} thumbnailRef={thumbnailRef} />
-                <div className="pointer-events-none absolute inset-y-0 left-3 z-10 flex items-center">
-                  <Toolbar activeTool={activeTool} onSelectTool={setActiveTool} className="pointer-events-auto" />
-                </div>
+                <BoardCanvas key={canvasKey} thumbnailRef={thumbnailRef} zoomBarClassName={isPhone ? '!mb-[84px]' : undefined} />
+                {isPhone ? (
+                  <div className="pointer-events-none absolute inset-x-3 bottom-3 z-10 flex flex-col items-center gap-2">
+                    <ToolOptions orientation="horizontal" className="pointer-events-auto max-w-full" />
+                    <Toolbar
+                      activeTool={activeTool}
+                      onSelectTool={setActiveTool}
+                      onOpenTemplates={() => setTemplatesOpen(true)}
+                      orientation="horizontal"
+                      className="pointer-events-auto max-w-full"
+                    />
+                  </div>
+                ) : (
+                  <div className="pointer-events-none absolute inset-y-0 left-3 z-10 flex items-center gap-2">
+                    <Toolbar activeTool={activeTool} onSelectTool={setActiveTool} onOpenTemplates={() => setTemplatesOpen(true)} className="pointer-events-auto max-h-full overflow-y-auto" />
+                    <ToolOptions className="pointer-events-auto" />
+                  </div>
+                )}
+                {!isWide && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn('absolute right-3 top-3 z-10 gap-2 rounded-xl bg-background/95 shadow-md backdrop-blur', hasSelection && 'border-[#5173D6] text-[#5173D6]')}
+                    onClick={() => setStyleSheetOpen(true)}
+                    data-testid="board-style-sheet-open"
+                  >
+                    <Paintbrush className="h-4 w-4" />
+                    {t('Style')}
+                  </Button>
+                )}
               </div>
-              <StylePanel className="hidden lg:flex" />
+              {isWide && <StylePanel />}
+              {!isWide && (
+                <Sheet open={styleSheetOpen} onOpenChange={setStyleSheetOpen}>
+                  <SheetContent
+                    side={isPhone ? 'bottom' : 'right'}
+                    className={cn('p-0', isPhone ? 'h-[62vh] rounded-t-2xl' : 'w-80')}
+                    data-testid="board-style-sheet"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <SheetTitle className="sr-only">{t('Style')}</SheetTitle>
+                    <SheetDescription className="sr-only">{t('Style the selection and the board')}</SheetDescription>
+                    <StylePanel variant="sheet" />
+                  </SheetContent>
+                </Sheet>
+              )}
             </>
           )}
         </div>
 
         <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
         <ImportTextDialog open={importOpen} onOpenChange={setImportOpen} onImport={importText} />
+        <TemplatePicker
+          open={templatesOpen}
+          onOpenChange={setTemplatesOpen}
+          onPick={(templateId) => {
+            setTemplatesOpen(false);
+            setActiveTool('select');
+            insertTemplate(store, templateId);
+          }}
+        />
 
         <AlertDialog open={!!restoreSnapshot}>
           <AlertDialogContent data-testid="board-restore">

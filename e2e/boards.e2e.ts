@@ -28,7 +28,32 @@ const PHONES: Record<EngineName, Parameters<Browser["newContext"]>[0]> = {
   firefox: { viewport: { width: 390, height: 800 } },
 };
 
-for (const browserName of BROWSERS) boardsSuite(browserName);
+for (const browserName of BROWSERS) {
+  boardsSuite(browserName);
+  canvasSuite(browserName);
+}
+
+async function startBoardsServer() {
+  const rows = installMemoryBoards();
+  const app = createBoardsApp({ alwaysAdmin: true });
+  app.get("/api/admin/session", (_req, res) => {
+    res.json({ isAdmin: true, email: "admin@skale.club", firstName: "Admin", lastName: "" });
+  });
+  app.get("/api/supabase-config", (_req, res) => res.json({}));
+  app.get("/api/company-settings", (_req, res) => res.json({ companyName: "Skale Club", sectionsOrder: [] }));
+  app.all("/api/*", (req, res) => (req.method === "GET" ? res.json([]) : res.json({})));
+  app.use(express.static(DIST, { index: false }));
+  app.get("*", (_req, res) => res.sendFile(path.join(DIST, "index.html")));
+  return { rows, ...(await listen(app)) };
+}
+
+async function waitForSaved(target: Page) {
+  await target.waitForFunction(
+    () => document.querySelector('[data-testid="board-save-status"]')?.textContent?.trim() === "All changes saved",
+    null,
+    { timeout: 10_000 },
+  );
+}
 
 function boardsSuite(browserName: EngineName) {
   let server: Server;
@@ -48,18 +73,10 @@ function boardsSuite(browserName: EngineName) {
     if (dir) await target.screenshot({ path: path.join(dir, `${browserName}-boards-${name}.png`) });
   }
 
-  function startServer() {
-    rows = installMemoryBoards();
-    const app = createBoardsApp({ alwaysAdmin: true });
-    app.get("/api/admin/session", (_req, res) => {
-      res.json({ isAdmin: true, email: "admin@skale.club", firstName: "Admin", lastName: "" });
-    });
-    app.get("/api/supabase-config", (_req, res) => res.json({}));
-    app.get("/api/company-settings", (_req, res) => res.json({ companyName: "Skale Club", sectionsOrder: [] }));
-    app.all("/api/*", (req, res) => (req.method === "GET" ? res.json([]) : res.json({})));
-    app.use(express.static(DIST, { index: false }));
-    app.get("*", (_req, res) => res.sendFile(path.join(DIST, "index.html")));
-    return listen(app);
+  async function startServer() {
+    const started = await startBoardsServer();
+    rows = started.rows;
+    return started;
   }
 
   const mindNodes = (target: Page = page) => target.locator('[data-testid="board-node-mind"]');
@@ -401,6 +418,247 @@ function boardsSuite(browserName: EngineName) {
         await mindNode("Ads", phone).getByTestId("mind-collapse-toggle").click({ force: true });
         await mindNode("Google", phone).waitFor();
         assert.equal(board().version, version, "the viewer never saves");
+      } finally {
+        await phoneContext.close();
+      }
+    });
+  });
+}
+
+// The free canvas: sticky notes, shapes, frames, connectors, duplicate/undo,
+// pen strokes and templates, then the public page on a phone.
+function canvasSuite(browserName: EngineName) {
+  let server: Server;
+  let baseUrl: string;
+  let browser: Browser;
+  let page: Page;
+  let rows: Map<string, Board>;
+  const board = () => {
+    const [only] = Array.from(rows.values());
+    assert.ok(only, "a board exists");
+    return only;
+  };
+  const nodesOf = (type: string) => board().document.nodes.filter((n) => n.data.type === type);
+  const byTestId = (id: string, target: Page = page) => target.locator(`[data-testid="${id}"]`);
+
+  async function screenshot(target: Page, name: string) {
+    const dir = process.env.E2E_SCREENSHOTS;
+    if (dir) await target.screenshot({ path: path.join(dir, `${browserName}-canvas-${name}.png`) });
+  }
+
+  async function drag(from: { x: number; y: number }, to: { x: number; y: number }, steps = 8) {
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move((from.x + to.x) / 2, (from.y + to.y) / 2, { steps });
+    await page.mouse.move(to.x, to.y, { steps });
+    await page.mouse.up();
+  }
+
+  async function center(locator: Locator) {
+    const box = (await locator.boundingBox())!;
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2, box };
+  }
+
+  describe(`boards free canvas (${browserName})`, { timeout: 150_000 }, () => {
+    before(async () => {
+      ({ server, baseUrl, rows } = await startBoardsServer());
+      browser = await ENGINES[browserName].launch();
+      const context = await browser.newContext({ viewport: { width: 1440, height: 860 } });
+      page = await context.newPage();
+    });
+
+    after(async () => {
+      await browser?.close();
+      server?.close();
+    });
+
+    it("creates a blank canvas board; Escape cancels a new empty mind-map topic", async () => {
+      await page.goto(`${baseUrl}/admin/boards`);
+      await page.getByText("No boards yet").waitFor({ timeout: 30_000 });
+      await page.getByTestId("boards-new").click();
+      await page.getByTestId("board-kind-option-canvas").click();
+      await page.getByTestId("board-template-blank").waitFor();
+      await page.getByTestId("board-new-title").fill("Workshop");
+      await page.getByTestId("board-create").click();
+      await page.getByTestId("board-editor").waitFor();
+      await page.getByTestId("board-canvas").waitFor({ timeout: 30_000 });
+      assert.equal(board().kind, "canvas");
+      assert.equal(board().document.nodes.length, 0);
+
+      await page.keyboard.press("m");
+      await page.mouse.click(700, 650);
+      await page.waitForFunction(() => document.activeElement?.getAttribute("data-testid") === "mind-node-editor");
+      await page.keyboard.press("Escape");
+      await byTestId("board-node-mind").waitFor({ state: "detached" });
+      await page.keyboard.press("Control+z");
+      await page.waitForTimeout(150);
+      assert.equal(await byTestId("board-node-mind").count(), 0, "undo does not bring the cancelled topic back");
+    });
+
+    it("places a sticky note and types into it", async () => {
+      await page.getByTestId("board-tool-sticky").click();
+      await page.mouse.click(300, 250);
+      await page.waitForFunction(() => document.activeElement?.getAttribute("data-testid") === "sticky-editor");
+      await page.keyboard.type("Hello sticky");
+      await page.keyboard.press("Enter");
+      await byTestId("sticky-editor").waitFor({ state: "detached" });
+      assert.equal((await byTestId("sticky-text").textContent())?.trim(), "Hello sticky");
+      assert.equal(await page.getByTestId("board-tool-select").getAttribute("data-active"), "true", "back to Select");
+    });
+
+    it("draws a shape by dragging", async () => {
+      await page.keyboard.press("s");
+      await drag({ x: 700, y: 160 }, { x: 880, y: 260 });
+      await byTestId("board-node-shape").waitFor();
+      const { box } = await center(byTestId("board-node-shape"));
+      assert.ok(Math.abs(box.width - 180) <= 2 && Math.abs(box.height - 100) <= 2, `drawn size ${box.width}x${box.height}`);
+    });
+
+    it("draws a frame; a sticky dropped in it becomes a child and moves with the frame", async () => {
+      await page.getByTestId("board-tool-frame").click();
+      await drag({ x: 150, y: 420 }, { x: 600, y: 760 });
+      await byTestId("board-node-frame").waitFor();
+      await page.mouse.click(1000, 780); // deselect
+
+      const sticky = byTestId("board-node-sticky");
+      const start = await center(sticky);
+      await drag(start, { x: 330, y: 560 });
+      await waitForSaved(page);
+      const [frame] = nodesOf("frame");
+      const [note] = nodesOf("sticky");
+      assert.equal(note.parentId, frame.id, "the sticky joined the frame");
+
+      const before = (await sticky.boundingBox())!;
+      const title = (await byTestId("frame-title").boundingBox())!;
+      await drag({ x: title.x + 12, y: title.y + title.height / 2 }, { x: title.x + 132, y: title.y + title.height / 2 });
+      const after = (await sticky.boundingBox())!;
+      assert.ok(Math.abs(after.x - before.x - 120) <= 8 && Math.abs(after.y - before.y) <= 8, `sticky moved with the frame: ${before.x} -> ${after.x}`);
+      await waitForSaved(page);
+      assert.equal(nodesOf("sticky")[0].parentId, frame.id, "still inside after the frame moved");
+    });
+
+    it("connects two shapes with the connector tool and labels the connector", async () => {
+      await page.getByTestId("board-tool-shape").click();
+      await drag({ x: 850, y: 450 }, { x: 1030, y: 550 });
+      await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-shape"]').length === 2);
+      const [first, second] = await Promise.all([center(byTestId("board-node-shape").nth(0)), center(byTestId("board-node-shape").nth(1))]);
+
+      await page.keyboard.press("c");
+      await page.mouse.click(first.x, first.y);
+      await page.mouse.click(second.x, second.y);
+      await page.locator(".react-flow__edge-connector").waitFor();
+
+      // Bottom of the first shape to the top of the second: the curve's middle.
+      const mid = { x: (first.x + second.x) / 2, y: (first.box.y + first.box.height + second.box.y) / 2 };
+      await page.mouse.dblclick(mid.x, mid.y);
+      await byTestId("edge-label-editor").waitFor();
+      await page.keyboard.type("depends on");
+      await page.keyboard.press("Enter");
+      await page.getByTestId("edge-label").getByText("depends on").waitFor();
+      await waitForSaved(page);
+      const [edge] = board().document.edges;
+      assert.equal(edge.kind, "connector");
+      assert.equal(edge.data?.label, "depends on");
+      await screenshot(page, "editor");
+    });
+
+    it("Ctrl+D duplicates the selection and undo removes the copy", async () => {
+      const second = await center(byTestId("board-node-shape").nth(1));
+      await page.mouse.click(second.x, second.y);
+      await page.keyboard.press("Control+d");
+      await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-shape"]').length === 3);
+      const copy = (await byTestId("board-node-shape").nth(2).boundingBox())!;
+      assert.ok(Math.abs(copy.x - second.box.x - 24) <= 1 && Math.abs(copy.y - second.box.y - 24) <= 1, `offset by 24px: ${JSON.stringify({ copy, orig: second.box, shapes: await page.$$eval('[data-testid="board-node-shape"]', (els) => els.map((e) => e.getBoundingClientRect().toJSON())) })}`);
+      await page.keyboard.press("Control+z");
+      await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-shape"]').length === 2);
+    });
+
+    it("a pen stroke is saved and is there after a reload", async () => {
+      await page.keyboard.press("p");
+      await byTestId("board-pen-overlay").waitFor();
+      await page.mouse.move(750, 640);
+      await page.mouse.down();
+      for (let i = 1; i <= 12; i++) await page.mouse.move(750 + i * 11, 640 + Math.sin(i / 2) * 25);
+      await page.mouse.up();
+      await byTestId("board-stroke").waitFor();
+      await page.keyboard.press("Escape");
+      await waitForSaved(page);
+      assert.equal(board().document.strokes.length, 1);
+      assert.ok(board().document.strokes[0].points.length >= 9);
+
+      await page.reload();
+      await page.getByTestId("board-editor").waitFor();
+      await byTestId("board-stroke").waitFor({ timeout: 30_000 });
+      assert.equal(await byTestId("board-stroke").count(), 1);
+      assert.equal(await byTestId("board-node-shape").count(), 2);
+    });
+
+    it("the SWOT template inserts four titled frames", async () => {
+      await page.getByTestId("board-tool-templates").click();
+      await page.getByTestId("board-template-picker").waitFor();
+      await page.getByTestId("board-template-swot").click();
+      await page.getByTestId("board-template-picker").waitFor({ state: "detached" });
+      await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-frame"]').length === 5);
+      await waitForSaved(page);
+      const titles = nodesOf("frame").map((n) => (n.data as { title?: string }).title);
+      for (const t of ["Strengths", "Weaknesses", "Opportunities", "Threats"]) assert.ok(titles.includes(t), `${t} frame`);
+    });
+
+    it("the public page renders the canvas on a phone", async () => {
+      await page.getByTestId("board-share").click();
+      await page.getByTestId("board-visibility-switch").click();
+      for (let i = 0; i < 50 && board().visibility !== "link"; i++) await page.waitForTimeout(100);
+      assert.equal(board().visibility, "link");
+      await page.keyboard.press("Escape");
+
+      const phoneContext = await browser.newContext(PHONES[browserName]);
+      const phone = await phoneContext.newPage();
+      try {
+        await phone.goto(`${baseUrl}/b/${board().slug}`);
+        await phone.getByTestId("board-viewer").waitFor({ timeout: 30_000 });
+        await byTestId("board-node-sticky", phone).waitFor({ timeout: 30_000 });
+        assert.equal(await byTestId("board-node-frame", phone).count(), 5);
+        assert.equal(await byTestId("board-node-shape", phone).count(), 2);
+        assert.equal(await byTestId("board-stroke", phone).count(), 1);
+        await phone.getByTestId("edge-label").getByText("depends on").waitFor();
+        await phone.getByTestId("frame-title").getByText("Opportunities").waitFor();
+        assert.equal((await byTestId("sticky-text", phone).textContent())?.trim(), "Hello sticky");
+        assert.equal(await phone.getByTestId("board-toolbar").count(), 0);
+        await screenshot(phone, "public-phone");
+      } finally {
+        await phoneContext.close();
+      }
+    });
+
+    it("on a phone the editor has a bottom toolbar, a style sheet, and touch drags move nodes", async () => {
+      await page.close();
+      const phoneContext = await browser.newContext({ ...PHONES[browserName], hasTouch: true });
+      const phone = await phoneContext.newPage();
+      try {
+        await phone.goto(`${baseUrl}/admin/boards/${board().id}`);
+        await byTestId("board-node-shape", phone).first().waitFor({ timeout: 30_000 });
+        await phone.waitForFunction(() => document.querySelector('[data-testid="board-toolbar"]')?.getAttribute("data-orientation") === "horizontal");
+        const bar = (await phone.getByTestId("board-toolbar").boundingBox())!;
+        assert.ok(bar.y + bar.height > phone.viewportSize()!.height - 40, "toolbar at the bottom");
+        await phone.getByTestId("board-style-sheet-open").click();
+        await phone.getByTestId("board-style-sheet").waitFor();
+        await phone.keyboard.press("Escape");
+        await phone.getByTestId("board-style-sheet").waitFor({ state: "detached" });
+        await screenshot(phone, "editor-phone");
+        if (browserName !== "chromium") return; // touch moves are driven through CDP
+
+        await phone.getByTestId("board-zoom-fit").click();
+        await phone.waitForTimeout(400);
+        const shape = byTestId("board-node-shape", phone).first();
+        const before = (await shape.boundingBox())!;
+        const cdp = await phoneContext.newCDPSession(phone);
+        const x = before.x + before.width / 2;
+        const y = before.y + before.height / 2;
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+        for (let i = 1; i <= 8; i++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x + i * 8, y: y + i * 5 }] });
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+        const after = (await shape.boundingBox())!;
+        assert.ok(after.x - before.x > 30 && after.y - before.y > 15, `touch drag moved the shape: ${JSON.stringify({ before, after })}`);
       } finally {
         await phoneContext.close();
       }

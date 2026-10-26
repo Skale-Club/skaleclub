@@ -10,6 +10,7 @@ import { selectSelectionCount, selectTheme, useBoardStore, type BoardState } fro
 import { branchPalette } from '../engine/palette';
 import { MindStyleSection } from './MindStyleSection';
 import { OutlinePanel } from './OutlinePanel';
+import { CanvasStyleSection } from './CanvasStyleSection';
 
 const BACKGROUNDS: { id: BoardTheme['background']; label: string; icon: typeof Grid3x3 }[] = [
   { id: 'dots', label: 'Dots', icon: CircleDot },
@@ -23,6 +24,17 @@ const PALETTES: { id: BoardTheme['palette']; label: string }[] = [
   { id: 'mono', label: 'Mono' },
 ];
 
+// Does the selection hold any canvas item (non-mind node or connector)?
+const selectHasCanvasItems = (s: BoardState) => {
+  if (s.selection.edgeIds.length) {
+    const ids = new Set(s.selection.edgeIds);
+    if (s.document.edges.some((e) => ids.has(e.id) && e.kind === 'connector')) return true;
+  }
+  if (!s.selection.nodeIds.length) return false;
+  const ids = new Set(s.selection.nodeIds);
+  return s.document.nodes.some((n) => ids.has(n.id) && n.data.type !== 'mind');
+};
+
 // The one mind node selected (and nothing else), if any.
 const selectSingleMindId = (s: BoardState) => {
   if (s.selection.nodeIds.length !== 1 || s.selection.edgeIds.length) return null;
@@ -35,6 +47,7 @@ export function StylePanelContent() {
   const { t } = useTranslation();
   const count = useBoardStore(selectSelectionCount);
   const mindId = useBoardStore(selectSingleMindId);
+  const hasCanvas = useBoardStore(selectHasCanvasItems);
   const theme = useBoardStore(selectTheme);
   const setTheme = useBoardStore((s) => s.setTheme);
 
@@ -42,6 +55,8 @@ export function StylePanelContent() {
     <div className="flex flex-col gap-6">
       {mindId ? (
         <MindStyleSection id={mindId} />
+      ) : hasCanvas ? (
+        <CanvasStyleSection />
       ) : (
         <section>
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('Selection')}</h3>
@@ -125,11 +140,15 @@ export function StylePanelContent() {
 
 // Right-hand side panel: "Style" (what is selected + board settings) and
 // "Outline" (the mind map as an indented list).
-export function StylePanel({ className }: { className?: string }) {
+export function StylePanel({ className, variant = 'aside' }: { className?: string; variant?: 'aside' | 'sheet' }) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<'style' | 'outline'>('style');
+  const Root = variant === 'aside' ? 'aside' : 'div';
   return (
-    <aside className={cn('flex w-72 flex-col border-l bg-background', className)} data-testid="board-style-panel">
+    <Root
+      className={cn('flex flex-col bg-background', variant === 'aside' ? 'w-72 border-l' : 'h-full w-full', className)}
+      data-testid={variant === 'aside' ? 'board-style-panel' : 'board-style-sheet-panel'}
+    >
       <Tabs value={tab} onValueChange={(value) => setTab(value as 'style' | 'outline')} className="flex min-h-0 flex-1 flex-col">
         <div className="border-b p-3">
           <TabsList className="grid h-9 w-full grid-cols-2 rounded-xl">
@@ -148,6 +167,6 @@ export function StylePanel({ className }: { className?: string }) {
           <OutlinePanel />
         </TabsContent>
       </Tabs>
-    </aside>
+    </Root>
   );
 }

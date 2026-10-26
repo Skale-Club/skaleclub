@@ -63,10 +63,60 @@
   animation: board-mind-pop 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Mind nodes keep their own focus styling (the selection ring). */
-.board-surface .react-flow__node-mind:focus,
-.board-surface .react-flow__node-mind:focus-visible {
+/* Nodes keep their own focus styling (the selection ring). */
+.board-surface .react-flow__node:focus,
+.board-surface .react-flow__node:focus-visible {
   outline: none;
+}
+
+/* Frames sit under everything and only grab the pointer by their title (or
+   once selected), so a drag that starts on a frame's body box-selects what is
+   inside it, and the read-only viewer pans through it. */
+.board-surface .react-flow__node-frame {
+  pointer-events: none !important;
+}
+.board-surface:not(.board-readonly) .react-flow__node-frame.selected,
+.board-surface:not(.board-readonly) .react-flow__node-frame .frame-title,
+.board-surface .react-flow__node-frame .react-flow__resize-control,
+.board-surface .react-flow__node-frame .react-flow__handle.connectable {
+  pointer-events: all !important;
+}
+
+/* Resize handles: small white squares with the accent border. */
+.board-surface .board-resize-handle {
+  width: 9px;
+  height: 9px;
+  background: #ffffff;
+  border: 1.5px solid #5173D6;
+  border-radius: 2px;
+}
+.board-surface .board-resize-line {
+  border-color: transparent;
+}
+
+/* Connector tool: every handle shows, and nodes are targets to click. */
+.board-surface.board-tool-connector .react-flow__handle.connectable {
+  opacity: 1 !important;
+}
+.board-surface.board-tool-connector .react-flow__node {
+  cursor: crosshair;
+}
+
+/* Dropping an image file onto the canvas. */
+.board-surface.board-drop-active::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  z-index: 20;
+  border: 2px dashed #5173D6;
+  border-radius: 16px;
+  background: rgba(81, 115, 214, 0.06);
+  pointer-events: none;
+}
+
+/* Connector labels stay readable over the edge. */
+.board-surface .react-flow__edge-connector.selected .react-flow__edge-path {
+  filter: drop-shadow(0 0 2px rgba(81, 115, 214, 0.35));
 }
 
 .board-surface.board-tool-mind .react-flow__pane {

@@ -31,11 +31,13 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { cn } from '@/lib/utils';
 import { createStarterDocument } from '@shared/boards/document';
+import { createTemplateDocument, type BoardTemplateId } from '@shared/boards/templates';
 import { BOARD_LIMITS, type Board, type BoardKind, type BoardPage, type BoardSummary } from '@shared/schema/boards';
 import { AdminCard, EmptyState, SectionHeader } from './shared';
 
 // React Flow and the editor load only once a board is opened.
 const BoardEditor = lazy(() => import('@/features/boards/BoardEditor').then((m) => ({ default: m.BoardEditor })));
+const TemplateGrid = lazy(() => import('@/features/boards/ui/TemplatePicker').then((m) => ({ default: m.TemplateGrid })));
 
 // Each card carries a thumbnail, so the list loads a page at a time.
 const PAGE_SIZE = 24;
@@ -61,6 +63,7 @@ export function BoardsSection() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newKind, setNewKind] = useState<BoardKind>('mindmap');
+  const [newTemplate, setNewTemplate] = useState<BoardTemplateId>('blank');
   const [deleteTarget, setDeleteTarget] = useState<BoardSummary | null>(null);
 
   const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } = useInfiniteQuery({
@@ -83,8 +86,12 @@ export function BoardsSection() {
   const closeBoard = (opts?: { replace?: boolean }) => setLocation('/admin/boards', opts);
 
   const createMutation = useMutation({
-    mutationFn: ({ title, kind }: { title: string; kind: BoardKind }) =>
-      apiRequest('POST', '/api/boards', { title, kind, document: createStarterDocument(kind, title) }).then(
+    mutationFn: ({ title, kind, template }: { title: string; kind: BoardKind; template: BoardTemplateId }) =>
+      apiRequest('POST', '/api/boards', {
+        title,
+        kind,
+        document: kind === 'canvas' && template !== 'blank' ? createTemplateDocument(template) : createStarterDocument(kind, title),
+      }).then(
         (r) => r.json() as Promise<Board>,
       ),
     onSuccess: (board) => {
@@ -123,12 +130,13 @@ export function BoardsSection() {
   function openCreate() {
     setNewTitle('');
     setNewKind('mindmap');
+    setNewTemplate('blank');
     setIsCreateOpen(true);
   }
 
   function submitCreate() {
     const title = newTitle.trim();
-    if (title) createMutation.mutate({ title, kind: newKind });
+    if (title) createMutation.mutate({ title, kind: newKind, template: newTemplate });
   }
 
   return (
@@ -283,7 +291,7 @@ export function BoardsSection() {
       )}
 
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-lg" data-testid="board-create-dialog">
+        <DialogContent className={cn('max-h-[92vh] overflow-y-auto', newKind === 'canvas' ? 'sm:max-w-2xl' : 'sm:max-w-lg')} data-testid="board-create-dialog">
           <DialogHeader>
             <DialogTitle>{t('New board')}</DialogTitle>
             <DialogDescription>{t('Pick a starting point. Both kinds can hold mind maps and canvas items.')}</DialogDescription>
@@ -325,6 +333,14 @@ export function BoardsSection() {
                 );
               })}
             </div>
+            {newKind === 'canvas' && (
+              <div className="space-y-1.5">
+                <Label>{t('Start from')}</Label>
+                <Suspense fallback={<div className="h-40" />}>
+                  <TemplateGrid value={newTemplate} onPick={setNewTemplate} />
+                </Suspense>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="board-new-title">{t('Title')}</Label>
               <Input

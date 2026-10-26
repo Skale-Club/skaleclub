@@ -28,7 +28,7 @@ export function createStarterDocument(kind: BoardKind, title: string): BoardDocu
     doc.nodes.push({
       id: createBoardId(),
       position: { x: 0, y: 0 },
-      data: { type: "mind", text: title.trim().slice(0, BOARD_LIMITS.nodeText) || "Central topic", layout: "balanced" },
+      data: { type: "mind", text: title.trim().slice(0, BOARD_LIMITS.nodeText) || "Central idea", layout: "balanced" },
     });
   }
   return doc;

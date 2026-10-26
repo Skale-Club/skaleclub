@@ -46,8 +46,15 @@ export function revealNode(store: BoardStore, id: string) {
 
 function startEditing(store: BoardStore, id: string) {
   store.getState().select({ nodeIds: [id], edgeIds: [] });
-  store.getState().setEditingNode(id);
+  store.getState().setEditingNode(id, { isNew: true });
   revealNode(store, id);
+}
+
+/** Escape on a brand-new empty topic: it goes away (no history) and its parent is selected. */
+export function cancelNewTopic(store: BoardStore, id: string) {
+  const parentId = forestOf(store).parent.get(id);
+  store.getState().cancelNewNode(id);
+  if (parentId && store.getState().document.nodes.some((n) => n.id === parentId)) selectNode(store, parentId);
 }
 
 export function addChild(store: BoardStore, parentId: string, opts: { edit?: boolean } = {}): string | null {
@@ -127,7 +134,7 @@ export function createRootAt(store: BoardStore, center: { x: number; y: number }
   const id = createBoardId();
   const node = createMindNode(id, { x: Math.round(center.x - size.w / 2), y: Math.round(center.y - size.h / 2) }, { text, layout: 'balanced' });
   state.addNode(node, { select: true });
-  state.setEditingNode(id);
+  state.setEditingNode(id, { isNew: true });
   return id;
 }
 

@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useLayoutEffect, useRef, useState } from 'react';
 import {
   BaseEdge,
   EdgeLabelRenderer,
@@ -10,6 +10,7 @@ import {
   type EdgeTypes,
 } from '@xyflow/react';
 import type { BoardFlowEdge } from '../toFlow';
+import { useBoardStore, useBoardStoreApi } from '../../store/boardStore';
 import { CTA_BLUE, EDGE_NEUTRAL } from '../palette';
 
 // `tree`: a mind-map branch. A smooth bezier from the parent's outer side to
@@ -49,9 +50,66 @@ export const TreeEdge = memo(function TreeEdge(props: EdgeProps<BoardFlowEdge>) 
   );
 });
 
+// Inline label editor for a connector (double-click the edge). Enter or blur
+// saves, Escape cancels; an empty label removes it.
+function EdgeLabelEditor({ id, initial }: { id: string; initial: string }) {
+  const store = useBoardStoreApi();
+  const [value, setValue] = useState(initial);
+  const ref = useRef<HTMLInputElement>(null);
+  const done = useRef(false);
+  useLayoutEffect(() => {
+    ref.current?.focus({ preventScroll: true });
+    ref.current?.select();
+  }, []);
+  const finish = (save: boolean) => {
+    if (done.current) return;
+    done.current = true;
+    const state = store.getState();
+    if (save) {
+      const label = value.trim().slice(0, 500);
+      const edge = state.document.edges.find((e) => e.id === id);
+      if (edge && (edge.data?.label ?? '') !== label) {
+        if (label) state.updateEdgeData(id, { label });
+        else {
+          const { label: _l, ...rest } = edge.data ?? {};
+          state.setDocument({ ...state.document, edges: state.document.edges.map((e) => (e.id === id ? { ...e, data: rest } : e)) });
+        }
+      }
+    }
+    if (store.getState().editingEdgeId === id) store.getState().setEditingEdge(null);
+  };
+  return (
+    <input
+      ref={ref}
+      value={value}
+      maxLength={500}
+      placeholder="Label"
+      onChange={(e) => setValue(e.target.value)}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          finish(true);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          finish(false);
+        }
+      }}
+      onBlur={() => finish(true)}
+      onPointerDown={(e) => e.stopPropagation()}
+      className="nodrag nopan w-40 border border-[#5173D6] bg-[var(--board-node-bg)] px-2 py-0.5 text-center text-xs font-medium text-[var(--board-node-fg)] shadow-md outline-none"
+      style={{ borderRadius: 6 }}
+      aria-label="Connector label"
+      data-testid="edge-label-editor"
+    />
+  );
+}
+
 // `connector`: a free Miro-style link with optional arrows (markers come from
 // toFlow), a curve/straight/step style and a label in the middle.
 export const ConnectorEdge = memo(function ConnectorEdge(props: EdgeProps<BoardFlowEdge>) {
+  const store = useBoardStoreApi();
+  const editing = useBoardStore((s) => s.editingEdgeId === props.id);
   const params = {
     sourceX: props.sourceX,
     sourceY: props.sourceY,
@@ -72,16 +130,33 @@ export const ConnectorEdge = memo(function ConnectorEdge(props: EdgeProps<BoardF
         path={path}
         markerStart={props.markerStart}
         markerEnd={props.markerEnd}
-        interactionWidth={16}
-        style={{ stroke: color, strokeWidth: 2, strokeDasharray: props.data?.dashed ? '6 6' : undefined }}
+        interactionWidth={18}
+        style={{ stroke: color, strokeWidth: props.selected ? 2.5 : 2, strokeDasharray: props.data?.dashed ? '6 6' : undefined }}
       />
-      {label && (
+      {(label || editing) && (
         <EdgeLabelRenderer>
           <div
-            className="nodrag nopan pointer-events-auto absolute max-w-[220px] truncate rounded-md border border-[var(--board-node-border)] bg-[var(--board-node-bg)] px-2 py-0.5 text-xs font-medium text-[var(--board-node-fg)] shadow-sm"
+            className="nodrag nopan pointer-events-auto absolute"
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
+            data-testid="edge-label"
+            data-edge-id={props.id}
           >
-            {label}
+            {editing ? (
+              <EdgeLabelEditor id={props.id} initial={props.data?.label ?? ''} />
+            ) : (
+              <div
+                className="max-w-[220px] truncate border border-[var(--board-node-border)] bg-[var(--board-node-bg)] px-2 py-0.5 text-xs font-medium text-[var(--board-node-fg)] shadow-sm"
+                style={{ borderRadius: 6, ...(props.selected ? { borderColor: CTA_BLUE } : {}) }}
+                onDoubleClick={(e) => {
+                  if (store.getState().readOnly) return;
+                  e.stopPropagation();
+                  store.getState().select({ nodeIds: [], edgeIds: [props.id] });
+                  store.getState().setEditingEdge(props.id);
+                }}
+              >
+                {label}
+              </div>
+            )}
           </div>
         </EdgeLabelRenderer>
       )}

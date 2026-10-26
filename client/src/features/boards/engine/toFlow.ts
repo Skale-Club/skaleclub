@@ -4,6 +4,7 @@
 import type { Edge, MarkerType, Node } from '@xyflow/react';
 import type { BoardEdge, BoardNode, BoardNodeData, BoardTheme } from '@shared/schema';
 import { computeTreeDepths, sortNodesParentFirst } from '@shared/boards/document';
+import { CANVAS_DEFAULT_SIZES } from '@shared/boards/canvasDefaults';
 import { buildMindForest, computeHiddenMindNodes, rootLayoutOf, type MindDirection, type MindForest, type MindLayoutKind } from '@shared/boards/layout';
 import type { BoardSelection, MeasuredSize } from '../store/boardStore';
 import { branchPalette } from './palette';
@@ -15,6 +16,8 @@ export interface FlowNodeMeta {
   /** Depth in its mind-map tree (0 = root); undefined for non-mind nodes. */
   depth?: number;
   readOnly?: boolean;
+  /** Locked: not draggable or resizable (still selectable). */
+  locked?: boolean;
   /** Mind nodes: the branch color (first-level palette color, or an inherited override). */
   branchColor?: string;
   /** Mind nodes (non-root): which way the node hangs off its parent. */
@@ -83,14 +86,7 @@ export type BoardFlowEdge = Edge<BoardFlowEdgeData, BoardEdge['kind']>;
 export type HandleSide = 'top' | 'right' | 'bottom' | 'left';
 
 // Fallback sizes before React Flow has measured a node (used to pick handles).
-export const DEFAULT_NODE_SIZE: Record<BoardNodeType, { w: number; h: number }> = {
-  mind: { w: 160, h: 44 },
-  sticky: { w: 200, h: 200 },
-  shape: { w: 160, h: 100 },
-  text: { w: 200, h: 40 },
-  frame: { w: 480, h: 320 },
-  image: { w: 320, h: 200 },
-};
+export const DEFAULT_NODE_SIZE: Record<BoardNodeType, { w: number; h: number }> = CANVAS_DEFAULT_SIZES;
 
 const FIXED_SIZE_TYPES = new Set<BoardNodeType>(['sticky', 'shape', 'frame', 'image']);
 
@@ -150,7 +146,7 @@ export function toFlowNode(
     id: node.id,
     type: node.data.type,
     position: { x: node.position.x, y: node.position.y },
-    data: { ...node.data, meta: { ...(ctx.mind ?? {}), depth: ctx.depth, readOnly: ctx.readOnly } } as BoardFlowNodeData,
+    data: { ...node.data, meta: { ...(ctx.mind ?? {}), depth: ctx.depth, readOnly: ctx.readOnly, ...(node.locked ? { locked: true } : {}) } } as BoardFlowNodeData,
     selected: ctx.selected ?? false,
     draggable: !ctx.readOnly && !node.locked,
     selectable: !ctx.readOnly,
@@ -169,10 +165,9 @@ export function toFlowNode(
   if (node.zIndex !== undefined) flow.zIndex = node.zIndex;
   // Frames sit under everything unless told otherwise.
   else if (node.data.type === 'frame') flow.zIndex = -1;
-  if (node.parentId && ctx.parentExists !== false) {
-    flow.parentId = node.parentId;
-    flow.extent = 'parent';
-  }
+  // No `extent: 'parent'`: a node dragged out of its frame leaves it (the
+  // canvas updates parentId on drop, see canvas/actions.ts).
+  if (node.parentId && ctx.parentExists !== false) flow.parentId = node.parentId;
   return flow;
 }
 

@@ -1,5 +1,7 @@
 import type { Express, Request, Response } from "express";
+import { randomUUID } from "crypto";
 import { z } from "zod";
+import { getSupabaseAdmin } from "../lib/supabase.js";
 import { SupabaseStorageService } from "../storage/supabaseStorage.js";
 import { requireAdmin } from "./_shared.js";
 
@@ -45,6 +47,23 @@ const deleteBodySchema = z.object({
 
 const ALLOWED_VIDEO_EXT = new Set(["mp4", "webm"]);
 
+// Board images (Boards canvas): raster formats only. SVG is left out because a
+// board image is any admin's upload shown to anyone with the board link.
+export const BOARD_IMAGE_EXT = new Set(["png", "jpg", "jpeg", "gif", "webp", "avif"]);
+export const BOARD_IMAGE_BUCKET = "boards";
+let boardBucketReady = false;
+
+async function ensureBoardBucket() {
+  if (boardBucketReady) return;
+  const supabase = getSupabaseAdmin();
+  const { data: buckets } = await supabase.storage.listBuckets();
+  if (!buckets?.some((b) => b.name === BOARD_IMAGE_BUCKET)) {
+    const { error } = await supabase.storage.createBucket(BOARD_IMAGE_BUCKET, { public: true });
+    if (error && !error.message.includes("already exists")) throw new Error(`Failed to create bucket: ${error.message}`);
+  }
+  boardBucketReady = true;
+}
+
 export function registerUploadRoutes(app: Express) {
   const storageService = new SupabaseStorageService();
 
@@ -65,6 +84,33 @@ export function registerUploadRoutes(app: Express) {
       return res.json(result);
     } catch (err: any) {
       console.error("[uploads] POST /api/uploads/page-media/sign failed:", err);
+      return res.status(500).json({ message: "Failed to create upload URL" });
+    }
+  });
+
+  // Board image — presigned upload URL, like page-media: the editor PUTs the
+  // file straight to Supabase and stores the public URL in the board document.
+  app.post("/api/uploads/board-image/sign", requireAdmin, async (req: Request, res: Response) => {
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return res.status(503).json({ message: "Storage not configured", code: "storage_not_configured" });
+    }
+    const parsed = z.object({ filename: z.string().min(1).max(200) }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "filename required" });
+
+    const ext = (parsed.data.filename.split(".").pop() || "").toLowerCase();
+    if (!BOARD_IMAGE_EXT.has(ext)) {
+      return res.status(415).json({ message: "Only PNG, JPEG, GIF, WebP and AVIF images are supported" });
+    }
+    try {
+      await ensureBoardBucket();
+      const supabase = getSupabaseAdmin();
+      const objectId = `images/${Date.now()}-${randomUUID()}.${ext}`;
+      const { data, error } = await supabase.storage.from(BOARD_IMAGE_BUCKET).createSignedUploadUrl(objectId);
+      if (error || !data) throw new Error(error?.message ?? "no signed URL");
+      const { data: urlData } = supabase.storage.from(BOARD_IMAGE_BUCKET).getPublicUrl(objectId);
+      return res.json({ uploadUrl: data.signedUrl, publicUrl: urlData.publicUrl });
+    } catch (err: any) {
+      console.error("[uploads] POST /api/uploads/board-image/sign failed:", err);
       return res.status(500).json({ message: "Failed to create upload URL" });
     }
   });

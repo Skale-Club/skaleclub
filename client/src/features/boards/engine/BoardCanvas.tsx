@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type MutableRefObject, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent, type MutableRefObject, type ReactNode } from 'react';
 import {
   Background,
   BackgroundVariant,
@@ -9,13 +9,18 @@ import {
   ReactFlowProvider,
   SelectionMode,
   useReactFlow,
+  type Edge,
+  type FinalConnectionState,
   type Node,
+  type NodeChange,
   type Viewport,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './board.css';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { absoluteBox, absolutePosition, computeSnap, indexNodes, nodeSize, parseClipboard, unionBox, type Box } from '@shared/boards/canvasOps';
+import { collectDescendants } from '@shared/boards/document';
 import { useBoardStore, useBoardStoreApi } from '../store/boardStore';
 import { computeMindMeta, toFlowEdges, toFlowNodes, type BoardFlowNode, type FlowNodeCache } from './toFlow';
 import { boardNodeTypes } from './nodes';
@@ -28,11 +33,33 @@ import { useAutoLayout } from '../mindmap/useAutoLayout';
 import { useMindmapKeyboard } from '../mindmap/useMindmapKeyboard';
 import { createRootAt } from '../mindmap/actions';
 import { MindContextMenu, type MindContextMenuState } from '../mindmap/MindContextMenu';
+import { CanvasContextMenu, type CanvasContextMenuState } from '../canvas/CanvasContextMenu';
+import {
+  addImageNode,
+  connectNodes,
+  copySelection,
+  createCanvasNode,
+  cutSelection,
+  duplicateSelection,
+  finishCanvasDrag,
+  getMemoryClipboard,
+  nudgeSelection,
+  pasteContent,
+} from '../canvas/actions';
+import { clearGuides, guidesSignal, useShiftTracking } from '../canvas/interaction';
+import { BOARD_IMAGE_ACCEPT, firstImageFile } from '../canvas/images';
+import { useImageUpload } from '../canvas/useImageUpload';
+import { StrokesLayer, PenOverlay } from './layers/PenLayer';
+import { GuidesLayer } from './layers/GuidesLayer';
+import { CREATION_TOOLS, CreationOverlay, type CreationTool } from './layers/CreationOverlay';
+import type { BoardTool } from '../store/boardStore';
 
 // Culling offscreen nodes only pays off on big boards, and it would also drop
 // them from the thumbnail (rendered from the DOM), so it kicks in late.
 const CULL_THRESHOLD = 300;
 const VIEWPORT_THROTTLE_MS = 200;
+const SNAP_PX = 6;
+const LONG_PRESS_MS = 550;
 
 export const BOARD_BACKGROUND = { light: '#ffffff', dark: '#0f172a' } as const;
 
@@ -42,6 +69,7 @@ export interface BoardCanvasProps {
   readOnly?: boolean;
   /** Overrides theme.dark (the public viewer's light/dark toggle). */
   dark?: boolean;
+  /** Overrides the store's grid-snap toggle. */
   snapToGrid?: boolean;
   showMiniMap?: boolean;
   /** Filled with a function that renders the save thumbnail from this canvas. */
@@ -49,6 +77,8 @@ export interface BoardCanvasProps {
   /** Extra overlay content (rendered inside the provider, over the canvas). */
   children?: ReactNode;
   className?: string;
+  /** Extra classes for the zoom bar panel (e.g. lift it above a mobile toolbar). */
+  zoomBarClassName?: string;
 }
 
 function isTypingTarget(target: EventTarget | null) {
@@ -69,7 +99,17 @@ function minimapColor(node: BoardFlowNode, dark: boolean): string {
   }
 }
 
-function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid = false, showMiniMap = true, thumbnailRef, children, className }: BoardCanvasProps) {
+function pointOf(event: unknown): { clientX: number; clientY: number } | null {
+  const e = event as { clientX?: number; clientY?: number; changedTouches?: ArrayLike<{ clientX: number; clientY: number }> };
+  if (typeof e?.clientX === 'number' && typeof e.clientY === 'number') return { clientX: e.clientX, clientY: e.clientY };
+  const t = e?.changedTouches?.[0];
+  return t ? { clientX: t.clientX, clientY: t.clientY } : null;
+}
+
+const TOOL_KEYS: Record<string, BoardTool> = { v: 'select', n: 'sticky', s: 'shape', t: 'text', c: 'connector', p: 'pen', f: 'frame', i: 'image' };
+const ARROWS: Record<string, [number, number]> = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+
+function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOverride, showMiniMap = true, thumbnailRef, children, className, zoomBarClassName }: BoardCanvasProps) {
   const storeApi = useBoardStoreApi();
   const document = useBoardStore((s) => s.document);
   const selection = useBoardStore((s) => s.selection);
@@ -77,8 +117,12 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid = false,
   const updateNodes = useBoardStore((s) => s.updateNodes);
   const updateEdges = useBoardStore((s) => s.updateEdges);
   const activeTool = useBoardStore((s) => s.activeTool);
+  const storeSnap = useBoardStore((s) => s.snapToGrid);
+  const snapToGrid = snapOverride ?? storeSnap;
   const reactFlow = useReactFlow();
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadImage = useImageUpload();
 
   const dark = darkOverride ?? !!document.theme.dark;
   // Mind-map facts depend on the document only, never on the selection.
@@ -100,25 +144,29 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid = false,
   const autoLayout = useAutoLayout(storeApi, reactFlow);
   // Registered before the generic key handler below, so mind keys win.
   useMindmapKeyboard(storeApi, { readOnly, containerRef: wrapperRef });
+  useShiftTracking();
   const [contextMenu, setContextMenu] = useState<MindContextMenuState | null>(null);
+  const [canvasMenu, setCanvasMenu] = useState<CanvasContextMenuState | null>(null);
+  const [dropActive, setDropActive] = useState(false);
 
   // Camera helpers for the panels, the keyboard and imports.
   useEffect(() => {
     storeApi.getState().setCanvasApi({
       focusNode: (id, opts) => {
-        const node = reactFlow.getNode(id);
+        const node = reactFlow.getInternalNode(id);
         const el = wrapperRef.current;
         if (!node || !el) return;
         const w = node.measured?.width ?? node.width ?? 160;
         const h = node.measured?.height ?? node.height ?? 44;
-        const cx = node.position.x + w / 2;
-        const cy = node.position.y + h / 2;
+        const pos = node.internals.positionAbsolute;
+        const cx = pos.x + w / 2;
+        const cy = pos.y + h / 2;
         const { x, y, zoom } = reactFlow.getViewport();
         if (opts?.ifOffscreen) {
           const rect = el.getBoundingClientRect();
           const margin = 48;
-          const left = node.position.x * zoom + x;
-          const top = node.position.y * zoom + y;
+          const left = pos.x * zoom + x;
+          const top = pos.y * zoom + y;
           const inside = left >= margin && top >= margin && left + w * zoom <= rect.width - margin && top + h * zoom <= rect.height - margin;
           if (inside) return;
         }
@@ -133,6 +181,48 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid = false,
     return () => storeApi.getState().setCanvasApi(null);
   }, [reactFlow, storeApi]);
 
+  // ---------------------------------------------------------------------------
+  // Images: file picker (Image tool), drop and paste.
+
+  const placeImage = useCallback(
+    async (file: File, at?: { x: number; y: number }) => {
+      const point = at ?? storeApi.getState().canvasApi?.getViewportCenter() ?? { x: 0, y: 0 };
+      const image = await uploadImage(file);
+      if (image) addImageNode(storeApi, point, image);
+    },
+    [storeApi, uploadImage],
+  );
+
+  useEffect(() => {
+    if (readOnly || activeTool !== 'image') return;
+    fileInputRef.current?.click();
+    storeApi.getState().setActiveTool('select');
+  }, [activeTool, readOnly, storeApi]);
+
+  const handleDragOver = useCallback(
+    (event: ReactDragEvent) => {
+      if (readOnly || !Array.from(event.dataTransfer.types).includes('Files')) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'copy';
+      setDropActive(true);
+    },
+    [readOnly],
+  );
+  const handleDrop = useCallback(
+    (event: ReactDragEvent) => {
+      setDropActive(false);
+      if (readOnly) return;
+      const file = firstImageFile(event.dataTransfer);
+      if (!file) return;
+      event.preventDefault();
+      void placeImage(file, reactFlow.screenToFlowPosition({ x: event.clientX, y: event.clientY }));
+    },
+    [placeImage, reactFlow, readOnly],
+  );
+
+  // ---------------------------------------------------------------------------
+  // Pointer: tools, clicks, context menus.
+
   // Mind map tool: a click (or double-click) on empty canvas starts a new map there.
   const createMapAt = useCallback(
     (clientX: number, clientY: number) => {
@@ -145,43 +235,232 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid = false,
   const handlePaneClick = useCallback(
     (event: ReactMouseEvent) => {
       setContextMenu(null);
+      setCanvasMenu(null);
+      const state = storeApi.getState();
       if (readOnly) {
-        storeApi.getState().clearSelection();
+        state.clearSelection();
         return;
       }
-      if (storeApi.getState().activeTool === 'mind') createMapAt(event.clientX, event.clientY);
+      if (state.activeTool === 'mind') createMapAt(event.clientX, event.clientY);
+      else if (state.activeTool === 'connector') state.setConnectorSource(null);
     },
     [createMapAt, readOnly, storeApi],
   );
   const handleDoubleClick = useCallback(
     (event: ReactMouseEvent) => {
-      if (readOnly || storeApi.getState().activeTool !== 'mind') return;
-      if (!(event.target instanceof Element) || !event.target.classList.contains('react-flow__pane')) return;
-      createMapAt(event.clientX, event.clientY);
+      if (readOnly || !(event.target instanceof Element) || !event.target.classList.contains('react-flow__pane')) return;
+      if (storeApi.getState().activeTool === 'mind') createMapAt(event.clientX, event.clientY);
     },
     [createMapAt, readOnly, storeApi],
   );
   const handleNodeClick = useCallback(
     (_event: ReactMouseEvent, node: Node) => {
+      const state = storeApi.getState();
       // The read-only viewer has no React Flow selection; keep one for keyboard navigation.
-      if (readOnly && node.type === 'mind') storeApi.getState().select({ nodeIds: [node.id], edgeIds: [] });
+      if (readOnly) {
+        if (node.type === 'mind') state.select({ nodeIds: [node.id], edgeIds: [] });
+        return;
+      }
+      if (state.activeTool === 'connector') {
+        const source = state.connectorSourceId;
+        if (!source) state.setConnectorSource(node.id);
+        else if (source !== node.id) {
+          connectNodes(storeApi, source, node.id);
+          state.setActiveTool('select');
+        }
+      }
     },
     [readOnly, storeApi],
   );
+  const openNodeMenu = useCallback(
+    (nodeId: string, x: number, y: number) => {
+      const state = storeApi.getState();
+      const node = state.document.nodes.find((n) => n.id === nodeId);
+      if (!node) return;
+      if (node.data.type === 'mind') {
+        state.select({ nodeIds: [nodeId], edgeIds: [] });
+        setContextMenu({ nodeId, x, y });
+        return;
+      }
+      if (!state.selection.nodeIds.includes(nodeId)) state.select({ nodeIds: [nodeId], edgeIds: [] });
+      setCanvasMenu({ kind: 'node', id: nodeId, x, y });
+    },
+    [storeApi],
+  );
+  const openEdgeMenu = useCallback(
+    (edgeId: string, x: number, y: number) => {
+      const state = storeApi.getState();
+      const edge = state.document.edges.find((e) => e.id === edgeId);
+      if (!edge || edge.kind !== 'connector') return;
+      state.select({ nodeIds: [], edgeIds: [edgeId] });
+      setCanvasMenu({ kind: 'edge', id: edgeId, x, y });
+    },
+    [storeApi],
+  );
   const handleNodeContextMenu = useCallback(
     (event: ReactMouseEvent, node: Node) => {
-      if (readOnly || node.type !== 'mind') return;
+      if (readOnly) return;
       event.preventDefault();
-      storeApi.getState().select({ nodeIds: [node.id], edgeIds: [] });
-      setContextMenu({ nodeId: node.id, x: event.clientX, y: event.clientY });
+      openNodeMenu(node.id, event.clientX, event.clientY);
+    },
+    [openNodeMenu, readOnly],
+  );
+  const handleEdgeContextMenu = useCallback(
+    (event: ReactMouseEvent, edge: Edge) => {
+      if (readOnly || edge.type !== 'connector') return;
+      event.preventDefault();
+      openEdgeMenu(edge.id, event.clientX, event.clientY);
+    },
+    [openEdgeMenu, readOnly],
+  );
+  const handleEdgeDoubleClick = useCallback(
+    (event: ReactMouseEvent, edge: Edge) => {
+      if (readOnly || edge.type !== 'connector') return;
+      event.stopPropagation();
+      storeApi.getState().select({ nodeIds: [], edgeIds: [edge.id] });
+      storeApi.getState().setEditingEdge(edge.id);
     },
     [readOnly, storeApi],
+  );
+
+  // Touch: a long press opens the context menu of the node or connector under the finger.
+  const longPress = useRef<{ timer: number; x: number; y: number } | null>(null);
+  const cancelLongPress = useCallback(() => {
+    if (longPress.current) window.clearTimeout(longPress.current.timer);
+    longPress.current = null;
+  }, []);
+  const handlePointerDownCapture = useCallback(
+    (event: React.PointerEvent) => {
+      if (readOnly || event.pointerType !== 'touch' || !event.isPrimary) {
+        cancelLongPress();
+        return;
+      }
+      const target = event.target instanceof Element ? event.target : null;
+      const nodeEl = target?.closest('.react-flow__node');
+      const edgeEl = target?.closest('.react-flow__edge');
+      if (!nodeEl && !edgeEl) return;
+      const { clientX, clientY } = event;
+      cancelLongPress();
+      longPress.current = {
+        x: clientX,
+        y: clientY,
+        timer: window.setTimeout(() => {
+          longPress.current = null;
+          const id = (nodeEl ?? edgeEl)?.getAttribute('data-id');
+          if (!id) return;
+          if (nodeEl) openNodeMenu(id, clientX, clientY);
+          else openEdgeMenu(id, clientX, clientY);
+        }, LONG_PRESS_MS),
+      };
+    },
+    [cancelLongPress, openEdgeMenu, openNodeMenu, readOnly],
+  );
+  const handlePointerMoveCapture = useCallback(
+    (event: React.PointerEvent) => {
+      const lp = longPress.current;
+      if (lp && Math.hypot(event.clientX - lp.x, event.clientY - lp.y) > 10) cancelLongPress();
+    },
+    [cancelLongPress],
+  );
+
+  // Connectors: drag from a handle and release on another node (anywhere on it).
+  const handleConnectEnd = useCallback(
+    (event: MouseEvent | TouchEvent, state: FinalConnectionState) => {
+      if (readOnly) return;
+      const from = state.fromNode?.id;
+      if (!from) return;
+      let to = state.toNode?.id ?? null;
+      if (!to) {
+        const p = pointOf(event);
+        const el = p ? window.document.elementFromPoint(p.clientX, p.clientY)?.closest('.react-flow__node') : null;
+        to = el?.getAttribute('data-id') ?? null;
+      }
+      if (to && to !== from) connectNodes(storeApi, from, to);
+    },
+    [readOnly, storeApi],
+  );
+
+  // ---------------------------------------------------------------------------
+  // Dragging: alignment guides (snap to other nodes' edges and centres) and
+  // frame membership on drop.
+
+  const handleNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      if (!readOnly) {
+        const drags = changes.filter((c): c is Extract<NodeChange, { type: 'position' }> => c.type === 'position' && !!c.dragging && !!c.position);
+        const state = storeApi.getState();
+        if (drags.length && !state.snapToGrid && snapOverride === undefined) {
+          const doc = state.document;
+          const byId = indexNodes(doc.nodes);
+          const moving = drags.map((c) => byId.get(c.id));
+          if (moving.every((n) => n && n.data.type !== 'mind')) {
+            const boxes: Box[] = drags.map((c) => {
+              const node = byId.get(c.id)!;
+              const parent = node.parentId ? byId.get(node.parentId) : undefined;
+              const origin = parent ? absolutePosition(byId, parent) : { x: 0, y: 0 };
+              const size = nodeSize(node, state.measured);
+              return { x: origin.x + c.position!.x, y: origin.y + c.position!.y, w: size.w, h: size.h };
+            });
+            const union = unionBox(boxes)!;
+            const excluded = collectDescendants(doc, drags.map((c) => c.id));
+            const { zoom } = reactFlow.getViewport();
+            const margin = 400 / zoom;
+            const others: Box[] = [];
+            for (const node of doc.nodes) {
+              if (excluded.has(node.id) || mind.hidden.has(node.id)) continue;
+              const b = absoluteBox(byId, node, state.measured);
+              // Only nodes near the drag are candidates (keeps big boards fast).
+              if (b.x > union.x + union.w + margin || b.x + b.w < union.x - margin || b.y > union.y + union.h + margin || b.y + b.h < union.y - margin) continue;
+              others.push(b);
+            }
+            const snap = computeSnap(union, others, SNAP_PX / zoom);
+            guidesSignal.set(snap.lines);
+            if (snap.dx || snap.dy) {
+              const ids = new Set(drags.map((c) => c.id));
+              changes = changes.map((c) =>
+                c.type === 'position' && ids.has(c.id) && c.position ? { ...c, position: { x: c.position.x + snap.dx, y: c.position.y + snap.dy } } : c,
+              );
+            }
+          }
+        } else if (changes.some((c) => c.type === 'position' && c.dragging === false)) {
+          clearGuides();
+        }
+      }
+      updateNodes(changes);
+    },
+    [mind.hidden, reactFlow, readOnly, snapOverride, storeApi, updateNodes],
+  );
+
+  const handleNodeDragStop = useCallback(
+    (event: MouseEvent | TouchEvent, node: Node, dragged: Node[]) => {
+      clearGuides();
+      // Inside the drag's undo step (opened by onNodeDragStart).
+      finishCanvasDrag(storeApi, (dragged.length ? dragged : [node]).map((n) => n.id));
+      autoLayout.onNodeDragStop(event, node, dragged);
+    },
+    [autoLayout, storeApi],
+  );
+  const handleSelectionDragStart = useCallback(() => {
+    storeApi.getState().beginBatch();
+    autoLayout.onSelectionDragStart();
+  }, [autoLayout, storeApi]);
+  const handleSelectionDragStop = useCallback(
+    (_event: unknown, dragged: Node[]) => {
+      clearGuides();
+      finishCanvasDrag(storeApi, dragged.map((n) => n.id));
+      autoLayout.onSelectionDragStop();
+      storeApi.getState().endBatch();
+    },
+    [autoLayout, storeApi],
   );
 
   // Open where the board was left; a board never opened before fits its content.
   // The read-only viewer always fits (the saved camera is the editor's screen).
   // Read once: later viewport writes must not move the camera.
   const initialViewport = useRef(readOnly ? null : storeApi.getState().viewport).current;
+  // Nothing to fit on an empty board (React Flow would otherwise fit to the
+  // first node placed and jump the camera).
+  const fitOnOpen = useRef(!initialViewport && storeApi.getState().document.nodes.length > 0).current;
 
   // Camera -> store, throttled (the store bumps viewportVersion for autosave).
   // Moves without a DOM event (the initial fit, the zoom bar) are remembered
@@ -211,19 +490,25 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid = false,
     if (viewportTimer.current !== null) window.clearTimeout(viewportTimer.current);
   }, []);
 
-  // Delete / undo / redo go through the store (React Flow's own delete key is off).
+  // ---------------------------------------------------------------------------
+  // Keyboard and clipboard (React Flow's own delete key is off).
+
   useEffect(() => {
     if (readOnly) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || isTypingTarget(event.target)) return;
-      // Ignore keys while a dialog/menu (portaled outside the canvas) has focus.
+    // Focus in a dialog/menu portaled outside the canvas: leave keys alone.
+    const inOverlay = () => {
       const active = window.document.activeElement;
-      if (active && active !== window.document.body && wrapperRef.current && !wrapperRef.current.contains(active)) {
-        if (active.closest('[role="dialog"], [role="menu"], [role="alertdialog"]')) return;
-      }
+      if (!active || active === window.document.body || (wrapperRef.current && wrapperRef.current.contains(active))) return false;
+      return !!active.closest('[role="dialog"], [role="menu"], [role="alertdialog"]');
+    };
+    const blocked = (event: Event) => isTypingTarget(event.target) || inOverlay() || storeApi.getState().editingNodeId !== null || storeApi.getState().editingEdgeId !== null;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.isComposing || isTypingTarget(event.target) || inOverlay()) return;
       const mod = event.ctrlKey || event.metaKey;
       const key = event.key.toLowerCase();
       const state = storeApi.getState();
+      if (state.editingNodeId !== null || state.editingEdgeId !== null) return;
       if (!mod && (event.key === 'Delete' || event.key === 'Backspace')) {
         event.preventDefault();
         state.removeSelection();
@@ -233,18 +518,79 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid = false,
       } else if (mod && ((key === 'z' && event.shiftKey) || key === 'y')) {
         event.preventDefault();
         state.redo();
-      } else if (!mod && !event.altKey && key === 'v') {
-        state.setActiveTool('select');
+      } else if (mod && key === 'd') {
+        event.preventDefault();
+        duplicateSelection(storeApi);
+      } else if (mod && key === 'a') {
+        event.preventDefault();
+        state.select({ nodeIds: state.document.nodes.filter((n) => !mind.hidden.has(n.id)).map((n) => n.id), edgeIds: [] });
+      } else if (!mod && !event.altKey && ARROWS[event.key]) {
+        const [dx, dy] = ARROWS[event.key];
+        const step = event.shiftKey ? 10 : 1;
+        if (nudgeSelection(storeApi, dx * step, dy * step)) event.preventDefault();
       } else if (!mod && !event.altKey && key === 'm') {
         state.setActiveTool(state.activeTool === 'mind' ? 'select' : 'mind');
-      } else if (key === 'escape' && state.editingNodeId === null) {
-        if (state.activeTool !== 'select') state.setActiveTool('select');
+      } else if (!mod && !event.altKey && TOOL_KEYS[key]) {
+        const tool = TOOL_KEYS[key];
+        state.setActiveTool(state.activeTool === tool && tool !== 'select' ? 'select' : tool);
+      } else if (key === 'escape') {
+        if (state.connectorSourceId) state.setConnectorSource(null);
+        else if (state.activeTool !== 'select') state.setActiveTool('select');
         else state.clearSelection();
       }
     };
+    const onCopy = (event: ClipboardEvent) => {
+      if (blocked(event)) return;
+      const text = copySelection(storeApi);
+      if (!text) return;
+      event.clipboardData?.setData('text/plain', text);
+      event.preventDefault();
+    };
+    const onCut = (event: ClipboardEvent) => {
+      if (blocked(event)) return;
+      const text = cutSelection(storeApi);
+      if (!text) return;
+      event.clipboardData?.setData('text/plain', text);
+      event.preventDefault();
+    };
+    // Runs after the mind map's paste (which turns text into a branch of the selected topic).
+    const onPaste = (event: ClipboardEvent) => {
+      if (event.defaultPrevented || blocked(event)) return;
+      const text = event.clipboardData?.getData('text/plain') ?? '';
+      const clip = parseClipboard(text);
+      if (clip) {
+        event.preventDefault();
+        pasteContent(storeApi, clip);
+        return;
+      }
+      const file = firstImageFile(event.clipboardData);
+      if (file) {
+        event.preventDefault();
+        void placeImage(file);
+        return;
+      }
+      if (text.trim()) {
+        event.preventDefault();
+        const center = storeApi.getState().canvasApi?.getViewportCenter() ?? { x: 0, y: 0 };
+        createCanvasNode(storeApi, 'text', { at: center }, { data: { text: text.slice(0, 2_000) } });
+        return;
+      }
+      if (getMemoryClipboard()) {
+        event.preventDefault();
+        pasteContent(storeApi);
+      }
+    };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [readOnly, storeApi]);
+    window.addEventListener('copy', onCopy);
+    window.addEventListener('cut', onCut);
+    window.addEventListener('paste', onPaste);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('copy', onCopy);
+      window.removeEventListener('cut', onCut);
+      window.removeEventListener('paste', onPaste);
+    };
+  }, [mind.hidden, placeImage, readOnly, storeApi]);
 
   useEffect(() => {
     if (!thumbnailRef) return;
@@ -261,6 +607,9 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid = false,
 
   const background = document.theme.background;
   const variant = background === 'grid' ? BackgroundVariant.Lines : BackgroundVariant.Dots;
+  const creating = !readOnly && CREATION_TOOLS.has(activeTool);
+  const drawing = !readOnly && activeTool === 'pen';
+  const connecting = !readOnly && activeTool === 'connector';
 
   return (
     <div
@@ -270,33 +619,47 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid = false,
         dark && 'board-dark',
         autoLayout.animate && 'board-animate',
         !readOnly && activeTool === 'mind' && 'board-tool-mind',
+        connecting && 'board-tool-connector',
+        readOnly && 'board-readonly',
+        dropActive && 'board-drop-active',
         className,
       )}
       onDoubleClick={handleDoubleClick}
+      onDragOver={handleDragOver}
+      onDragLeave={() => setDropActive(false)}
+      onDrop={handleDrop}
+      onPointerDownCapture={handlePointerDownCapture}
+      onPointerMoveCapture={handlePointerMoveCapture}
+      onPointerUpCapture={cancelLongPress}
+      onPointerCancelCapture={cancelLongPress}
       data-testid="board-canvas"
+      data-tool={activeTool}
     >
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={boardNodeTypes}
         edgeTypes={boardEdgeTypes}
-        onNodesChange={updateNodes}
+        onNodesChange={handleNodesChange}
         onEdgesChange={updateEdges}
         onMove={handleMove}
         onMoveEnd={handleMoveEnd}
         onPaneClick={handlePaneClick}
         onNodeClick={handleNodeClick}
         onNodeContextMenu={handleNodeContextMenu}
+        onEdgeContextMenu={handleEdgeContextMenu}
+        onEdgeDoubleClick={handleEdgeDoubleClick}
         onNodeDragStart={autoLayout.onNodeDragStart}
         onNodeDrag={autoLayout.onNodeDrag}
-        onNodeDragStop={autoLayout.onNodeDragStop}
-        onSelectionDragStart={autoLayout.onSelectionDragStart}
-        onSelectionDragStop={autoLayout.onSelectionDragStop}
-        // Arrow keys navigate the mind map instead of nudging nodes.
+        onNodeDragStop={handleNodeDragStop}
+        onSelectionDragStart={handleSelectionDragStart}
+        onSelectionDragStop={handleSelectionDragStop}
+        onConnectEnd={handleConnectEnd}
+        // Arrow keys navigate the mind map / nudge instead of React Flow's own moves.
         disableKeyboardA11y
         colorMode={dark ? 'dark' : 'light'}
         defaultViewport={initialViewport ?? undefined}
-        fitView={!initialViewport}
+        fitView={fitOnOpen}
         fitViewOptions={{ padding: FIT_VIEW_OPTIONS.padding, maxZoom: FIT_VIEW_OPTIONS.maxZoom }}
         minZoom={MIN_ZOOM}
         maxZoom={MAX_ZOOM}
@@ -313,8 +676,9 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid = false,
         selectionMode={SelectionMode.Partial}
         multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
         deleteKeyCode={null}
-        nodesDraggable={!readOnly}
-        nodesConnectable={false}
+        nodesDraggable={!readOnly && !connecting}
+        nodesConnectable={!readOnly}
+        connectionRadius={28}
         elementsSelectable={!readOnly}
         edgesFocusable={!readOnly}
         nodesFocusable={!readOnly}
@@ -331,6 +695,10 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid = false,
             color={dark ? (variant === BackgroundVariant.Dots ? '#334155' : '#1e293b') : variant === BackgroundVariant.Dots ? '#cbd5e1' : '#eef2f7'}
           />
         )}
+        <StrokesLayer strokes={document.strokes} />
+        {!readOnly && <GuidesLayer />}
+        {creating && <CreationOverlay tool={activeTool as CreationTool} containerRef={wrapperRef} />}
+        {drawing && <PenOverlay containerRef={wrapperRef} />}
         {showMiniMap && (
           <MiniMap
             position="bottom-right"
@@ -344,12 +712,29 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid = false,
             ariaLabel="Board overview"
           />
         )}
-        <Panel position="bottom-left">
-          <ZoomBar showHistory={!readOnly} />
+        <Panel position="bottom-left" className={zoomBarClassName}>
+          <ZoomBar showHistory={!readOnly} showSnap={!readOnly && snapOverride === undefined} />
         </Panel>
         {children}
       </ReactFlow>
-      {!readOnly && <MindContextMenu menu={contextMenu} onClose={() => setContextMenu(null)} />}
+      {!readOnly && (
+        <>
+          <MindContextMenu menu={contextMenu} onClose={() => setContextMenu(null)} />
+          <CanvasContextMenu menu={canvasMenu} onClose={() => setCanvasMenu(null)} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={BOARD_IMAGE_ACCEPT}
+            className="hidden"
+            data-testid="board-image-input"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (file) void placeImage(file);
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }
