@@ -554,7 +554,7 @@ function boardsSuite(browserName: EngineName) {
         await phone
           .waitForFunction(
             () =>
-              [...document.querySelectorAll('[data-testid="board-node-mind"]')].every((el) => {
+              Array.from(document.querySelectorAll('[data-testid="board-node-mind"]')).every((el) => {
                 const r = el.getBoundingClientRect();
                 return r.left >= -1 && r.top >= -1 && r.right <= window.innerWidth + 1 && r.bottom <= window.innerHeight + 1;
               }),
