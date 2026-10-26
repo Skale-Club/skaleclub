@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { ViewportPortal, useReactFlow } from '@xyflow/react';
 import { getStroke } from 'perfect-freehand';
 import type { BoardStroke } from '@shared/schema/boards';
@@ -72,7 +72,18 @@ export function PenOverlay({ containerRef }: { containerRef: React.RefObject<HTM
   const [, setTick] = useState(0);
   const frame = useRef(0);
   const [hover, setHover] = useState<string | null>(null);
-  const erasing = useRef(false);
+  // The pointer erasing right now (its strokes removed as one undo step); null when not erasing.
+  const erasing = useRef<number | null>(null);
+  // The overlay goes away mid-erase (tool switched): close the batch it opened.
+  useEffect(
+    () => () => {
+      if (erasing.current !== null) {
+        erasing.current = null;
+        store.getState().endBatch();
+      }
+    },
+    [store],
+  );
 
   const redraw = useCallback(() => {
     if (frame.current) return;
@@ -92,8 +103,10 @@ export function PenOverlay({ containerRef }: { containerRef: React.RefObject<HTM
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    // A second finger cancels the stroke in progress.
-    if (active.current || erasing.current) {
+    // A second finger cancels the stroke in progress; while erasing it is ignored
+    // (the first pointer keeps erasing in the same batch).
+    if (erasing.current !== null) return;
+    if (active.current) {
       active.current = null;
       redraw();
       return;
@@ -101,7 +114,7 @@ export function PenOverlay({ containerRef }: { containerRef: React.RefObject<HTM
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
     if (pen.mode === 'erase') {
-      erasing.current = true;
+      erasing.current = e.pointerId;
       store.getState().beginBatch();
       eraseAt(e);
       return;
@@ -115,8 +128,9 @@ export function PenOverlay({ containerRef }: { containerRef: React.RefObject<HTM
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (pen.mode === 'erase') {
-      if (erasing.current) eraseAt(e);
-      else {
+      if (erasing.current !== null) {
+        if (erasing.current === e.pointerId) eraseAt(e);
+      } else {
         const hits = hitStrokes(store.getState().document.strokes, toFlow(e), tolerance());
         setHover(hits[hits.length - 1] ?? null);
       }
@@ -134,8 +148,10 @@ export function PenOverlay({ containerRef }: { containerRef: React.RefObject<HTM
   };
 
   const finish = (e: ReactPointerEvent<HTMLDivElement>, keep: boolean) => {
-    if (erasing.current) {
-      erasing.current = false;
+    if (erasing.current !== null) {
+      // Only the pointer that started erasing ends the batch.
+      if (erasing.current !== e.pointerId) return;
+      erasing.current = null;
       store.getState().endBatch();
       return;
     }

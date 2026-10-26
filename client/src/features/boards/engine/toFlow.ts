@@ -11,7 +11,7 @@ import { branchPalette } from './palette';
 
 export type BoardNodeType = BoardNodeData['type'];
 
-/** Render-only fields added next to the stored data; stripped by `fromFlowNode`. */
+/** Render-only fields added next to the stored data; never stored. */
 export interface FlowNodeMeta {
   /** Depth in its mind-map tree (0 = root); undefined for non-mind nodes. */
   depth?: number;
@@ -77,7 +77,7 @@ export type FlowNodeCache = Map<string, { key: unknown[]; flow: BoardFlowNode }>
 export type BoardFlowNodeData = BoardNodeData & { meta: FlowNodeMeta };
 export type BoardFlowNode = Node<BoardFlowNodeData, BoardNodeType>;
 export type BoardFlowEdgeData = NonNullable<BoardEdge['data']> & {
-  /** Render-only (tree edges): branch color and depth of the child; stripped by fromFlowEdge. */
+  /** Render-only (tree edges): branch color and depth of the child; never stored. */
   branchColor?: string;
   treeDepth?: number;
 } & Record<string, unknown>;
@@ -171,20 +171,6 @@ export function toFlowNode(
   return flow;
 }
 
-export function fromFlowNode(flow: BoardFlowNode): BoardNode {
-  const { meta: _meta, ...data } = flow.data;
-  const node: BoardNode = {
-    id: flow.id,
-    position: { x: flow.position.x, y: flow.position.y },
-    data: data as BoardNodeData,
-  };
-  if (flow.width !== undefined && flow.height !== undefined) node.size = { w: flow.width, h: flow.height };
-  if (flow.parentId) node.parentId = flow.parentId;
-  if (flow.zIndex !== undefined && !(data.type === 'frame' && flow.zIndex === -1)) node.zIndex = flow.zIndex;
-  if (flow.draggable === false) node.locked = true;
-  return node;
-}
-
 // Picks the facing sides of two nodes so an edge never wraps around a node.
 // Mind-map edges always run horizontally (the tree grows left/right).
 export function pickHandles(
@@ -263,13 +249,4 @@ export function toFlowEdges(edges: BoardEdge[], nodes: BoardNode[], opts: ToFlow
     out.push(flow);
   }
   return out;
-}
-
-export function fromFlowEdge(flow: BoardFlowEdge): BoardEdge {
-  const edge: BoardEdge = { id: flow.id, source: flow.source, target: flow.target, kind: flow.type ?? 'connector' };
-  if (flow.data) {
-    const { branchColor: _color, treeDepth: _depth, ...data } = flow.data;
-    if (Object.keys(data).length) edge.data = data;
-  }
-  return edge;
 }

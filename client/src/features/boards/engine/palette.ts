@@ -1,18 +1,9 @@
+import { STICKY_COLORS } from '@shared/boards/canvasDefaults';
+
 // Brand-aligned colors for board content. Brand navy is the mind-map root, the
 // CTA blue is the accent (selection, links); everything else stays neutral.
 export const BRAND_NAVY = '#0A162E';
 export const CTA_BLUE = '#5173D6';
-
-export const STICKY_COLORS = [
-  '#FEF3C7', // butter
-  '#FDE2E4', // blush
-  '#DCFCE7', // mint
-  '#DBEAFE', // sky
-  '#EDE9FE', // lavender
-  '#FFEDD5', // peach
-  '#E0F2FE', // ice
-  '#F1F5F9', // cloud
-] as const;
 
 export const DEFAULT_STICKY_COLOR = STICKY_COLORS[0];
 

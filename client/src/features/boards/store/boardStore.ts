@@ -163,6 +163,11 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
   // A drag opens its own batch (closed by the drag end), independent of any
   // batch a caller opened around it (useAutoLayout wraps drag + reparent).
   let dragBatch = false;
+  // The documentVersion each document object was current at (history restores
+  // the same objects), so stepping back over an edit can tell whether it lands
+  // on the version last saved.
+  const versionOf = new WeakMap<BoardDocument, number>();
+  versionOf.set(initialDoc, 0);
 
   const store = createStore<BoardState>()(
     temporal(
@@ -173,6 +178,7 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
           if (input === state.document) return;
           const next = autoLayout ? autoLayoutDocument(state.document, input, state.measured) : input;
           set({ document: next, documentVersion: state.documentVersion + 1 });
+          versionOf.set(next, state.documentVersion + 1);
           if (batchDepth > 0 && !batchRecorded) {
             batchRecorded = true;
             (api as unknown as BoardStore).temporal.getState().pause();
@@ -185,6 +191,7 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
           const tracking = history.isTracking;
           if (tracking) history.pause();
           set({ document: next });
+          versionOf.set(next, get().documentVersion);
           if (tracking) history.resume();
         };
         const relayoutSilently = (ids: Iterable<string> | null) => {
@@ -264,6 +271,7 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
               dropTargetId: null,
               measured: {},
             });
+            versionOf.set(doc, version);
             (api as unknown as BoardStore).temporal.getState().clear();
           },
           setDocument: (doc) => {
@@ -443,7 +451,16 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
             if (last?.document && !last.document.nodes.some((n) => n.id === id) && history.isTracking && batchDepth === 0) {
               history.undo();
               temporal.setState({ futureStates: [] });
-              set({ documentVersion: get().documentVersion + 1 });
+              // Back on the content that was last saved: clean again, so nothing
+              // is sent for identical content. Otherwise (the creation was
+              // already saved) the removal still needs saving. A fresh version
+              // either way: a save of the creation still in flight then marks
+              // an older version saved and leaves the board dirty, as it is.
+              const { documentVersion, savedVersion } = get();
+              const restored = versionOf.get(get().document);
+              const version = documentVersion + 1;
+              set({ documentVersion: version, ...(restored !== undefined && restored === savedVersion ? { savedVersion: version } : {}) });
+              versionOf.set(get().document, version);
               relayoutSilently(null);
               pruneSelection();
               return;
@@ -507,6 +524,7 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
             if (!history.pastStates.length) return;
             history.undo();
             set({ documentVersion: get().documentVersion + 1, editingNodeId: null, editingEdgeId: null });
+            versionOf.set(get().document, get().documentVersion);
             // Sizes may have changed since that state was recorded.
             relayoutSilently(null);
             pruneSelection();
@@ -516,6 +534,7 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
             if (!history.futureStates.length) return;
             history.redo();
             set({ documentVersion: get().documentVersion + 1, editingNodeId: null, editingEdgeId: null });
+            versionOf.set(get().document, get().documentVersion);
             relayoutSilently(null);
             pruneSelection();
           },
@@ -547,7 +566,9 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
 // ---------------------------------------------------------------------------
 // Selectors (stable functions: pass them straight to useBoardStore)
 
-export const selectIsDirty = (s: BoardState) => s.documentVersion !== s.savedVersion || s.title.trim() !== s.savedTitle;
+/** A board title cannot be empty: a cleared title is not a change (saves keep the saved one). */
+export const effectiveTitle = (s: Pick<BoardState, 'title' | 'savedTitle'>) => s.title.trim() || s.savedTitle;
+export const selectIsDirty = (s: BoardState) => s.documentVersion !== s.savedVersion || effectiveTitle(s) !== s.savedTitle;
 /** Viewport moved since the last save (saved quietly, never shown as "unsaved"). */
 export const selectViewportDirty = (s: BoardState) => s.viewportVersion !== s.savedViewportVersion;
 export const selectSelectionCount = (s: BoardState) => s.selection.nodeIds.length + s.selection.edgeIds.length;

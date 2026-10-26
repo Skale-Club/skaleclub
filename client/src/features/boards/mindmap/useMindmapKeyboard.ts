@@ -12,11 +12,7 @@ import {
   toggleCollapse,
   type MindNavDirection,
 } from './actions';
-
-function isTypingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
-}
+import { isTypingTarget } from '../canvas/interaction';
 
 // Focus is in a dialog or menu portaled outside the canvas: leave keys alone.
 function isInOverlay(container: HTMLElement | null) {

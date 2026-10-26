@@ -61,16 +61,12 @@ import { EmptyBoardError } from './io/exportImage';
 import { PresentOverlay } from './present/PresentOverlay';
 import { usePresentMode } from './present/usePresentMode';
 import { countOutlineItems, parseIndentedText } from '@shared/boards/outline';
+import { isTypingTarget } from './canvas/interaction';
 
 interface BoardEditorProps {
   id: string;
-  /** `replace` when the editor left a guard entry in history (see below). */
-  onClose: (opts?: { replace?: boolean }) => void;
-}
-
-function isTypingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+  /** Leaves the editor; called with the editor's own history entry current (any guard entry is gone). */
+  onClose: () => void;
 }
 
 function downloadText(filename: string, text: string, type = 'text/markdown') {
@@ -357,8 +353,12 @@ function EditorShell({
     if (status === 'conflict') setConflictOpen(true);
   }, [status]);
 
+  // An explicit save also sends the card thumbnail now instead of waiting for the throttle.
   const saveNow = useCallback(() => {
-    void autosave.save().catch(() => undefined);
+    void autosave
+      .save()
+      .then(() => autosave.flushThumbnail())
+      .catch(() => undefined);
   }, [autosave]);
 
   function restoreLocal() {
@@ -370,6 +370,9 @@ function EditorShell({
     });
     // Keep the server's title as the saved baseline so a restored title counts as a change.
     store.setState({ savedTitle: board.title });
+    // Saved against the version the snapshot was based on: if the board was
+    // saved elsewhere since, the conflict dialog asks instead of overwriting.
+    if (restoreSnapshot.baseVersion !== null) autosave.setBaseVersion(restoreSnapshot.baseVersion);
     setRestoreSnapshot(null);
     setCanvasKey((key) => key + 1);
   }
@@ -387,7 +390,16 @@ function EditorShell({
       const updated = await autosave.save({ extra: { visibility: next } });
       if (updated) {
         setVisibility(updated.visibility);
-        toast({ title: next === 'link' ? t('Link sharing is on') : t('Board is private') });
+        toast({ title: updated.visibility === 'link' ? t('Link sharing is on') : t('Board is private') });
+      } else {
+        // Nothing was sent (a conflict is waiting to be resolved, or saving is
+        // paused): the stored visibility did not change.
+        setVisibility(previous);
+        toast({
+          title: t('Could not change sharing'),
+          description: status === 'conflict' ? t('Resolve the save conflict first.') : t('Try again in a moment.'),
+          variant: 'destructive',
+        });
       }
     } catch (err) {
       setVisibility(previous);
@@ -494,10 +506,27 @@ function EditorShell({
     setClosing(true);
     // Flush pending changes first; only ask when they could not be saved.
     const clean = status === 'conflict' ? !isDirty : await autosave.flush();
+    if (!clean && !window.confirm(t('You have unsaved changes. Leave without saving?'))) {
+      setClosing(false);
+      return;
+    }
+    // Step back over the guard entry first, so leaving never stacks the list on
+    // top of an editor entry (browser Back would reopen the editor).
+    if (guardEntryRef.current) {
+      guardEntryRef.current = false;
+      await new Promise<void>((resolve) => {
+        const done = () => {
+          window.clearTimeout(timer);
+          window.removeEventListener('popstate', done);
+          resolve();
+        };
+        const timer = window.setTimeout(done, 1_000);
+        window.addEventListener('popstate', done);
+        window.history.back();
+      });
+    }
     setClosing(false);
-    if (!clean && !window.confirm(t('You have unsaved changes. Leave without saving?'))) return;
-    // Replace the guard entry rather than stacking the list on top of it.
-    onClose({ replace: guardEntryRef.current });
+    onClose();
   }
 
   // Portaled to <body>: the admin layout's containers would otherwise clip and
@@ -521,6 +550,11 @@ function EditorShell({
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === 'Escape') (e.target as HTMLInputElement).blur();
+            }}
+            onBlur={() => {
+              // A board always has a title: a cleared field shows the saved one again.
+              const s = store.getState();
+              if (!s.title.trim()) setTitle(s.savedTitle);
             }}
             maxLength={BOARD_LIMITS.title}
             className="h-9 max-w-xs border-transparent font-medium shadow-none hover:border-input focus-visible:border-input"

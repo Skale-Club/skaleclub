@@ -2,10 +2,11 @@
 // upload URL, then a direct PUT), stored in the document as a public URL with
 // the picture's natural size.
 import { apiRequest, HttpError } from '@/lib/queryClient';
+import { BOARD_IMAGE_MAX_BYTES } from '@shared/boards/canvasDefaults';
 
 export const BOARD_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif'] as const;
 export const BOARD_IMAGE_ACCEPT = BOARD_IMAGE_TYPES.join(',');
-export const BOARD_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+export { BOARD_IMAGE_MAX_BYTES };
 
 const EXT: Record<string, string> = {
   'image/png': 'png',

@@ -26,6 +26,14 @@ function pathTo(store: BoardStore, id: string): string[] {
   return path;
 }
 
+/** Thrown before any request when the topic to expand has no text yet. */
+export class EmptyTopicError extends Error {
+  constructor() {
+    super('Write the topic text first');
+    this.name = 'EmptyTopicError';
+  }
+}
+
 /** Asks for 3 to 6 children and adds them under the node in one undo step. Returns how many were added. */
 export async function expandNodeWithAi(store: BoardStore, id: string, language: AiLanguage): Promise<number> {
   const state = store.getState();
@@ -33,6 +41,8 @@ export async function expandNodeWithAi(store: BoardStore, id: string, language: 
   const forest = getMindForest(state.document.nodes, state.document.edges);
   const node = forest.nodes.get(id);
   if (!node || node.data.type !== 'mind') return 0;
+  // Nothing to expand on: say so instead of sending an empty prompt.
+  if (!node.data.text.trim()) throw new EmptyTopicError();
   const existing = (forest.children.get(id) ?? []).map((child) => forest.nodes.get(child)).flatMap((n) => (n?.data.type === 'mind' ? [n.data.text] : []));
   state.setAiBusyNode(id);
   try {

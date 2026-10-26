@@ -46,6 +46,12 @@ export interface ToolPrefs {
 export const toolPrefsSignal = createSignal<ToolPrefs>({ stickyColor: STICKY_COLORS[0], shapeKind: 'rect' });
 export const setToolPrefs = (patch: Partial<ToolPrefs>) => toolPrefsSignal.set({ ...toolPrefsSignal.get(), ...patch });
 
+/** Focus is in a text field (or contenteditable): keyboard shortcuts leave the key alone. */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+}
+
 /** Keeps shiftSignal in sync with the keyboard while mounted. */
 export function useShiftTracking() {
   useEffect(() => {

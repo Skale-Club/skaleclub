@@ -192,6 +192,40 @@ function boardsSuite(browserName: EngineName) {
       await waitForSaveStatus("All changes saved");
     });
 
+    it("Tab then Escape, or clearing the title, leaves the board saved and sends nothing", async () => {
+      const id = board().id;
+      const puts: string[] = [];
+      const onRequest = (req: { method: () => string; url: () => string }) => {
+        if (req.method() === "PUT" && req.url().endsWith(`/api/boards/${id}`)) puts.push(req.url());
+      };
+      page.on("request", onRequest);
+      try {
+        const version = board().version;
+        await select("Plano de marketing");
+        await page.keyboard.press("Tab");
+        await editorFocused();
+        await page.keyboard.press("Escape");
+        await page.getByTestId("mind-node-editor").waitFor({ state: "detached" });
+        assert.equal(await mindNodes().count(), 1, "the empty topic was cancelled");
+        // Longer than the autosave delay.
+        await page.waitForTimeout(2_200);
+        assert.equal((await page.getByTestId("board-save-status").textContent())?.trim(), "All changes saved");
+
+        // A cleared title is not a change; leaving the field shows the saved one again.
+        const titleInput = page.getByTestId("board-title-input");
+        await titleInput.fill("");
+        await page.waitForTimeout(2_200);
+        assert.equal((await page.getByTestId("board-save-status").textContent())?.trim(), "All changes saved");
+        await titleInput.press("Enter");
+        assert.equal(await titleInput.inputValue(), "Plano de marketing");
+        assert.deepEqual(puts, [], "no save for identical content");
+        assert.equal(board().version, version);
+        assert.equal(board().title, "Plano de marketing");
+      } finally {
+        page.off("request", onRequest);
+      }
+    });
+
     it("Tab adds a child and types into it; Enter adds a sibling", async () => {
       await select("Plano de marketing");
       await page.keyboard.press("Tab");
@@ -398,6 +432,11 @@ function boardsSuite(browserName: EngineName) {
 
       const phoneContext = await browser.newContext(PHONES[browserName]);
       const phone = await phoneContext.newPage();
+      // Writes the public page sends (the editor tab may still send its card thumbnail meanwhile).
+      const viewerWrites: string[] = [];
+      phone.on("request", (req) => {
+        if (req.method() !== "GET" && req.url().includes("/api/boards")) viewerWrites.push(`${req.method()} ${req.url()}`);
+      });
       try {
         await phone.goto(`${baseUrl}/b/${board().slug}`);
         await phone.getByTestId("board-viewer").waitFor({ timeout: 30_000 });
@@ -416,13 +455,15 @@ function boardsSuite(browserName: EngineName) {
         await screenshot(phone, "public-phone");
 
         // Folding a branch works read-only (and is not saved).
-        const version = board().version;
+        const doc = JSON.stringify(board().document);
         await mindNode("Ads", phone).getByTestId("mind-collapse-toggle").click({ force: true });
         await mindNode("Google", phone).waitFor({ state: "detached" });
         assert.equal((await mindNode("Ads", phone).getByTestId("mind-collapse-toggle").textContent())?.trim(), "+1");
         await mindNode("Ads", phone).getByTestId("mind-collapse-toggle").click({ force: true });
         await mindNode("Google", phone).waitFor();
-        assert.equal(board().version, version, "the viewer never saves");
+        await phone.waitForTimeout(300);
+        assert.deepEqual(viewerWrites, [], "the viewer never saves");
+        assert.equal(JSON.stringify(board().document), doc, "the stored map is unchanged");
       } finally {
         await phoneContext.close();
       }
@@ -879,7 +920,10 @@ function finishingSuite(browserName: EngineName) {
       assert.equal(exported.nodes.length, 4);
       assert.equal(exported.strokes.length, 1);
 
-      // Delete a frame, then import the file: the board is whole again.
+      // Delete a frame, then import the file: the board is whole again. (Fit
+      // first: leaving present mode can leave the camera off the frames.)
+      await byTestId("board-zoom-fit").click();
+      await page.waitForTimeout(400);
       await byTestId("frame-title").getByText("Gamma", { exact: true }).click();
       await page.keyboard.press("Delete");
       await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-frame"]').length === 2);
@@ -1156,6 +1200,68 @@ function resilienceSuite(browserName: EngineName) {
       assert.equal(await page.getByTestId("sticky-text").getByText("discard me").count(), 0);
       assert.equal(await page.evaluate((key) => window.localStorage.getItem(key), snapshotKey()), null);
       assert.ok(!stickyTexts(board().document).includes("discard me"));
+    });
+
+    it("a restored snapshot saves against the version it was based on: a save made elsewhere raises the conflict dialog", async () => {
+      await waitForStatus("saved");
+      await blockSaves();
+      // Another device saves while this tab still works on the version it loaded.
+      const base = board();
+      const theirs: BoardDocument = { ...base.document, nodes: [...base.document.nodes, { id: "other-device", position: { x: 1000, y: 650 }, data: { type: "sticky", text: "from another device" } }] };
+      assert.equal((await put({ document: theirs })).status, 200);
+      await addSticky("stale draft", 600, 650);
+      await waitForStatus("offline");
+      await page.waitForFunction((key) => !!window.localStorage.getItem(key)?.includes("stale draft"), snapshotKey(), { timeout: 5_000 });
+      await page.close();
+      await context.unroute(SAVE_URL);
+
+      page = await context.newPage();
+      await openBoard();
+      await byTestId("board-restore").waitFor();
+      await byTestId("board-restore-confirm").click();
+      await byTestId("board-conflict").waitFor({ timeout: 15_000 });
+      assert.equal(await byTestId("board-save-status").getAttribute("data-status"), "conflict");
+      assert.ok(stickyTexts(board().document).includes("from another device"), "the other save was not overwritten");
+      assert.ok(!stickyTexts(board().document).includes("stale draft"));
+
+      await byTestId("board-conflict-load").click();
+      await byTestId("board-conflict").waitFor({ state: "detached" });
+      await page.getByTestId("sticky-text").getByText("from another device").waitFor();
+      await waitForStatus("saved");
+    });
+
+    it("closing with the Back arrow never leaves the editor under the list in history", async () => {
+      // Opened from the list, edited (a guard entry is pushed), saved, closed.
+      await page.close();
+      page = await context.newPage();
+      await page.goto(`${baseUrl}/admin/boards`);
+      await byTestId(`board-edit-${boardId}`).click();
+      await byTestId("board-canvas").waitFor({ timeout: 30_000 });
+      await addSticky("history", 600, 200);
+      await waitForStatus("saved");
+      await byTestId("board-back").click();
+      await byTestId("board-editor").waitFor({ state: "detached" });
+      await byTestId(`board-card-${boardId}`).waitFor();
+      assert.ok(page.url().endsWith("/admin/boards"), page.url());
+      await page.goBack();
+      await page.waitForTimeout(500);
+      assert.equal(await byTestId("board-editor").count(), 0, "browser Back did not reopen the editor");
+      assert.ok(!page.url().includes(boardId), page.url());
+
+      // Opened from its URL: the editor entry is replaced by the list.
+      await page.goto(`${baseUrl}/admin/boards`);
+      await byTestId(`board-card-${boardId}`).waitFor({ timeout: 30_000 });
+      await openBoard();
+      await addSticky("history 2", 600, 320);
+      await waitForStatus("saved");
+      await byTestId("board-back").click();
+      await byTestId("board-editor").waitFor({ state: "detached" });
+      assert.ok(page.url().endsWith("/admin/boards"), page.url());
+      await page.goBack();
+      await page.waitForTimeout(500);
+      assert.equal(await byTestId("board-editor").count(), 0, "browser Back did not reopen the editor");
+      assert.ok(page.url().endsWith("/admin/boards"), page.url());
+      assert.ok(stickyTexts(board().document).includes("history 2"));
     });
   });
 }

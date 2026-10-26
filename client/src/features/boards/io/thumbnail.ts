@@ -65,6 +65,15 @@ export async function createBoardThumbnail({ viewportEl, bounds, background }: T
     },
     filter: (el) => !isEditingChrome(el),
   });
-  // Safari cannot encode WebP and silently returns PNG; the server takes both.
-  return canvas.toDataURL('image/webp', 0.85);
+  return encodeThumbnail(canvas);
+}
+
+// A busy board as PNG can outgrow what the server stores; JPEG keeps it small.
+const PNG_MAX_CHARS = 900_000;
+
+function encodeThumbnail(canvas: HTMLCanvasElement): string {
+  // Safari cannot encode WebP and silently returns PNG; the server takes WebP, PNG and JPEG.
+  const url = canvas.toDataURL('image/webp', 0.85);
+  if (url.startsWith('data:image/png') && url.length > PNG_MAX_CHARS) return canvas.toDataURL('image/jpeg', 0.8);
+  return url;
 }

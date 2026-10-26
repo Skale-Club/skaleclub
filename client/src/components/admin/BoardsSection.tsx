@@ -82,8 +82,16 @@ export function BoardsSection() {
   const boards = data?.pages.flatMap((page) => page.data) ?? [];
   const total = data?.pages[0]?.total ?? 0;
 
-  const openBoard = (id: string) => setLocation(`/admin/boards/${id}`);
-  const closeBoard = (opts?: { replace?: boolean }) => setLocation('/admin/boards', opts);
+  // The editor's history entry remembers it was opened from this list, so
+  // closing goes back to the list entry instead of stacking a new one on top
+  // (browser Back would then reopen the editor). Opened any other way (a link,
+  // a reload of a deep URL), the editor entry is replaced by the list.
+  const openBoard = (id: string) => setLocation(`/admin/boards/${id}`, { state: { boardsFromList: true } });
+  const closeBoard = () => {
+    const state = window.history.state as { boardsFromList?: boolean } | null;
+    if (state?.boardsFromList) window.history.back();
+    else setLocation('/admin/boards', { replace: true });
+  };
 
   const createMutation = useMutation({
     mutationFn: ({ title, kind, template }: { title: string; kind: BoardKind; template: BoardTemplateId }) =>

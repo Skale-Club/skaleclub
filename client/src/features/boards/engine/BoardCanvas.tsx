@@ -51,7 +51,7 @@ import {
   nudgeSelection,
   pasteContent,
 } from '../canvas/actions';
-import { clearGuides, guidesSignal, useShiftTracking } from '../canvas/interaction';
+import { clearGuides, guidesSignal, isTypingTarget, useShiftTracking } from '../canvas/interaction';
 import { BOARD_IMAGE_ACCEPT, firstImageFile } from '../canvas/images';
 import { useImageUpload } from '../canvas/useImageUpload';
 import { StrokesLayer, PenOverlay } from './layers/PenLayer';
@@ -88,11 +88,6 @@ export interface BoardCanvasProps {
   onShowShortcuts?: () => void;
   /** Present mode: the minimap and the zoom bar get out of the way. */
   presenting?: boolean;
-}
-
-function isTypingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
 }
 
 function minimapColor(node: BoardFlowNode, dark: boolean): string {

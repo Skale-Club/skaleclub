@@ -11,11 +11,7 @@ import { BoardCanvas } from './engine/BoardCanvas';
 import { PresentOverlay } from './present/PresentOverlay';
 import { usePresentMode } from './present/usePresentMode';
 import { ShortcutsDialog, VIEWER_SHORTCUTS } from './ui/ShortcutsDialog';
-
-function isTypingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
-}
+import { isTypingTarget } from './canvas/interaction';
 
 const CHIP = 'flex h-9 w-9 items-center justify-center rounded-xl border bg-background/90 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:text-foreground';
 
