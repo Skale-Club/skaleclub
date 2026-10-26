@@ -1,0 +1,8 @@
+/* Excalidraw 0.18 has no prop to drop the Library button. Hide its wrapping
+   label, not just the visible part: the label holds the checkbox, which would
+   stay a Tab stop that opens the library on Space. The library has no other
+   entry point in the editor. The :has() lifts specificity above Excalidraw's
+   own rules, so this does not depend on stylesheet order. */
+.whiteboard-editor-canvas .excalidraw .sidebar-trigger__label-element:has(> .default-sidebar-trigger) {
+  display: none;
+}

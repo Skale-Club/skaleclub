@@ -29,8 +29,10 @@ export async function waitForImageFiles(api: ExcalidrawImperativeAPI, timeoutMs 
 }
 
 // Only the parts of the editor state that change how the board looks are
-// stored; selection, zoom and open menus stay per-session.
-export function serializeWhiteboardScene(api: ExcalidrawImperativeAPI): WhiteboardScene {
+// stored; selection, zoom and open menus stay per-session. `theme` is the
+// board's own look: the editor chrome follows the app theme, which must not
+// leak into what the public page shows.
+export function serializeWhiteboardScene(api: ExcalidrawImperativeAPI, theme?: 'light' | 'dark'): WhiteboardScene {
   const elements = api.getSceneElements();
   const appState = api.getAppState();
   const allFiles = api.getFiles();
@@ -42,7 +44,7 @@ export function serializeWhiteboardScene(api: ExcalidrawImperativeAPI): Whiteboa
     elements: elements as unknown as WhiteboardScene['elements'],
     appState: {
       viewBackgroundColor: appState.viewBackgroundColor,
-      theme: appState.theme,
+      theme: theme ?? appState.theme,
       gridModeEnabled: appState.gridModeEnabled,
       gridSize: appState.gridSize,
     },

@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import '@/components/whiteboard/excalidrawAssets';
-import { Excalidraw, getSceneVersion } from '@excalidraw/excalidraw';
+import { Excalidraw, MainMenu, WelcomeScreen, getSceneVersion } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import '@excalidraw/excalidraw/index.css';
-import { ArrowLeft, Check, Copy, ExternalLink, Save } from 'lucide-react';
+import '@/components/whiteboard/whiteboardEditor.css';
+import { ArrowLeft, Check, Copy, ExternalLink, Save, Share2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +28,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from '@/components/ui/loader';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { apiRequest, HttpError, queryClient } from '@/lib/queryClient';
@@ -60,12 +63,12 @@ function defaultWhiteboardName(now = new Date()): string {
 
 type ChangeArgs = Parameters<NonNullable<React.ComponentProps<typeof Excalidraw>['onChange']>>;
 
-// Anything that changes what a viewer of /w/:slug would see.
+// Anything that changes what a viewer of /w/:slug would see. The editor's
+// theme follows the app and is not part of the board, so it is left out.
 function sceneSignature(elements: ChangeArgs[0], appState: ChangeArgs[1], files: ChangeArgs[2]): string {
   return [
     getSceneVersion(elements),
     appState.viewBackgroundColor,
-    appState.theme,
     appState.gridModeEnabled,
     Object.keys(files).length,
   ].join('|');
@@ -74,6 +77,7 @@ function sceneSignature(elements: ChangeArgs[0], appState: ChangeArgs[1], files:
 export function WhiteboardEditor({ id, onCreated, onClose }: WhiteboardEditorProps) {
   const { t, language } = useTranslation();
   const { toast } = useToast();
+  const { resolvedTheme } = useTheme();
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   // False once the editor is gone: a request still in flight must not bring the
   // board back or save a canvas that was discarded.
@@ -133,6 +137,11 @@ export function WhiteboardEditor({ id, onCreated, onClose }: WhiteboardEditorPro
     [board, boardId],
   );
   const hasUnsavedChanges = isDirty || title.trim() !== savedTitle;
+  // The board's own look (what /w/:slug opens with) is kept as saved: the editor
+  // chrome follows the app theme, and that must not change the stored board.
+  const boardTheme: 'light' | 'dark' = board?.scene.appState?.theme === 'dark' ? 'dark' : 'light';
+  const boardThemeRef = useRef(boardTheme);
+  boardThemeRef.current = boardTheme;
 
   const handleChange = useCallback((key: number, ...[elements, appState, files]: ChangeArgs) => {
     if (key !== sceneKeyRef.current) return;
@@ -154,7 +163,7 @@ export function WhiteboardEditor({ id, onCreated, onClose }: WhiteboardEditorPro
       await waitForImageFiles(api);
       if (!mountedRef.current) return;
       // Snapshot first: anything drawn while the request is in flight stays unsaved.
-      const scene = serializeWhiteboardScene(api);
+      const scene = serializeWhiteboardScene(api, boardThemeRef.current);
       const sentSignature = currentSignature();
       // A failed thumbnail never blocks the save; the card keeps the old one.
       const thumbnailUrl = await createWhiteboardThumbnail(scene).catch((err) => {
@@ -266,6 +275,24 @@ export function WhiteboardEditor({ id, onCreated, onClose }: WhiteboardEditorPro
     }
   }, [boardId, t, toast]);
 
+  // A dropped scene file would replace the whole board (Excalidraw ignores
+  // `loadScene: false` for drops), so those are stopped before Excalidraw sees
+  // them. Images, which Excalidraw inserts, pass through.
+  const canvasWrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const wrap = canvasWrapRef.current;
+    if (!wrap) return;
+    const onDrop = (event: DragEvent) => {
+      // Excalidraw only reads the first dropped file.
+      const file = event.dataTransfer?.files.item(0);
+      if (!file || !(/\.(excalidraw|json)$/i.test(file.name) || /^application\/(vnd\.excalidraw\+)?json$/.test(file.type))) return;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    wrap.addEventListener('drop', onDrop, true);
+    return () => wrap.removeEventListener('drop', onDrop, true);
+  }, []);
+
   // Ctrl/Cmd+S saves to the server instead of Excalidraw's "save to file".
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -366,18 +393,47 @@ export function WhiteboardEditor({ id, onCreated, onClose }: WhiteboardEditorPro
         </span>
         <div className="ml-auto flex items-center gap-2">
           {board && (
-            <>
-              <Button variant="outline" size="sm" className="gap-2" onClick={copyLink} data-testid="whiteboard-copy-link">
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                <span className="hidden md:inline">{t('Copy link')}</span>
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2" asChild>
-                <a href={`/w/${board.slug}`} target="_blank" rel="noopener noreferrer" data-testid="whiteboard-open-public">
-                  <ExternalLink className="h-4 w-4" />
-                  <span className="hidden md:inline">{t('Open public page')}</span>
-                </a>
-              </Button>
-            </>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2" aria-label={t('Share')} data-testid="whiteboard-share">
+                  <Share2 className="h-4 w-4" />
+                  <span className="hidden md:inline">{t('Share')}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 rounded-xl p-4" data-testid="whiteboard-share-menu">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold">{t('Share this whiteboard')}</h3>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{t('Anyone with the link sees the last saved version.')}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      readOnly
+                      value={whiteboardPublicUrl(board.slug)}
+                      className="h-9 text-xs"
+                      onFocus={(e) => e.currentTarget.select()}
+                      aria-label={t('Public link')}
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 shrink-0"
+                      onClick={copyLink}
+                      aria-label={t('Copy link')}
+                      data-testid="whiteboard-copy-link"
+                    >
+                      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <Button variant="outline" size="sm" className="w-full gap-2" asChild>
+                    <a href={`/w/${board.slug}`} target="_blank" rel="noopener noreferrer" data-testid="whiteboard-open-public">
+                      <ExternalLink className="h-4 w-4" />
+                      {t('Open public page')}
+                    </a>
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
           <Button
             size="sm"
@@ -392,7 +448,7 @@ export function WhiteboardEditor({ id, onCreated, onClose }: WhiteboardEditorPro
         </div>
       </div>
 
-      <div className="relative min-h-0 flex-1">
+      <div ref={canvasWrapRef} className="whiteboard-editor-canvas relative min-h-0 flex-1">
         {isLoading && (
           <div className="flex h-full items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -413,9 +469,36 @@ export function WhiteboardEditor({ id, onCreated, onClose }: WhiteboardEditorPro
             onChange={(...args) => handleChange(sceneKey, ...args)}
             langCode={language === 'pt' ? 'pt-BR' : 'en'}
             name={title}
-            UIOptions={{ canvasActions: { loadScene: true, saveToActiveFile: false, toggleTheme: true } }}
+            theme={resolvedTheme}
+            // Only Export image, canvas background and Help stay in the menu; the
+            // flags also switch off the matching shortcuts.
+            UIOptions={{
+              canvasActions: {
+                loadScene: false,
+                saveToActiveFile: false,
+                export: false,
+                clearCanvas: false,
+                toggleTheme: false,
+                saveAsImage: true,
+                changeViewBackgroundColor: true,
+              },
+            }}
             autoFocus
-          />
+          >
+            <MainMenu>
+              <MainMenu.DefaultItems.SaveAsImage />
+              <MainMenu.DefaultItems.ChangeCanvasBackground />
+              <MainMenu.DefaultItems.Help />
+            </MainMenu>
+            <WelcomeScreen>
+              <WelcomeScreen.Hints.MenuHint>{t('Export image, canvas color')}</WelcomeScreen.Hints.MenuHint>
+              <WelcomeScreen.Hints.ToolbarHint>{t('Pick a tool and start drawing')}</WelcomeScreen.Hints.ToolbarHint>
+              <WelcomeScreen.Center>
+                <WelcomeScreen.Center.Heading>{t('Start drawing')}</WelcomeScreen.Center.Heading>
+                <p className="text-sm text-muted-foreground">{t('Pick a tool above or press 1–9')}</p>
+              </WelcomeScreen.Center>
+            </WelcomeScreen>
+          </Excalidraw>
         )}
       </div>
 

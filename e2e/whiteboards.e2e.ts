@@ -36,6 +36,10 @@ const PHONES: Record<EngineName, Parameters<Browser["newContext"]>[0]> = {
   firefox: { viewport: { width: 390, height: 800 } },
 };
 
+// What the toolbar's "More tools" menu offers: Frame, Web embed and Laser, plus
+// the client-side Mermaid import.
+const EXTRA_TOOLS = ["Frame tool", "Web Embed", "Laser pointer", "Mermaid to Excalidraw"];
+
 for (const browserName of BROWSERS) whiteboardSuite(browserName);
 
 function whiteboardSuite(browserName: EngineName) {
@@ -193,6 +197,9 @@ function whiteboardSuite(browserName: EngineName) {
       ({ server, baseUrl } = await startServer());
       browser = await ENGINES[browserName].launch();
       context = await browser.newContext({ viewport: { width: 1440, height: 860 } });
+      // The editor follows the admin theme (dark by default). These tests read ink
+      // off the canvas, so they run light; the theme test below sets its own.
+      await context.addInitScript(() => localStorage.setItem("skale-club-admin-theme", "light"));
       context.on("requestfinished", async (request) => {
         if (!request.url().endsWith(".woff2")) return;
         const response = await request.response();
@@ -219,8 +226,11 @@ function whiteboardSuite(browserName: EngineName) {
       assert.equal(await page.getByTestId("whiteboard-title-input").inputValue(), "");
       assert.equal(await saveStatus(), "Not saved yet");
       assert.equal(await page.getByTestId("whiteboard-save").isDisabled(), true, "nothing to save yet");
-      assert.equal(await page.getByTestId("whiteboard-copy-link").count(), 0, "no link before the board exists");
-      assert.equal(await page.getByTestId("whiteboard-open-public").count(), 0);
+      assert.equal(await page.getByTestId("whiteboard-share").count(), 0, "no share menu before the board exists");
+      // The empty canvas shows the short welcome, not Excalidraw's default one.
+      await page.getByText("Start drawing", { exact: true }).waitFor();
+      await page.getByText("Pick a tool above or press 1–9").waitFor();
+      await screenshot(page, "editor-empty");
 
       // A reload on /new is a fresh empty board, never a lookup of the id "new".
       await page.reload();
@@ -257,6 +267,7 @@ function whiteboardSuite(browserName: EngineName) {
       await drag("rectangle", [300, 200], [600, 380]);
       await waitForSaveStatus("Unsaved changes");
       assert.equal(await page.getByTestId("whiteboard-save").isDisabled(), false);
+      assert.equal(await page.getByText("Start drawing", { exact: true }).count(), 0, "the welcome goes once there is a drawing");
 
       page.once("dialog", (dialog) => void dialog.dismiss());
       await page.getByTestId("whiteboard-back").click();
@@ -304,8 +315,7 @@ function whiteboardSuite(browserName: EngineName) {
       assert.match(page.url(), new RegExp(`/admin/whiteboards/${board().id}$`));
       assert.equal(await page.getByTestId("whiteboard-title-input").inputValue(), "Como funciona o Google Ads");
       assert.equal(await page.getByTestId("whiteboard-save").isDisabled(), true);
-      await page.getByTestId("whiteboard-copy-link").waitFor();
-      assert.match((await page.getByTestId("whiteboard-open-public").getAttribute("href")) ?? "", /^\/w\//);
+      await page.getByTestId("whiteboard-share").waitFor();
       assert.equal(
         await page.evaluate(
           () => document.querySelector("canvas.excalidraw__canvas.interactive") === (window as any).__editorCanvas,
@@ -314,6 +324,77 @@ function whiteboardSuite(browserName: EngineName) {
         "the canvas was not remounted",
       );
       assert.equal((await inkBox(page))?.empty, false, "the drawing is still on the canvas");
+    });
+
+    it("Share holds the public link: copy it, or open the public page", async () => {
+      // One Share button in the top bar; the link actions live inside it.
+      assert.equal(await page.getByTestId("whiteboard-copy-link").count(), 0, "closed until Share is opened");
+      assert.equal(await page.getByTestId("whiteboard-open-public").count(), 0);
+      await page.getByTestId("whiteboard-share").click();
+      await page.getByTestId("whiteboard-share-menu").waitFor();
+
+      const url = `${baseUrl}/w/${board().slug}`;
+      assert.equal(await page.getByTestId("whiteboard-share-menu").getByRole("textbox").inputValue(), url);
+
+      // Clipboard permissions differ per engine: capture the write instead.
+      await page.evaluate(
+        `Object.defineProperty(navigator, "clipboard", {
+          configurable: true,
+          value: { writeText: async (text) => (window.__copied = text) },
+        })`,
+      );
+      await page.getByTestId("whiteboard-copy-link").click();
+      await page.waitForFunction(() => (window as any).__copied !== undefined);
+      assert.equal(await page.evaluate(() => (window as any).__copied), url);
+
+      const link = page.getByTestId("whiteboard-open-public");
+      assert.equal(await link.getAttribute("href"), `/w/${board().slug}`);
+      assert.equal(await link.getAttribute("target"), "_blank");
+      const [publicPage] = await Promise.all([context.waitForEvent("page"), link.click()]);
+      try {
+        await publicPage.getByTestId("whiteboard-viewer").waitFor({ timeout: 30_000 });
+        assert.match(publicPage.url(), new RegExp(`/w/${board().slug}$`));
+      } finally {
+        await publicPage.close();
+      }
+      await page.keyboard.press("Escape");
+      await page.getByTestId("whiteboard-share-menu").waitFor({ state: "detached" });
+      await screenshot(page, "editor-light");
+    });
+
+    it("the Excalidraw menu keeps only export image, canvas background and help", async () => {
+      await page.getByTestId("main-menu-trigger").click();
+      await page.getByTestId("image-export-button").waitFor();
+      await page.getByTestId("canvas-background-label").waitFor();
+      await page.getByTestId("help-menu-item").waitFor();
+      for (const gone of ["load-button", "save-button", "json-export-button", "clear-canvas-button", "toggle-dark-mode"]) {
+        assert.equal(await page.getByTestId(gone).count(), 0, `${gone} is not offered`);
+      }
+      await page.keyboard.press("Escape");
+      // The Library button is gone, with its checkbox: no Tab stop opens the library.
+      const libraryTrigger = page.locator(".sidebar-trigger__label-element:has(> .default-sidebar-trigger)");
+      assert.equal(await libraryTrigger.count(), 1, "the library trigger is rendered, then hidden");
+      assert.equal(await libraryTrigger.isVisible(), false, "library button hidden");
+      const libraryCheckbox = libraryTrigger.locator("input");
+      assert.equal(await libraryCheckbox.isVisible(), false);
+      assert.equal(
+        await libraryCheckbox.evaluate((input: HTMLInputElement) => {
+          input.focus();
+          return document.activeElement === input;
+        }),
+        false,
+        "the library checkbox cannot take focus",
+      );
+
+      // Pin the "More tools" menu: a new entry (AI, library, ...) must be a decision.
+      await page.getByTitle("More tools").click();
+      const extraTools = page.locator(".App-toolbar__extra-tools-dropdown .dropdown-menu-item");
+      await extraTools.first().waitFor();
+      assert.deepEqual(
+        (await extraTools.allInnerTexts()).map((text) => text.split("\n")[0].trim()),
+        EXTRA_TOOLS,
+      );
+      await page.keyboard.press("Escape");
     });
 
     it("drawing marks the board unsaved and Ctrl+S stores the scene and a thumbnail", async () => {
@@ -515,8 +596,29 @@ function whiteboardSuite(browserName: EngineName) {
       }
     });
 
-    it("a dark-theme board is saved and shown dark", async () => {
+    it("a dark board stays dark when saved again, and the Excalidraw theme toggle is gone", async () => {
+      // The Alt+Shift+D shortcut belonged to the removed toggle. With the canvas
+      // focused, "2" proves shortcuts reach Excalidraw at all.
+      const box = await canvasBox();
+      await page.mouse.click(box.x + 1200, box.y + 120);
+      await page.keyboard.press("2");
+      assert.equal(await page.getByTestId("toolbar-rectangle").isChecked(), true, "shortcuts are live");
+      await page.keyboard.press("1");
       await page.keyboard.press("Alt+Shift+D");
+      assert.equal(await page.locator(".excalidraw.theme--dark").count(), 0, "the shortcut no longer switches theme");
+      assert.equal(await saveStatus(), "All changes saved");
+
+      // A board whose look was saved dark (the editor no longer sets this).
+      const saved = board();
+      const response = await page.request.put(`${baseUrl}/api/whiteboards/${saved.id}`, {
+        data: { scene: { ...saved.scene, appState: { ...saved.scene.appState, theme: "dark" } } },
+      });
+      assert.equal(response.ok(), true);
+      await page.reload();
+      await openEditorReady();
+      assert.equal(await saveStatus(), "All changes saved", "opening it is not an edit");
+
+      await drag("rectangle", [300, 650], [380, 720]);
       await waitForSaveStatus("Unsaved changes");
       await page.keyboard.press("Control+s");
       await waitForSaveStatus("All changes saved");
@@ -530,6 +632,64 @@ function whiteboardSuite(browserName: EngineName) {
       } finally {
         await viewer.close();
       }
+    });
+
+    it("the editor follows the admin theme without touching the board or its unsaved state", async () => {
+      const before = JSON.stringify(board().scene.appState);
+      const version = board().version;
+      // Fresh context: no stored preference, so the admin default (dark) applies.
+      const darkContext = await browser.newContext({ viewport: { width: 1440, height: 860 } });
+      const dark = await darkContext.newPage();
+      try {
+        await dark.goto(`${baseUrl}/admin/whiteboards/${board().id}`);
+        await openEditorReady(dark);
+        await dark.locator(".excalidraw.theme--dark").waitFor();
+        assert.equal(await saveStatus(dark), "All changes saved", "the app theme is not an edit");
+        await screenshot(dark, "editor-dark");
+
+        // A stored light preference gives a light editor, again not an edit.
+        await dark.evaluate(() => {
+          localStorage.setItem("skale-club-admin-theme", "light");
+        });
+        await dark.reload();
+        await openEditorReady(dark);
+        await dark.locator(".excalidraw:not(.theme--dark)").waitFor();
+        assert.equal(await dark.locator(".excalidraw.theme--dark").count(), 0);
+        assert.equal(await saveStatus(dark), "All changes saved");
+      } finally {
+        await darkContext.close();
+      }
+      assert.equal(JSON.stringify(board().scene.appState), before);
+      assert.equal(board().version, version, "nothing was saved");
+    });
+
+    it("a board saved before themes were stored is saved light, whatever the admin theme", async () => {
+      const created = await page.request.post(`${baseUrl}/api/whiteboards`, { data: { title: "Legacy" } });
+      const { id } = (await created.json()) as Whiteboard;
+      const stored = await page.request.put(`${baseUrl}/api/whiteboards/${id}`, {
+        data: { scene: { elements: [], appState: { viewBackgroundColor: "#ffffff" }, files: {} } },
+      });
+      assert.equal(stored.ok(), true);
+      assert.equal(rows.get(id)?.scene.appState?.theme, undefined);
+
+      // No stored preference: the admin shell, and so the editor, is dark.
+      const darkContext = await browser.newContext({ viewport: { width: 1440, height: 860 } });
+      const legacy = await darkContext.newPage();
+      try {
+        await legacy.goto(`${baseUrl}/admin/whiteboards/${id}`);
+        await openEditorReady(legacy);
+        await legacy.locator(".excalidraw.theme--dark").waitFor();
+        assert.equal(await saveStatus(legacy), "All changes saved");
+        await drag("rectangle", [300, 200], [600, 380], legacy);
+        await waitForSaveStatus("Unsaved changes", legacy);
+        await legacy.keyboard.press("Control+s");
+        await waitForSaveStatus("All changes saved", legacy);
+        assert.equal(rows.get(id)?.scene.appState?.theme, "light", "saved light, as before themes followed the app");
+      } finally {
+        await darkContext.close();
+        await page.request.delete(`${baseUrl}/api/whiteboards/${id}`);
+      }
+      assert.equal(rows.has(id), false);
     });
 
     it("a save from another tab is never overwritten silently", async () => {
@@ -559,6 +719,7 @@ function whiteboardSuite(browserName: EngineName) {
         await waitForSaveStatus("All changes saved", tabB);
         assert.equal(countByType("diamond"), diamonds + 1);
         assert.equal(countByType("rectangle"), rectangles, "overwrite replaced tab A's version");
+        assert.equal(board().scene.appState?.theme, "dark", "the board's look survives an overwrite");
 
         // Tab A is now the stale one; it chooses to load what tab B saved.
         await drag("ellipse", [700, 650], [780, 720]);
@@ -576,6 +737,7 @@ function whiteboardSuite(browserName: EngineName) {
         assert.equal(board().version, versionAfterLoad + 1);
         assert.equal(countByType("diamond"), diamonds + 1, "tab B's diamond survived the reload");
         assert.equal(countByType("ellipse"), 1, "tab A's discarded ellipse never reached the server");
+        assert.equal(board().scene.appState?.theme, "dark", "and loading the saved version");
       } finally {
         await tabB.close();
       }
@@ -627,6 +789,53 @@ function whiteboardSuite(browserName: EngineName) {
       } finally {
         await viewer.close();
       }
+    });
+
+    it("a dropped scene file never replaces the board, but a dropped image is inserted", async () => {
+      assert.equal(await saveStatus(), "All changes saved");
+      const box = await canvasBox();
+      const canvas = page.locator("canvas.excalidraw__canvas.interactive");
+      const images = () => board().scene.elements.filter((element) => element.type === "image").length;
+      const imagesBefore = images();
+      const elementsBefore = board().scene.elements.length;
+
+      async function dropFile(file: { name: string; type: string; text?: string }, at: [number, number]) {
+        const dataTransfer = await page.evaluateHandle(async (spec) => {
+          const data = new DataTransfer();
+          if (spec.text !== undefined) {
+            data.items.add(new File([spec.text], spec.name, { type: spec.type }));
+          } else {
+            const picture = document.createElement("canvas");
+            picture.width = 160;
+            picture.height = 120;
+            const ctx = picture.getContext("2d")!;
+            ctx.fillStyle = "#ff0000";
+            ctx.fillRect(0, 0, 160, 120);
+            const blob = await new Promise<Blob>((resolve) => picture.toBlob((b) => resolve(b!), spec.type));
+            data.items.add(new File([blob], spec.name, { type: spec.type }));
+          }
+          return data;
+        }, file);
+        await canvas.dispatchEvent("drop", { dataTransfer, clientX: box.x + at[0], clientY: box.y + at[1] });
+      }
+
+      // An empty scene would wipe the canvas if it got through.
+      const emptyScene = JSON.stringify({ type: "excalidraw", version: 2, source: "e2e", elements: [], appState: {}, files: {} });
+      await dropFile({ name: "other.excalidraw", type: "", text: emptyScene }, [400, 300]);
+      await dropFile({ name: "other.json", type: "application/json", text: emptyScene }, [400, 300]);
+      await page.waitForTimeout(1500);
+      assert.equal(await saveStatus(), "All changes saved", "the scene file changed nothing");
+      assert.equal((await inkBox(page))?.empty, false, "the drawing is still on the canvas");
+      assert.equal(await page.getByText("Couldn't load").count(), 0, "and no error dialog");
+
+      // A picture still lands on the canvas.
+      await dropFile({ name: "red.png", type: "image/png" }, [1100, 600]);
+      await waitForSaveStatus("Unsaved changes");
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Control+s");
+      await waitForSaveStatus("All changes saved");
+      assert.equal(images(), imagesBefore + 1, "the dropped picture was saved");
+      assert.equal(board().scene.elements.length, elementsBefore + 1);
     });
 
     it("an unknown public link shows the not-found screen", async () => {
