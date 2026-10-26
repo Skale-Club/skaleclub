@@ -8,7 +8,9 @@ import {
   ReactFlow,
   ReactFlowProvider,
   SelectionMode,
+  useNodesInitialized,
   useReactFlow,
+  useStoreApi as useFlowStoreApi,
   type Edge,
   type FinalConnectionState,
   type Node,
@@ -21,6 +23,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { absoluteBox, absolutePosition, computeSnap, indexNodes, nodeSize, parseClipboard, unionBox, type Box } from '@shared/boards/canvasOps';
 import { collectDescendants } from '@shared/boards/document';
+import { boardContentBounds } from '@shared/boards/bounds';
 import { useBoardStore, useBoardStoreApi } from '../store/boardStore';
 import { computeMindMeta, toFlowEdges, toFlowNodes, type BoardFlowNode, type FlowNodeCache } from './toFlow';
 import { boardNodeTypes } from './nodes';
@@ -28,6 +31,8 @@ import { boardEdgeTypes } from './edges';
 import { BRAND_NAVY, CTA_BLUE, DEFAULT_STICKY_COLOR, EDGE_NEUTRAL } from './palette';
 import { FIT_VIEW_OPTIONS, MAX_ZOOM, MIN_ZOOM, ZoomBar } from '../ui/ZoomBar';
 import { createBoardThumbnail } from '../io/thumbnail';
+import { exportRegion, renderBoardImage } from '../io/exportImage';
+import { frameBox } from './camera';
 import { getMindForest } from '../mindmap/autoLayout';
 import { useAutoLayout } from '../mindmap/useAutoLayout';
 import { useMindmapKeyboard } from '../mindmap/useMindmapKeyboard';
@@ -79,6 +84,10 @@ export interface BoardCanvasProps {
   className?: string;
   /** Extra classes for the zoom bar panel (e.g. lift it above a mobile toolbar). */
   zoomBarClassName?: string;
+  /** Shows a "?" button in the zoom bar. */
+  onShowShortcuts?: () => void;
+  /** Present mode: the minimap and the zoom bar get out of the way. */
+  presenting?: boolean;
 }
 
 function isTypingTarget(target: EventTarget | null) {
@@ -109,7 +118,7 @@ function pointOf(event: unknown): { clientX: number; clientY: number } | null {
 const TOOL_KEYS: Record<string, BoardTool> = { v: 'select', n: 'sticky', s: 'shape', t: 'text', c: 'connector', p: 'pen', f: 'frame', i: 'image' };
 const ARROWS: Record<string, [number, number]> = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
 
-function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOverride, showMiniMap = true, thumbnailRef, children, className, zoomBarClassName }: BoardCanvasProps) {
+function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOverride, showMiniMap = true, thumbnailRef, children, className, zoomBarClassName, onShowShortcuts, presenting = false }: BoardCanvasProps) {
   const storeApi = useBoardStoreApi();
   const document = useBoardStore((s) => s.document);
   const selection = useBoardStore((s) => s.selection);
@@ -120,6 +129,7 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
   const storeSnap = useBoardStore((s) => s.snapToGrid);
   const snapToGrid = snapOverride ?? storeSnap;
   const reactFlow = useReactFlow();
+  const flowStore = useFlowStoreApi();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadImage = useImageUpload();
@@ -141,6 +151,19 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
     [document.edges, document.nodes, selection, measured, readOnly, mind],
   );
 
+  // Present mode dims what is not on the current slide.
+  const presentFocus = useBoardStore((s) => s.presentFocus);
+  const shownNodes = useMemo(() => {
+    if (!presentFocus) return nodes;
+    const keep = new Set(presentFocus);
+    return nodes.map((n) => (keep.has(n.id) ? n : { ...n, className: cn(n.className, 'board-dimmed') }));
+  }, [nodes, presentFocus]);
+  const shownEdges = useMemo(() => {
+    if (!presentFocus) return edges;
+    const keep = new Set(presentFocus);
+    return edges.map((e) => (keep.has(e.source) && keep.has(e.target) ? e : { ...e, className: cn(e.className, 'board-dimmed') }));
+  }, [edges, presentFocus]);
+
   const autoLayout = useAutoLayout(storeApi, reactFlow);
   // Registered before the generic key handler below, so mind keys win.
   useMindmapKeyboard(storeApi, { readOnly, containerRef: wrapperRef });
@@ -148,6 +171,61 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
   const [contextMenu, setContextMenu] = useState<MindContextMenuState | null>(null);
   const [canvasMenu, setCanvasMenu] = useState<CanvasContextMenuState | null>(null);
   const [dropActive, setDropActive] = useState(false);
+
+  // What the camera and the DOM know about sizes: React Flow's measurements are
+  // fresher than the store's copy right after a layout.
+  const measuredSizes = useCallback(() => {
+    const sizes: Record<string, { width: number; height: number }> = { ...storeApi.getState().measured };
+    for (const node of reactFlow.getNodes()) {
+      if (node.measured?.width && node.measured?.height) sizes[node.id] = { width: node.measured.width, height: node.measured.height };
+    }
+    return sizes;
+  }, [reactFlow, storeApi]);
+
+  // Frames everything: nodes, frames and pen strokes (React Flow's own fitView only knows nodes).
+  const fitContent = useCallback(
+    (opts?: { duration?: number }) => {
+      const bounds = boardContentBounds(storeApi.getState().document, { sizes: measuredSizes() });
+      if (!bounds) return;
+      frameBox(reactFlow, flowStore.getState(), bounds, {
+        padding: FIT_VIEW_OPTIONS.padding,
+        maxZoom: FIT_VIEW_OPTIONS.maxZoom,
+        duration: opts?.duration ?? FIT_VIEW_OPTIONS.duration,
+      });
+    },
+    [flowStore, measuredSizes, reactFlow, storeApi],
+  );
+
+  const renderImage = useCallback(
+    async ({ format, frameId }: { format: 'png' | 'svg'; frameId?: string | null }) => {
+      const viewportEl = wrapperRef.current?.querySelector<HTMLElement>('.react-flow__viewport');
+      if (!viewportEl) throw new Error('The board is not ready yet');
+      const state = storeApi.getState();
+      const sizes = measuredSizes();
+      const region = exportRegion(state.document, sizes, frameId);
+      // Selection rings and a culled (offscreen) part of a big board must not end up in the picture.
+      const selection = state.selection;
+      const camera = reactFlow.getViewport();
+      const culled = state.document.nodes.length > CULL_THRESHOLD;
+      state.clearSelection();
+      if (culled && region) await reactFlow.fitBounds({ x: region.x, y: region.y, width: region.w, height: region.h }, { padding: 0, duration: 0 });
+      await new Promise((resolve) => window.setTimeout(resolve, culled ? 250 : 60));
+      try {
+        return await renderBoardImage({
+          viewportEl,
+          document: storeApi.getState().document,
+          measured: sizes,
+          format,
+          frameId,
+          background: dark ? BOARD_BACKGROUND.dark : BOARD_BACKGROUND.light,
+        });
+      } finally {
+        if (culled) void reactFlow.setViewport(camera);
+        if (selection.nodeIds.length || selection.edgeIds.length) storeApi.getState().select(selection);
+      }
+    },
+    [dark, measuredSizes, reactFlow, storeApi],
+  );
 
   // Camera helpers for the panels, the keyboard and imports.
   useEffect(() => {
@@ -177,9 +255,11 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
         if (!rect) return { x: 0, y: 0 };
         return reactFlow.screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
       },
+      fitContent,
+      renderImage,
     });
     return () => storeApi.getState().setCanvasApi(null);
-  }, [reactFlow, storeApi]);
+  }, [fitContent, reactFlow, renderImage, storeApi]);
 
   // ---------------------------------------------------------------------------
   // Images: file picker (Image tool), drop and paste.
@@ -458,9 +538,20 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
   // The read-only viewer always fits (the saved camera is the editor's screen).
   // Read once: later viewport writes must not move the camera.
   const initialViewport = useRef(readOnly ? null : storeApi.getState().viewport).current;
-  // Nothing to fit on an empty board (React Flow would otherwise fit to the
-  // first node placed and jump the camera).
-  const fitOnOpen = useRef(!initialViewport && storeApi.getState().document.nodes.length > 0).current;
+  // Nothing to fit on an empty board (the camera would otherwise jump to the
+  // first node placed). Content includes pen strokes, so React Flow's own
+  // `fitView` (nodes only) is not used; the fit runs once the nodes are measured.
+  const fitOnOpen = useRef(!initialViewport && (storeApi.getState().document.nodes.length > 0 || storeApi.getState().document.strokes.length > 0)).current;
+  const nodesInitialized = useNodesInitialized();
+  const didInitialFit = useRef(false);
+  useEffect(() => {
+    if (!fitOnOpen || didInitialFit.current) return;
+    if (storeApi.getState().document.nodes.length > 0 && !nodesInitialized) return;
+    didInitialFit.current = true;
+    // After the measured pass has settled the map layout.
+    const frame = requestAnimationFrame(() => fitContent({ duration: 0 }));
+    return () => cancelAnimationFrame(frame);
+  }, [fitContent, fitOnOpen, nodesInitialized, storeApi]);
 
   // Camera -> store, throttled (the store bumps viewportVersion for autosave).
   // Moves without a DOM event (the initial fit, the zoom bar) are remembered
@@ -597,13 +688,13 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
     thumbnailRef.current = () =>
       createBoardThumbnail({
         viewportEl: wrapperRef.current?.querySelector<HTMLElement>('.react-flow__viewport') ?? null,
-        nodes: reactFlow.getNodes(),
+        bounds: boardContentBounds(storeApi.getState().document, { sizes: measuredSizes() }),
         background: dark ? BOARD_BACKGROUND.dark : BOARD_BACKGROUND.light,
       });
     return () => {
       thumbnailRef.current = null;
     };
-  }, [dark, reactFlow, thumbnailRef]);
+  }, [dark, measuredSizes, storeApi, thumbnailRef]);
 
   const background = document.theme.background;
   const variant = background === 'grid' ? BackgroundVariant.Lines : BackgroundVariant.Dots;
@@ -636,8 +727,8 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
       data-tool={activeTool}
     >
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={shownNodes}
+        edges={shownEdges}
         nodeTypes={boardNodeTypes}
         edgeTypes={boardEdgeTypes}
         onNodesChange={handleNodesChange}
@@ -659,8 +750,6 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
         disableKeyboardA11y
         colorMode={dark ? 'dark' : 'light'}
         defaultViewport={initialViewport ?? undefined}
-        fitView={fitOnOpen}
-        fitViewOptions={{ padding: FIT_VIEW_OPTIONS.padding, maxZoom: FIT_VIEW_OPTIONS.maxZoom }}
         minZoom={MIN_ZOOM}
         maxZoom={MAX_ZOOM}
         onlyRenderVisibleElements={nodes.length > CULL_THRESHOLD}
@@ -699,7 +788,7 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
         {!readOnly && <GuidesLayer />}
         {creating && <CreationOverlay tool={activeTool as CreationTool} containerRef={wrapperRef} />}
         {drawing && <PenOverlay containerRef={wrapperRef} />}
-        {showMiniMap && (
+        {showMiniMap && !presenting && (
           <MiniMap
             position="bottom-right"
             pannable
@@ -712,9 +801,11 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
             ariaLabel="Board overview"
           />
         )}
-        <Panel position="bottom-left" className={zoomBarClassName}>
-          <ZoomBar showHistory={!readOnly} showSnap={!readOnly && snapOverride === undefined} />
-        </Panel>
+        {!presenting && (
+          <Panel position="bottom-left" className={zoomBarClassName}>
+            <ZoomBar showHistory={!readOnly} showSnap={!readOnly && snapOverride === undefined} onShowShortcuts={onShowShortcuts} />
+          </Panel>
+        )}
         {children}
       </ReactFlow>
       {!readOnly && (

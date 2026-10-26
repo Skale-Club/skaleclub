@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Copy, ExternalLink, Globe, Lock, Share2 } from 'lucide-react';
+import { Check, Copy, ExternalLink, FileJson, Globe, ImageDown, Lock, Share2, Shapes } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -19,9 +19,14 @@ interface ShareMenuProps {
   onVisibilityChange: (visibility: BoardVisibility) => void;
   pending?: boolean;
   disabled?: boolean;
+  /** Export entries (PNG / SVG / JSON); the section is left out when not given. */
+  onExport?: (kind: 'png' | 'svg' | 'json') => void;
+  exporting?: boolean;
+  /** Exactly one frame is selected: PNG / SVG export just that frame. */
+  frameSelected?: boolean;
 }
 
-export function ShareMenu({ slug, visibility, onVisibilityChange, pending, disabled }: ShareMenuProps) {
+export function ShareMenu({ slug, visibility, onVisibilityChange, pending, disabled, onExport, exporting, frameSelected }: ShareMenuProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -89,12 +94,32 @@ export function ShareMenu({ slug, visibility, onVisibilityChange, pending, disab
                 {t('Open public page')}
               </a>
             ) : (
-              <span>
-                <ExternalLink className="h-4 w-4" />
+              <span className="inline-flex items-center gap-2">
+                <ExternalLink className="h-4 w-4 shrink-0" />
                 {t('Turn on link sharing to open the public page')}
               </span>
             )}
           </Button>
+
+          {onExport && (
+            <div className="space-y-2 border-t pt-3">
+              <p className="text-xs font-medium text-muted-foreground">{frameSelected ? t('Export the selected frame') : t('Export')}</p>
+              <div className="grid grid-cols-3 gap-2">
+                <Button variant="outline" size="sm" className="gap-1.5 px-2" disabled={exporting} onClick={() => onExport('png')} data-testid="board-share-export-png">
+                  <ImageDown className="h-4 w-4" />
+                  PNG
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5 px-2" disabled={exporting} onClick={() => onExport('svg')} data-testid="board-share-export-svg">
+                  <Shapes className="h-4 w-4" />
+                  SVG
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5 px-2" onClick={() => onExport('json')} data-testid="board-share-export-json">
+                  <FileJson className="h-4 w-4" />
+                  JSON
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>

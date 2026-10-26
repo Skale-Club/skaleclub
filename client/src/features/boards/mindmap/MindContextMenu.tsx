@@ -1,4 +1,4 @@
-import { ChevronsDownUp, ChevronsUpDown, CornerDownRight, ListPlus, Palette, Trash2 } from 'lucide-react';
+import { ChevronsDownUp, ChevronsUpDown, CornerDownRight, ListPlus, Palette, Sparkles, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,8 @@ import { useBoardStore, useBoardStoreApi } from '../store/boardStore';
 import { branchPalette } from '../engine/palette';
 import { addChild, addSibling, clearMindData, removeSubtree, setMindData, toggleCollapse } from './actions';
 import { getMindForest } from './autoLayout';
+import { useBoardsAiEnabled } from '../ai/boardsAiApi';
+import { useExpandWithAi } from '../ai/useExpandWithAi';
 
 export interface MindContextMenuState {
   nodeId: string;
@@ -30,6 +32,9 @@ export function MindContextMenu({ menu, onClose }: { menu: MindContextMenuState 
   const store = useBoardStoreApi();
   const palette = useBoardStore((s) => s.document.theme.palette);
   const node = useBoardStore((s) => (menu ? s.document.nodes.find((n) => n.id === menu.nodeId) : undefined));
+  const aiEnabled = useBoardsAiEnabled();
+  const aiBusy = useBoardStore((s) => s.aiBusyNodeId !== null);
+  const expandWithAi = useExpandWithAi();
   const hasChildren = useBoardStore((s) => (menu ? (getMindForest(s.document.nodes, s.document.edges).children.get(menu.nodeId)?.length ?? 0) > 0 : false));
   if (!menu || !node || node.data.type !== 'mind') return null;
   const id = node.id;
@@ -57,6 +62,12 @@ export function MindContextMenu({ menu, onClose }: { menu: MindContextMenuState 
             {collapsed ? <ChevronsUpDown className="mr-2 h-4 w-4" /> : <ChevronsDownUp className="mr-2 h-4 w-4" />}
             {collapsed ? t('Expand') : t('Collapse')}
             <DropdownMenuShortcut>Space</DropdownMenuShortcut>
+          </DropdownMenuItem>
+        )}
+        {aiEnabled && (
+          <DropdownMenuItem onSelect={() => void expandWithAi(id)} disabled={aiBusy} data-testid="mind-menu-ai-expand">
+            <Sparkles className="mr-2 h-4 w-4 text-[#5173D6]" />
+            {t('Expand with AI')}
           </DropdownMenuItem>
         )}
         <DropdownMenuSub>

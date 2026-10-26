@@ -31,6 +31,7 @@ import { registerEstimatesRoutes } from "./routes/estimates.js";
 import { registerPresentationsRoutes } from "./routes/presentations.js";
 import { registerWhiteboardsRoutes } from "./routes/whiteboards.js";
 import { registerBoardsRoutes } from "./routes/boards.js";
+import { registerBoardsAiRoutes } from "./routes/boardsAi.js";
 import { registerPageRoutes } from "./routes/pages.js";
 import { registerUploadRoutes } from "./routes/uploads.js";
 import { registerLinksPageRoutes } from "./routes/linksPage.js";
@@ -137,6 +138,7 @@ export async function registerRoutes(
   registerPresentationsRoutes(app);
   registerWhiteboardsRoutes(app);
   registerBoardsRoutes(app);
+  registerBoardsAiRoutes(app);
   registerPageRoutes(app);
   registerRevisionRoutes(app);
   registerRetentionRoutes(app);

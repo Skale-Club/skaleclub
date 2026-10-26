@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { AlignHorizontalJustifyCenter, ArrowRightFromLine, Network, X } from 'lucide-react';
+import { AlignHorizontalJustifyCenter, ArrowRightFromLine, Loader2, Network, Sparkles, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -12,6 +13,8 @@ import { useBoardStore, useBoardStoreApi } from '../store/boardStore';
 import { branchPalette } from '../engine/palette';
 import { clearMindData, setMindData } from '../mindmap/actions';
 import { getMindForest } from '../mindmap/autoLayout';
+import { useBoardsAiEnabled } from '../ai/boardsAiApi';
+import { useExpandWithAi } from '../ai/useExpandWithAi';
 
 export const MIND_ICONS = ['💡', '⭐', '🎯', '✅', '❗', '❓', '🚀', '📌', '📈', '💰', '🛠️', '📣', '🧠', '❤️', '⚠️', '🔥', '📅', '👥', '📝', '🔍', '🏁', '🎨', '💬', '🌱'] as const;
 
@@ -73,6 +76,10 @@ export function MindStyleSection({ id }: { id: string }) {
   const store = useBoardStoreApi();
   const node = useBoardStore((s) => s.document.nodes.find((n) => n.id === id));
   const palette = useBoardStore((s) => s.document.theme.palette);
+  const aiEnabled = useBoardsAiEnabled();
+  const aiBusy = useBoardStore((s) => s.aiBusyNodeId !== null);
+  const aiBusyHere = useBoardStore((s) => s.aiBusyNodeId === id);
+  const expandWithAi = useExpandWithAi();
   const position = useBoardStore((s) => {
     const forest = getMindForest(s.document.nodes, s.document.edges);
     const parent = forest.parent.get(id);
@@ -120,6 +127,21 @@ export function MindStyleSection({ id }: { id: string }) {
   return (
     <section className="space-y-4" data-testid="mind-style-section">
       <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{depth === 0 ? t('Central topic') : t('Topic')}</h3>
+
+      {aiEnabled && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-full gap-2 rounded-xl"
+          onClick={() => void expandWithAi(id)}
+          disabled={aiBusy}
+          data-testid="mind-style-ai-expand"
+        >
+          {aiBusyHere ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-[#5173D6]" />}
+          {aiBusyHere ? t('Thinking…') : t('Expand with AI')}
+        </Button>
+      )}
 
       <div>
         <p className="mb-2 text-sm">{t('Color')}</p>

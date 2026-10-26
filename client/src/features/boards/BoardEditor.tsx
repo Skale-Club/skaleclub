@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useStore } from 'zustand';
-import { AlertTriangle, ArrowLeft, CloudOff, FileDown, FileUp, Keyboard, LayoutTemplate, Loader2 as Spinner, MoreHorizontal, Paintbrush, Save } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CloudOff, FileDown, FileJson, FileUp, ImageDown, Keyboard, LayoutTemplate, Loader2 as Spinner, MoreHorizontal, Paintbrush, Play, Save, Shapes, Sparkles } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,9 +40,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { cn } from '@/lib/utils';
-import { normalizeDocument } from '@shared/boards/document';
-import { BOARD_LIMITS, type Board, type BoardVisibility } from '@shared/schema/boards';
-import { BoardStoreProvider, useCreateBoardStore, type BoardStore } from './store/boardStore';
+import { isDocumentEmpty, normalizeDocument } from '@shared/boards/document';
+import { parseBoardJson, serializeBoardJson } from '@shared/boards/json';
+import { BOARD_LIMITS, type Board, type BoardDocument, type BoardVisibility } from '@shared/schema/boards';
+import { BoardStoreProvider, getDocumentForSave, useCreateBoardStore, type BoardStore } from './store/boardStore';
 import { BoardCanvas, type ThumbnailRenderer } from './engine/BoardCanvas';
 import { clearSnapshot, conflictCode, isSnapshotNewer, readSnapshot, useBoardAutosave, type BoardSnapshot, type SaveStatus } from './io/autosave';
 import { ToolOptions, Toolbar } from './ui/Toolbar';
@@ -52,6 +53,13 @@ import { StylePanel } from './ui/StylePanel';
 import { ShareMenu } from './ui/ShareMenu';
 import { ShortcutsDialog } from './ui/ShortcutsDialog';
 import { exportOutline, importOutlineText } from './mindmap/actions';
+import { AiGenerateDialog, AiSummaryDialog } from './ui/AiDialogs';
+import { generateMindmapFromTopic, summarizeBoard } from './ai/aiActions';
+import { aiErrorMessage, useBoardsAiEnabled } from './ai/boardsAiApi';
+import { downloadBlob, fileNameFor } from './io/exportImage';
+import { EmptyBoardError } from './io/exportImage';
+import { PresentOverlay } from './present/PresentOverlay';
+import { usePresentMode } from './present/usePresentMode';
 import { countOutlineItems, parseIndentedText } from '@shared/boards/outline';
 
 interface BoardEditorProps {
@@ -74,10 +82,6 @@ function downloadText(filename: string, text: string, type = 'text/markdown') {
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
-}
-
-function fileSafe(name: string) {
-  return name.trim().replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').slice(0, 80) || 'board';
 }
 
 // "Import from text": pasted Markdown or an indented list becomes a new map.
@@ -180,13 +184,19 @@ function EditorShell({
   store,
   onClose,
 }: BoardEditorProps & { board: Board | undefined; isLoading: boolean; isError: boolean; store: BoardStore }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { toast } = useToast();
   const title = useStore(store, (s) => s.title);
   const setTitle = useStore(store, (s) => s.setTitle);
   const activeTool = useStore(store, (s) => s.activeTool);
   const setActiveTool = useStore(store, (s) => s.setActiveTool);
   const thumbnailRef = useRef<ThumbnailRenderer | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const jsonInputRef = useRef<HTMLInputElement>(null);
+  const { active: presenting, start: startPresent, stop: stopPresent } = usePresentMode(rootRef);
+  const presentingRef = useRef(presenting);
+  presentingRef.current = presenting;
+  const aiEnabled = useBoardsAiEnabled();
 
   const [loaded, setLoaded] = useState(false);
   // Remounts the canvas when the saved version is loaded over local edits.
@@ -200,10 +210,28 @@ function EditorShell({
   const [importOpen, setImportOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [styleSheetOpen, setStyleSheetOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [pendingImport, setPendingImport] = useState<{ document: BoardDocument; repaired: number } | null>(null);
+  const [aiGenerateOpen, setAiGenerateOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summary, setSummary] = useState<string | null>(null);
   // Phones get a bottom toolbar; below lg the style panel is a sheet.
   const isPhone = useMediaQuery('(max-width: 767px)');
   const isWide = useMediaQuery('(min-width: 1024px)');
   const hasSelection = useStore(store, (s) => s.selection.nodeIds.length + s.selection.edgeIds.length > 0);
+  // Image export covers the whole board, or just the frame when exactly one is selected.
+  const selectedFrameId = useStore(store, (s) => {
+    if (s.selection.nodeIds.length !== 1 || s.selection.edgeIds.length) return null;
+    const node = s.document.nodes.find((n) => n.id === s.selection.nodeIds[0]);
+    return node?.data.type === 'frame' ? node.id : null;
+  });
+  const selectedFrameTitle = useStore(store, (s) => {
+    const node = selectedFrameId ? s.document.nodes.find((n) => n.id === selectedFrameId) : undefined;
+    return node?.data.type === 'frame' ? (node.data.title ?? '') : '';
+  });
+  const selectedFrame = selectedFrameId ? { id: selectedFrameId, title: selectedFrameTitle } : null;
+  const canPresent = useStore(store, (s) => s.document.nodes.length > 0 || s.document.strokes.length > 0);
 
   function exportMarkdown() {
     const markdown = exportOutline(store);
@@ -211,7 +239,7 @@ function EditorShell({
       toast({ title: t('There is no mind map to export yet') });
       return;
     }
-    downloadText(`${fileSafe(store.getState().title)}.md`, markdown);
+    downloadText(fileNameFor(store.getState().title, 'md'), markdown);
   }
 
   function importText(text: string) {
@@ -219,6 +247,77 @@ function EditorShell({
     if (rootId) {
       setImportOpen(false);
       toast({ title: t('Outline imported') });
+    }
+  }
+
+  async function exportImage(format: 'png' | 'svg') {
+    const api = store.getState().canvasApi;
+    if (!api || exporting) return;
+    setExporting(true);
+    try {
+      const frame = selectedFrame;
+      const blob = await api.renderImage({ format, frameId: frame?.id ?? null });
+      const name = frame?.title.trim() ? `${store.getState().title} - ${frame.title.trim()}` : store.getState().title;
+      downloadBlob(fileNameFor(name, format), blob);
+    } catch (err) {
+      if (err instanceof EmptyBoardError) toast({ title: t('There is nothing to export yet') });
+      else toast({ title: t('Could not export the image'), description: err instanceof Error ? err.message : undefined, variant: 'destructive' });
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  function exportJson() {
+    const json = serializeBoardJson(getDocumentForSave(store.getState()));
+    downloadBlob(fileNameFor(store.getState().title, 'json'), new Blob([json], { type: 'application/json;charset=utf-8' }));
+  }
+
+  function handleExport(kind: 'png' | 'svg' | 'json') {
+    if (kind === 'json') exportJson();
+    else void exportImage(kind);
+  }
+
+  // The imported document replaces the board as one undoable edit (Ctrl+Z brings the old one back).
+  function applyImport(imported: { document: BoardDocument; repaired: number }) {
+    store.getState().setDocument(imported.document);
+    requestAnimationFrame(() => store.getState().canvasApi?.fitContent({ duration: 0 }));
+    toast({
+      title: t('Board imported'),
+      description: imported.repaired ? t('Some broken items in the file were dropped. Undo brings the previous board back.') : t('Undo brings the previous board back.'),
+    });
+  }
+
+  async function importJsonFile(file: File) {
+    if (file.size > 25 * 1024 * 1024) {
+      toast({ title: t('Could not import the file'), description: t('The file is too large.'), variant: 'destructive' });
+      return;
+    }
+    const parsed = parseBoardJson(await file.text());
+    if (!parsed.ok) {
+      toast({ title: t('Could not import the file'), description: t(parsed.error), variant: 'destructive' });
+      return;
+    }
+    if (isDocumentEmpty(store.getState().document)) applyImport(parsed);
+    else setPendingImport(parsed);
+  }
+
+  async function summarize() {
+    setSummary(null);
+    setSummaryOpen(true);
+    setSummaryLoading(true);
+    try {
+      const text = await summarizeBoard(store, language === 'pt' ? 'pt' : 'en');
+      if (text === null) {
+        setSummaryOpen(false);
+        toast({ title: t('There is nothing to summarize yet') });
+      } else {
+        setSummary(text);
+      }
+    } catch (err) {
+      setSummaryOpen(false);
+      toast({ title: t('Could not summarize the board'), description: t(aiErrorMessage(err)), variant: 'destructive' });
+    } finally {
+      setSummaryLoading(false);
     }
   }
 
@@ -337,6 +436,12 @@ function EditorShell({
         saveNow();
         return;
       }
+      if (presentingRef.current) return;
+      if (event.altKey && event.shiftKey && event.code === 'KeyP' && !(event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        void startPresent();
+        return;
+      }
       if (event.key === '?' && !isTypingTarget(event.target)) {
         event.preventDefault();
         setShortcutsOpen(true);
@@ -344,7 +449,7 @@ function EditorShell({
     };
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [saveNow]);
+  }, [startPresent, saveNow]);
 
   useEffect(() => {
     if (!isDirty) return;
@@ -399,8 +504,8 @@ function EditorShell({
   // offset a fixed full-screen editor.
   return createPortal(
     <TooltipProvider delayDuration={300}>
-      <div className="fixed inset-0 z-50 flex flex-col bg-background" data-testid="board-editor">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-3">
+      <div ref={rootRef} className="fixed inset-0 z-50 flex flex-col bg-background" data-testid="board-editor" data-presenting={presenting ? 'true' : undefined}>
+        <header className={cn('h-14 shrink-0 items-center gap-2 border-b px-3', presenting ? 'hidden' : 'flex')}>
           <Button
             variant="ghost"
             size="icon"
@@ -431,6 +536,18 @@ function EditorShell({
           )}
           <div className="ml-auto flex items-center gap-2">
             <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => void startPresent()}
+              disabled={!loaded || !canPresent}
+              aria-label={t('Present')}
+              data-testid="board-present"
+            >
+              <Play className="h-4 w-4" />
+              <span className="hidden md:inline">{t('Present')}</span>
+            </Button>
+            <Button
               variant="ghost"
               size="icon"
               className="hidden sm:inline-flex"
@@ -441,7 +558,16 @@ function EditorShell({
               <Keyboard className="h-4 w-4" />
             </Button>
             {board && slug && (
-              <ShareMenu slug={slug} visibility={visibility} onVisibilityChange={(v) => void changeVisibility(v)} pending={visibilityPending} disabled={!loaded} />
+              <ShareMenu
+                slug={slug}
+                visibility={visibility}
+                onVisibilityChange={(v) => void changeVisibility(v)}
+                pending={visibilityPending}
+                disabled={!loaded}
+                onExport={handleExport}
+                exporting={exporting}
+                frameSelected={!!selectedFrame}
+              />
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -460,6 +586,44 @@ function EditorShell({
                   {t('Import from text')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {selectedFrame ? t('Export (selected frame)') : t('Export')}
+                </DropdownMenuLabel>
+                <DropdownMenuItem onSelect={() => void exportImage('png')} disabled={exporting} data-testid="board-export-png">
+                  <ImageDown className="mr-2 h-4 w-4" />
+                  {t('Export as PNG')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => void exportImage('svg')} disabled={exporting} data-testid="board-export-svg">
+                  <Shapes className="mr-2 h-4 w-4" />
+                  {t('Export as SVG')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={exportJson} data-testid="board-export-json">
+                  <FileJson className="mr-2 h-4 w-4" />
+                  {t('Export as JSON')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => jsonInputRef.current?.click()} data-testid="board-import-json">
+                  <FileUp className="mr-2 h-4 w-4" />
+                  {t('Import JSON')}
+                </DropdownMenuItem>
+                {aiEnabled && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('AI')}</DropdownMenuLabel>
+                    <DropdownMenuItem onSelect={() => setAiGenerateOpen(true)} data-testid="board-more-ai-generate">
+                      <Sparkles className="mr-2 h-4 w-4 text-[#5173D6]" />
+                      {t('Generate mind map from a topic')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => void summarize()} data-testid="board-more-ai-summarize">
+                      <Sparkles className="mr-2 h-4 w-4 text-[#5173D6]" />
+                      {t('Summarize board')}
+                    </DropdownMenuItem>
+                  </>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => void startPresent()} disabled={!canPresent} data-testid="board-more-present">
+                  <Play className="mr-2 h-4 w-4" />
+                  {t('Present')}
+                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setTemplatesOpen(true)} data-testid="board-more-templates">
                   <LayoutTemplate className="mr-2 h-4 w-4" />
                   {t('Insert template')}
@@ -495,25 +659,34 @@ function EditorShell({
           {loaded && (
             <>
               <div className="relative min-w-0 flex-1">
-                <BoardCanvas key={canvasKey} thumbnailRef={thumbnailRef} zoomBarClassName={isPhone ? '!mb-[84px]' : undefined} />
-                {isPhone ? (
+                <BoardCanvas
+                  key={canvasKey}
+                  thumbnailRef={thumbnailRef}
+                  zoomBarClassName={isPhone ? '!mb-[84px]' : undefined}
+                  onShowShortcuts={() => setShortcutsOpen(true)}
+                  presenting={presenting}
+                >
+                  <PresentOverlay active={presenting} onExit={stopPresent} />
+                </BoardCanvas>
+                {presenting ? null : isPhone ? (
                   <div className="pointer-events-none absolute inset-x-3 bottom-3 z-10 flex flex-col items-center gap-2">
                     <ToolOptions orientation="horizontal" className="pointer-events-auto max-w-full" />
                     <Toolbar
                       activeTool={activeTool}
                       onSelectTool={setActiveTool}
                       onOpenTemplates={() => setTemplatesOpen(true)}
+                      onOpenAi={aiEnabled ? () => setAiGenerateOpen(true) : undefined}
                       orientation="horizontal"
                       className="pointer-events-auto max-w-full"
                     />
                   </div>
                 ) : (
                   <div className="pointer-events-none absolute inset-y-0 left-3 z-10 flex items-center gap-2">
-                    <Toolbar activeTool={activeTool} onSelectTool={setActiveTool} onOpenTemplates={() => setTemplatesOpen(true)} className="pointer-events-auto max-h-full overflow-y-auto" />
+                    <Toolbar activeTool={activeTool} onSelectTool={setActiveTool} onOpenTemplates={() => setTemplatesOpen(true)} onOpenAi={aiEnabled ? () => setAiGenerateOpen(true) : undefined} className="pointer-events-auto max-h-full overflow-y-auto" />
                     <ToolOptions className="pointer-events-auto" />
                   </div>
                 )}
-                {!isWide && (
+                {!isWide && !presenting && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -526,8 +699,8 @@ function EditorShell({
                   </Button>
                 )}
               </div>
-              {isWide && <StylePanel />}
-              {!isWide && (
+              {isWide && !presenting && <StylePanel />}
+              {!isWide && !presenting && (
                 <Sheet open={styleSheetOpen} onOpenChange={setStyleSheetOpen}>
                   <SheetContent
                     side={isPhone ? 'bottom' : 'right'}
@@ -545,7 +718,47 @@ function EditorShell({
           )}
         </div>
 
+        <input
+          ref={jsonInputRef}
+          type="file"
+          accept=".json,application/json"
+          className="hidden"
+          data-testid="board-import-json-input"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = '';
+            if (file) void importJsonFile(file);
+          }}
+        />
         <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+        <AiGenerateDialog
+          open={aiGenerateOpen}
+          onOpenChange={setAiGenerateOpen}
+          onGenerate={(input) => generateMindmapFromTopic(store, input)}
+        />
+        <AiSummaryDialog open={summaryOpen} onOpenChange={setSummaryOpen} loading={summaryLoading} summary={summary} />
+        <AlertDialog open={!!pendingImport} onOpenChange={(open) => !open && setPendingImport(null)}>
+          <AlertDialogContent data-testid="board-import-json-confirm-dialog">
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('Replace this board?')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('Importing the file replaces everything on this board. You can undo it right after with Ctrl+Z.')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('Cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (pendingImport) applyImport(pendingImport);
+                  setPendingImport(null);
+                }}
+                data-testid="board-import-json-confirm"
+              >
+                {t('Replace')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <ImportTextDialog open={importOpen} onOpenChange={setImportOpen} onImport={importText} />
         <TemplatePicker
           open={templatesOpen}

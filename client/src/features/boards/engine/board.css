@@ -40,7 +40,7 @@
    `board-animate` while dragging so nodes follow the pointer 1:1). Edges morph
    with them where the browser can transition the path `d` property. */
 .board-surface.board-animate .react-flow__node-mind {
-  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 300ms ease;
 }
 .board-surface.board-animate .react-flow__node-mind.dragging {
   transition: none;
@@ -131,4 +131,14 @@
   .board-surface .mind-node-body {
     animation: none;
   }
+}
+
+/* Present mode: everything outside the current slide steps back. */
+.board-surface .react-flow__node,
+.board-surface .react-flow__edge {
+  transition: opacity 300ms ease;
+}
+.board-surface .react-flow__node.board-dimmed,
+.board-surface .react-flow__edge.board-dimmed {
+  opacity: 0.14;
 }

@@ -6,11 +6,14 @@ import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import type { Server } from "node:http";
 import express from "express";
 import { chromium, devices, firefox, webkit, type Browser, type BrowserContext, type Locator, type Page } from "playwright";
 import type { Board, BoardDocument, MindNodeData } from "#shared/schema.js";
 import { createBoardsApp, installMemoryBoards, listen } from "../server/routes/__tests__/helpers/boardsHarness.js";
+import type { BoardsAiProvider, BoardsAiRequest } from "../server/routes/boardsAi.js";
+import { boardContentBounds } from "#shared/boards/bounds.js";
 
 const DIST = path.resolve(import.meta.dirname, "../dist/public");
 
@@ -31,11 +34,13 @@ const PHONES: Record<EngineName, Parameters<Browser["newContext"]>[0]> = {
 for (const browserName of BROWSERS) {
   boardsSuite(browserName);
   canvasSuite(browserName);
+  finishingSuite(browserName);
+  resilienceSuite(browserName);
 }
 
-async function startBoardsServer() {
+async function startBoardsServer(opts: { ai?: BoardsAiProvider } = {}) {
   const rows = installMemoryBoards();
-  const app = createBoardsApp({ alwaysAdmin: true });
+  const app = createBoardsApp({ alwaysAdmin: true, ai: opts.ai });
   app.get("/api/admin/session", (_req, res) => {
     res.json({ isAdmin: true, email: "admin@skale.club", firstName: "Admin", lastName: "" });
   });
@@ -662,6 +667,490 @@ function canvasSuite(browserName: EngineName) {
       } finally {
         await phoneContext.close();
       }
+    });
+  });
+}
+
+// Export, present mode, JSON round trip, AI assist and the public page's controls.
+function finishingSuite(browserName: EngineName) {
+  let server: Server;
+  let baseUrl: string;
+  let browser: Browser;
+  let page: Page;
+  let rows: Map<string, Board>;
+  let boardId = "";
+  let slug = "";
+
+  // The AI provider the routes talk to: off at first, then answering with `outline`.
+  const ai = { enabled: false, outline: "- Podcast\n  - Guests\n  - Gear", delayMs: 0, requests: [] as BoardsAiRequest[] };
+  const provider: BoardsAiProvider = {
+    async isConfigured() {
+      return ai.enabled;
+    },
+    async complete(request) {
+      ai.requests.push(request);
+      if (ai.delayMs) await new Promise((resolve) => setTimeout(resolve, ai.delayMs));
+      return ai.outline;
+    },
+  };
+
+  const byTestId = (id: string, target: Page = page) => target.locator(`[data-testid="${id}"]`);
+  const frame = (id: string, title: string, x: number, y: number) => ({
+    id,
+    position: { x, y },
+    size: { w: 400, h: 300 },
+    data: { type: "frame" as const, title },
+  });
+  // Three frames in two rows (reading order: Alpha, Beta, Gamma), a sticky inside Alpha, and a pen stroke far to the right.
+  const DOCUMENT: BoardDocument = {
+    schemaVersion: 1,
+    nodes: [
+      frame("f-gamma", "Gamma", 0, 500),
+      frame("f-alpha", "Alpha", 0, 0),
+      frame("f-beta", "Beta", 600, 10),
+      { id: "s1", position: { x: 40, y: 60 }, size: { w: 160, h: 160 }, parentId: "f-alpha", data: { type: "sticky", text: "Hello" } },
+    ],
+    edges: [],
+    strokes: [{ id: "p1", points: [1600, 100, 0.5, 1700, 160, 0.5, 1800, 120, 0.5], color: "#EF4444", size: 8 }],
+    theme: { palette: "brand", background: "dots" },
+  };
+
+  // Escape, then wait out the exit animation (a click during it is swallowed).
+  const closeOverlays = async (target: Page = page) => {
+    await target.keyboard.press("Escape");
+    await target.waitForFunction(() => document.querySelectorAll('[role="menu"], [role="dialog"], [role="alertdialog"]').length === 0, null, { timeout: 5_000 });
+  };
+  const openMore = async () => {
+    await byTestId("board-more").click();
+    await byTestId("board-more-menu").waitFor();
+  };
+  const pngSize = async (path: string) => {
+    const bytes = await readFile(path);
+    assert.equal(bytes.subarray(1, 4).toString("ascii"), "PNG");
+    return { w: bytes.readUInt32BE(16), h: bytes.readUInt32BE(20) };
+  };
+  async function download(trigger: () => Promise<void>) {
+    const [file] = await Promise.all([page.waitForEvent("download", { timeout: 30_000 }), trigger()]);
+    return file;
+  }
+  async function exportViaMenu(testId: string) {
+    const file = await download(async () => {
+      await openMore();
+      await byTestId(testId).click();
+    });
+    // The menu fades out after the click; keys and clicks during that are swallowed.
+    await byTestId("board-more-menu").waitFor({ state: "detached" });
+    return file;
+  }
+  const frameCenters = () =>
+    page.$$eval('[data-testid="board-node-frame"]', (els) => {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      return els.map((el) => {
+        const r = el.getBoundingClientRect();
+        return { title: el.querySelector('[data-testid="frame-title"]')?.textContent?.trim() ?? "", d: Math.hypot(r.x + r.width / 2 - cx, r.y + r.height / 2 - cy) };
+      });
+    });
+  const closestFrame = async () => (await frameCenters()).sort((a, b) => a.d - b.d)[0].title;
+  const counter = async (target: Page = page) => (await byTestId("present-counter", target).textContent())?.trim();
+  async function waitForCounter(expected: string, target: Page = page) {
+    await target.waitForFunction((text) => document.querySelector('[data-testid="present-counter"]')?.textContent?.trim() === text, expected, { timeout: 5_000 });
+  }
+
+  describe(`boards export, present, JSON and AI (${browserName})`, { timeout: 170_000 }, () => {
+    before(async () => {
+      ({ server, baseUrl, rows } = await startBoardsServer({ ai: provider }));
+      browser = await ENGINES[browserName].launch();
+      const context = await browser.newContext({ viewport: { width: 1440, height: 860 }, acceptDownloads: true });
+      page = await context.newPage();
+      const created = await fetch(`${baseUrl}/api/boards`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: "Quarterly Review", kind: "canvas", document: DOCUMENT }),
+      });
+      assert.equal(created.status, 201);
+      const row = (await created.json()) as Board;
+      boardId = row.id;
+      slug = row.slug;
+    });
+
+    after(async () => {
+      await browser?.close();
+      server?.close();
+    });
+
+    async function openEditor() {
+      const status = page.waitForResponse((res) => res.url().includes("/api/boards/ai/status"), { timeout: 30_000 });
+      await page.goto(`${baseUrl}/admin/boards/${boardId}`);
+      await byTestId("board-node-frame").first().waitFor({ timeout: 30_000 });
+      await status;
+      await page.waitForTimeout(200);
+    }
+
+    it("hides every AI entry while the server reports no provider", async () => {
+      await openEditor();
+      assert.equal(await byTestId("board-tool-ai").count(), 0);
+      await openMore();
+      assert.equal(await byTestId("board-more-ai-generate").count(), 0);
+      assert.equal(await byTestId("board-more-ai-summarize").count(), 0);
+      await closeOverlays();
+      assert.equal(await byTestId("board-node-frame").count(), 3);
+    });
+
+    it("exports the board as a PNG named after the title, pen strokes included", async () => {
+      const file = await exportViaMenu("board-export-png");
+      assert.equal(file.suggestedFilename(), "Quarterly Review.png");
+      const { w, h } = await pngSize((await file.path())!);
+      // 2x the content (frames and the far-away pen stroke) plus 32px on every side.
+      const bounds = boardContentBounds(DOCUMENT)!;
+      assert.ok(bounds.w > 1_800, "the stroke widens the bounds");
+      assert.ok(Math.abs(w - 2 * (bounds.w + 64)) <= 6, `png width ${w} vs ${2 * (bounds.w + 64)}`);
+      assert.ok(Math.abs(h - 2 * (bounds.h + 64)) <= 6, `png height ${h} vs ${2 * (bounds.h + 64)}`);
+    });
+
+    it("exports the selected frame cropped to its bounds, and the whole board as SVG", async () => {
+      await byTestId("frame-title").getByText("Alpha", { exact: true }).click();
+      await page.waitForFunction(() => document.querySelector(".react-flow__node-frame.selected") !== null);
+      const file = await exportViaMenu("board-export-png");
+      assert.equal(file.suggestedFilename(), "Quarterly Review - Alpha.png");
+      const { w, h } = await pngSize((await file.path())!);
+      assert.ok(Math.abs(w - 2 * (400 + 64)) <= 4 && Math.abs(h - 2 * (300 + 64)) <= 4, `frame png ${w}x${h}`);
+
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(() => document.querySelector(".react-flow__node-frame.selected") === null);
+      const svg = await exportViaMenu("board-export-svg");
+      assert.equal(svg.suggestedFilename(), "Quarterly Review.svg");
+      const text = await readFile((await svg.path())!, "utf8");
+      assert.match(text, /^<svg/);
+      assert.match(text, /Hello/, "node content is in the SVG");
+      assert.match(text, /board-stroke|<path/, "the pen stroke is in the SVG");
+
+      // The Share menu offers the same exports.
+      await byTestId("board-share").click();
+      const viaShare = await download(() => byTestId("board-share-export-png").click());
+      assert.equal(viaShare.suggestedFilename(), "Quarterly Review.png");
+      await closeOverlays();
+    });
+
+    it("presents the frames in reading order; arrows, Space and the buttons step; Escape leaves", async () => {
+      await byTestId("board-present").click();
+      await byTestId("present-controls").waitFor();
+      await waitForCounter("1 / 3");
+      assert.equal(await byTestId("board-editor").getAttribute("data-presenting"), "true");
+      assert.equal(await byTestId("board-toolbar").count(), 0, "the editor chrome is gone");
+      await page.waitForTimeout(600);
+      assert.equal(await closestFrame(), "Alpha");
+      const camera1 = await page.locator(".react-flow__viewport").getAttribute("style");
+
+      await page.keyboard.press("ArrowRight");
+      await waitForCounter("2 / 3");
+      await page.waitForTimeout(600);
+      assert.equal(await closestFrame(), "Beta");
+      assert.notEqual(await page.locator(".react-flow__viewport").getAttribute("style"), camera1, "the camera moved");
+
+      await page.keyboard.press("Space");
+      await waitForCounter("3 / 3");
+      await page.waitForTimeout(600);
+      assert.equal(await closestFrame(), "Gamma");
+      assert.equal(await byTestId("present-next").isDisabled(), true);
+
+      await byTestId("present-prev").click();
+      await waitForCounter("2 / 3");
+      await byTestId("present-surface").click({ position: { x: 300, y: 300 } });
+      await waitForCounter("3 / 3");
+      assert.equal(await byTestId("board-node-frame").count(), 3, "keys did not edit the board");
+
+      await page.keyboard.press("Escape");
+      await byTestId("present-controls").waitFor({ state: "detached" });
+      await byTestId("board-title-input").waitFor();
+      assert.equal(await byTestId("board-editor").getAttribute("data-presenting"), null);
+    });
+
+    it("round-trips the document through JSON, undoably", async () => {
+      const file = await exportViaMenu("board-export-json");
+      assert.equal(file.suggestedFilename(), "Quarterly Review.json");
+      const path = (await file.path())!;
+      const exported = JSON.parse(await readFile(path, "utf8")) as BoardDocument;
+      assert.equal(exported.nodes.length, 4);
+      assert.equal(exported.strokes.length, 1);
+
+      // Delete a frame, then import the file: the board is whole again.
+      await byTestId("frame-title").getByText("Gamma", { exact: true }).click();
+      await page.keyboard.press("Delete");
+      await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-frame"]').length === 2);
+
+      await openMore();
+      await Promise.all([page.waitForEvent("filechooser").then((chooser) => chooser.setFiles(path)), byTestId("board-import-json").click()]);
+      await byTestId("board-import-json-confirm").click();
+      await byTestId("board-import-json-confirm-dialog").waitFor({ state: "detached" });
+      await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-frame"]').length === 3);
+      await waitForSaved(page);
+      assert.equal(rows.get(boardId)!.document.nodes.length, 4);
+
+      // One undo brings back the board as it was before the import.
+      await page.waitForTimeout(300);
+      await page.keyboard.press("Control+z");
+      await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-frame"]').length === 2);
+      await page.keyboard.press("Control+y");
+      await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-frame"]').length === 3);
+
+      // A file that is not a board is refused and changes nothing.
+      await page.setInputFiles('[data-testid="board-import-json-input"]', { name: "nope.json", mimeType: "application/json", buffer: Buffer.from("{\"nodes\": 5}") });
+      await page.getByText("Could not import the file").first().waitFor();
+      assert.equal(await byTestId("board-node-frame").count(), 3);
+    });
+
+    it("shows the AI button once a provider is configured and inserts the generated map", async () => {
+      ai.enabled = true;
+      await waitForSaved(page);
+      await page.reload();
+      await byTestId("board-node-frame").first().waitFor({ timeout: 30_000 });
+      await byTestId("board-tool-ai").waitFor();
+
+      await byTestId("board-tool-ai").click();
+      await byTestId("board-ai-generate-dialog").waitFor();
+      assert.equal(await byTestId("board-ai-generate").isDisabled(), true, "a topic is required");
+      await byTestId("board-ai-topic").fill("Launching a podcast");
+      await byTestId("board-ai-depth-3").click();
+      await byTestId("board-ai-generate").click();
+      await byTestId("board-ai-generate-dialog").waitFor({ state: "detached" });
+      await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-mind"]').length === 3);
+      assert.equal(ai.requests.length, 1);
+      assert.equal(ai.requests[0].user, "Topic: Launching a podcast");
+      assert.match(ai.requests[0].system, /3 levels/);
+      for (const text of ["Podcast", "Guests", "Gear"]) await byTestId("mind-node-text").getByText(text, { exact: true }).waitFor();
+
+      // One undo removes the whole generated map.
+      await page.waitForTimeout(300);
+      await page.keyboard.press("Control+z");
+      await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-mind"]').length === 0);
+      await page.keyboard.press("Control+y");
+      await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-mind"]').length === 3);
+    });
+
+    it("expands a topic with AI in one undo step, with a spinner while it thinks", async () => {
+      // "Guests" is the node itself: it is dropped, so three new children arrive.
+      ai.outline = "- Alpha idea\n- Beta idea\n- Gamma idea\n- Guests";
+      ai.delayMs = 700;
+      await byTestId("board-node-mind").filter({ has: page.getByText("Guests", { exact: true }) }).click({ button: "right" });
+      await byTestId("mind-menu-ai-expand").click();
+      await byTestId("mind-ai-busy").waitFor();
+      await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-mind"]').length === 6, null, { timeout: 15_000 });
+      await byTestId("mind-ai-busy").waitFor({ state: "detached" });
+      const request = ai.requests[ai.requests.length - 1];
+      assert.match(request.user, /Node: Guests/);
+      assert.match(request.user, /Podcast/);
+      ai.delayMs = 0;
+
+      await page.waitForTimeout(300);
+      await page.keyboard.press("Control+z");
+      await page.waitForFunction(() => document.querySelectorAll('[data-testid="board-node-mind"]').length === 3);
+    });
+
+    it("summarizes the board in a dialog with a copy button", async () => {
+      ai.outline = "A podcast plan.\n- Guests\n- Gear";
+      await openMore();
+      await byTestId("board-more-ai-summarize").click();
+      await byTestId("board-ai-summary-text").waitFor();
+      assert.match((await byTestId("board-ai-summary-text").textContent()) ?? "", /A podcast plan/);
+      const request = ai.requests[ai.requests.length - 1];
+      assert.match(request.user, /Podcast/);
+      assert.equal(await byTestId("board-ai-summary-copy").isEnabled(), true);
+      await closeOverlays();
+    });
+
+    it("the public page: title, made-with link, present, share; a private board is a 404", async () => {
+      await waitForSaved(page);
+      await fetch(`${baseUrl}/api/boards/${boardId}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ visibility: "link" }) });
+
+      const desktop = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+      const view = await desktop.newPage();
+      try {
+        await view.goto(`${baseUrl}/b/${slug}`);
+        await byTestId("board-viewer", view).waitFor({ timeout: 30_000 });
+        await byTestId("board-node-frame", view).first().waitFor({ timeout: 30_000 });
+        assert.equal((await byTestId("board-viewer-title", view).textContent())?.trim(), "Quarterly Review");
+        assert.equal(await byTestId("board-viewer-made-with", view).getAttribute("href"), "/");
+        await byTestId("board-viewer-theme", view).waitFor();
+        await byTestId("board-viewer-share", view).waitFor();
+        await byTestId("board-zoom-shortcuts", view).click();
+        await byTestId("board-shortcuts-dialog", view).waitFor();
+        await view.keyboard.press("Escape");
+
+        // The fit button frames the pen stroke as well as the frames.
+        await view.waitForTimeout(500);
+        const stroke = (await byTestId("board-stroke", view).boundingBox())!;
+        assert.ok(stroke.x >= 0 && stroke.x + stroke.width <= 1280, `stroke on screen: ${JSON.stringify(stroke)}`);
+
+        await byTestId("board-viewer-present", view).click();
+        await waitForCounter("1 / 3", view);
+        await view.keyboard.press("ArrowRight");
+        await waitForCounter("2 / 3", view);
+        await view.keyboard.press("Escape");
+        await byTestId("present-controls", view).waitFor({ state: "detached" });
+        await byTestId("board-viewer-present", view).waitFor();
+      } finally {
+        await desktop.close();
+      }
+
+      const phoneContext = await browser.newContext(PHONES[browserName]);
+      const phone = await phoneContext.newPage();
+      try {
+        await phone.goto(`${baseUrl}/b/${slug}`);
+        await byTestId("board-viewer-bar", phone).waitFor({ timeout: 30_000 });
+        assert.equal(await byTestId("board-zoom-bar", phone).isVisible(), false, "the zoom bar is not shown on phones");
+        const bar = (await byTestId("board-viewer-bar", phone).boundingBox())!;
+        assert.ok(bar.y > phone.viewportSize()!.height / 2, "controls are in a bottom bar");
+        await byTestId("board-viewer-present", phone).click();
+        await waitForCounter("1 / 3", phone);
+        await byTestId("present-next", phone).click();
+        await waitForCounter("2 / 3", phone);
+        await byTestId("present-exit", phone).click();
+        await byTestId("board-viewer-bar", phone).waitFor();
+      } finally {
+        await phoneContext.close();
+      }
+
+      // Private again: the page is a 404 and the API agrees.
+      await fetch(`${baseUrl}/api/boards/${boardId}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ visibility: "private" }) });
+      const missing = await page.context().newPage();
+      try {
+        await missing.goto(`${baseUrl}/b/${slug}`);
+        await byTestId("board-not-found", missing).waitFor({ timeout: 30_000 });
+        assert.equal((await fetch(`${baseUrl}/api/boards/slug/${slug}`)).status, 404);
+      } finally {
+        await missing.close();
+      }
+    });
+  });
+}
+
+// Saving under stress: offline, a save from another tab (conflict dialog) and
+// the local snapshot offered back after a tab dies with unsaved changes.
+function resilienceSuite(browserName: EngineName) {
+  let server: Server;
+  let baseUrl: string;
+  let browser: Browser;
+  let context: BrowserContext;
+  let page: Page;
+  let rows: Map<string, Board>;
+  let boardId = "";
+
+  const byTestId = (id: string, target: Page = page) => target.locator(`[data-testid="${id}"]`);
+  const board = () => rows.get(boardId)!;
+  const stickyTexts = (doc: BoardDocument) =>
+    doc.nodes.flatMap((n) => (n.data.type === "sticky" ? [n.data.text] : [])).sort();
+  const put = (body: unknown) =>
+    fetch(`${baseUrl}/api/boards/${boardId}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+
+  async function openBoard(target: Page = page) {
+    await target.goto(`${baseUrl}/admin/boards/${boardId}`);
+    await byTestId("board-canvas", target).waitFor({ timeout: 30_000 });
+  }
+  async function addSticky(text: string, x: number, y: number, target: Page = page) {
+    await byTestId("board-tool-sticky", target).click();
+    await target.mouse.click(x, y);
+    await target.waitForFunction(() => document.activeElement?.getAttribute("data-testid") === "sticky-editor");
+    await target.keyboard.type(text);
+    await target.keyboard.press("Enter");
+    await byTestId("sticky-editor", target).waitFor({ state: "detached" });
+  }
+  async function waitForStatus(expected: string, target: Page = page) {
+    await target.waitForFunction((value) => document.querySelector('[data-testid="board-save-status"]')?.getAttribute("data-status") === value, expected, { timeout: 15_000 });
+  }
+  const snapshotKey = () => `skale:board-snapshot:${boardId}`;
+  // Saves fail like a dropped connection, so a tab can "die" with changes only in its snapshot.
+  const SAVE_URL = /\/api\/boards\/[0-9a-f-]{36}$/;
+  const blockSaves = () => context.route(SAVE_URL, (route) => (route.request().method() === "PUT" ? route.abort() : route.continue()));
+
+  describe(`boards saving: offline, conflict, local snapshot (${browserName})`, { timeout: 150_000 }, () => {
+    before(async () => {
+      ({ server, baseUrl, rows } = await startBoardsServer());
+      browser = await ENGINES[browserName].launch();
+      context = await browser.newContext({ viewport: { width: 1440, height: 860 } });
+      page = await context.newPage();
+      const created = await fetch(`${baseUrl}/api/boards`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: "Offline test", kind: "canvas" }) });
+      boardId = ((await created.json()) as Board).id;
+    });
+
+    after(async () => {
+      await browser?.close();
+      server?.close();
+    });
+
+    it("goes offline with pending changes, then saves them when the connection returns", async () => {
+      await openBoard();
+      await context.setOffline(true);
+      await addSticky("while offline", 400, 300);
+      await waitForStatus("offline");
+      assert.match((await byTestId("board-save-status").textContent()) ?? "", /Offline/);
+      assert.deepEqual(stickyTexts(board().document), []);
+      await context.setOffline(false);
+      await waitForStatus("saved");
+      assert.deepEqual(stickyTexts(board().document), ["while offline"]);
+    });
+
+    it("a save from another tab opens the conflict dialog: load the saved version, or overwrite", async () => {
+      // Another tab saves a different sticky.
+      const base = board();
+      const theirs: BoardDocument = { ...base.document, nodes: [...base.document.nodes, { id: "theirs", position: { x: 700, y: 100 }, data: { type: "sticky", text: "from another tab" } }] };
+      assert.equal((await put({ document: theirs })).status, 200);
+
+      await addSticky("mine", 400, 520);
+      await byTestId("board-conflict").waitFor({ timeout: 15_000 });
+      assert.equal((await byTestId("board-save-status").getAttribute("data-status")), "conflict");
+
+      await byTestId("board-conflict-load").click();
+      await byTestId("board-conflict").waitFor({ state: "detached" });
+      await page.getByTestId("sticky-text").getByText("from another tab").waitFor();
+      assert.equal(await page.getByTestId("sticky-text").getByText("mine", { exact: true }).count(), 0, "local edits were dropped");
+      await waitForStatus("saved");
+
+      // Again, this time keeping my version over a second remote edit.
+      const second: BoardDocument = { ...board().document, nodes: [...board().document.nodes, { id: "theirs-2", position: { x: 900, y: 100 }, data: { type: "sticky", text: "second remote edit" } }] };
+      assert.equal((await put({ document: second })).status, 200);
+      await addSticky("kept", 400, 520);
+      await byTestId("board-conflict").waitFor({ timeout: 15_000 });
+      await byTestId("board-conflict-overwrite").click();
+      await waitForStatus("saved");
+      assert.ok(stickyTexts(board().document).includes("kept"), "my version was saved over theirs");
+      assert.ok(!stickyTexts(board().document).includes("second remote edit"), "the remote edit was overwritten");
+    });
+
+    it("offers the local snapshot of a tab that died with unsaved changes: restore it, or discard it", async () => {
+      await blockSaves();
+      await addSticky("unsaved work", 800, 520);
+      await waitForStatus("offline");
+      // The snapshot is written (throttled to 1s) while changes are pending.
+      await page.waitForFunction((key) => !!window.localStorage.getItem(key)?.includes("unsaved work"), snapshotKey(), { timeout: 5_000 });
+      assert.ok(!stickyTexts(board().document).includes("unsaved work"));
+      await page.close(); // the tab dies; its localStorage stays
+      await context.unroute(SAVE_URL);
+
+      page = await context.newPage();
+      await openBoard();
+      await byTestId("board-restore").waitFor();
+      await byTestId("board-restore-confirm").click();
+      await page.getByTestId("sticky-text").getByText("unsaved work").waitFor();
+      await waitForStatus("saved");
+      assert.ok(stickyTexts(board().document).includes("unsaved work"), "the restored change was saved");
+      assert.equal(await page.evaluate((key) => window.localStorage.getItem(key), snapshotKey()), null, "the snapshot is cleared after saving");
+
+      // Discard: a second dead tab, this time thrown away.
+      await blockSaves();
+      await addSticky("discard me", 800, 300);
+      await waitForStatus("offline");
+      await page.waitForFunction((key) => !!window.localStorage.getItem(key)?.includes("discard me"), snapshotKey(), { timeout: 5_000 });
+      await page.close();
+      await context.unroute(SAVE_URL);
+      page = await context.newPage();
+      await openBoard();
+      await byTestId("board-restore").waitFor();
+      await byTestId("board-restore-discard").click();
+      await byTestId("board-restore").waitFor({ state: "detached" });
+      assert.equal(await page.getByTestId("sticky-text").getByText("discard me").count(), 0);
+      assert.equal(await page.evaluate((key) => window.localStorage.getItem(key), snapshotKey()), null);
+      assert.ok(!stickyTexts(board().document).includes("discard me"));
     });
   });
 }

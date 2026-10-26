@@ -1,4 +1,4 @@
-import { Grid3x3, Maximize, Minus, Plus, Redo2, Undo2 } from 'lucide-react';
+import { CircleHelp, Grid3x3, Maximize, Minus, Plus, Redo2, Undo2 } from 'lucide-react';
 import { useReactFlow, useViewport } from '@xyflow/react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -49,7 +49,7 @@ function BarButton({
 
 // Bottom-left camera controls: − / zoom % (click for 100%) / + / fit, plus
 // undo/redo while editing. Must render inside the ReactFlowProvider.
-export function ZoomBar({ showHistory = true, showSnap = false, className }: { showHistory?: boolean; showSnap?: boolean; className?: string }) {
+export function ZoomBar({ showHistory = true, showSnap = false, className, onShowShortcuts }: { showHistory?: boolean; showSnap?: boolean; className?: string; onShowShortcuts?: () => void }) {
   const { t } = useTranslation();
   const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow();
   const { zoom } = useViewport();
@@ -57,6 +57,7 @@ export function ZoomBar({ showHistory = true, showSnap = false, className }: { s
   const redo = useBoardStore((s) => s.redo);
   const canUndo = useBoardHistory((h) => h.pastStates.length > 0);
   const canRedo = useBoardHistory((h) => h.futureStates.length > 0);
+  const canvasApi = useBoardStore((s) => s.canvasApi);
   const snap = useBoardStore((s) => s.snapToGrid);
   const setSnap = useBoardStore((s) => s.setSnapToGrid);
 
@@ -81,7 +82,7 @@ export function ZoomBar({ showHistory = true, showSnap = false, className }: { s
         <Plus className="h-4 w-4" />
       </BarButton>
       <div className="mx-0.5 h-5 w-px bg-border" />
-      <BarButton label={t('Fit to screen')} onClick={() => void fitView(FIT_VIEW_OPTIONS)} testId="board-zoom-fit">
+      <BarButton label={t('Fit to screen')} onClick={() => (canvasApi ? canvasApi.fitContent() : void fitView(FIT_VIEW_OPTIONS))} testId="board-zoom-fit">
         <Maximize className="h-4 w-4" />
       </BarButton>
       {showSnap && (
@@ -98,6 +99,16 @@ export function ZoomBar({ showHistory = true, showSnap = false, className }: { s
           <BarButton label={t('Redo')} onClick={redo} disabled={!canRedo} testId="board-redo">
             <Redo2 className="h-4 w-4" />
           </BarButton>
+        </>
+      )}
+      {onShowShortcuts && (
+        <>
+          <div className="mx-0.5 hidden h-5 w-px bg-border sm:block" />
+          <span className="hidden sm:inline-flex">
+            <BarButton label={t('Keyboard shortcuts (?)')} onClick={onShowShortcuts} testId="board-zoom-shortcuts">
+              <CircleHelp className="h-4 w-4" />
+            </BarButton>
+          </span>
         </>
       )}
     </div>

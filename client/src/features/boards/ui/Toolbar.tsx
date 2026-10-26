@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Circle, Diamond, Eraser, Frame, ImageIcon, LayoutTemplate, MousePointer2, Network, PenLine, RectangleHorizontal, Spline, Square, StickyNote, Triangle, Type } from 'lucide-react';
+import { Circle, Diamond, Eraser, Frame, ImageIcon, LayoutTemplate, MousePointer2, Network, PenLine, RectangleHorizontal, Sparkles, Spline, Square, StickyNote, Triangle, Type } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/hooks/useTranslation';
 import { cn } from '@/lib/utils';
@@ -47,6 +47,8 @@ interface ToolbarProps {
   onSelectTool: (tool: BoardTool) => void;
   tools?: ToolDefinition[];
   onOpenTemplates?: () => void;
+  /** Opens "Generate mind map from a topic"; the button only exists when given (an AI provider is configured). */
+  onOpenAi?: () => void;
   /** Vertical rail (desktop) or a horizontal, scrollable bar (phones). */
   orientation?: Orientation;
   className?: string;
@@ -109,7 +111,7 @@ function ToolButton({
 
 // Miro-like tool rail: vertical on the left of the editor, a horizontal
 // scrollable bar at the bottom on phones.
-export function Toolbar({ activeTool, onSelectTool, tools = TOOL_DEFINITIONS, onOpenTemplates, orientation = 'vertical', className }: ToolbarProps) {
+export function Toolbar({ activeTool, onSelectTool, tools = TOOL_DEFINITIONS, onOpenTemplates, onOpenAi, orientation = 'vertical', className }: ToolbarProps) {
   const { t } = useTranslation();
   const vertical = orientation === 'vertical';
   const side = vertical ? 'right' : 'top';
@@ -150,6 +152,17 @@ export function Toolbar({ activeTool, onSelectTool, tools = TOOL_DEFINITIONS, on
         testId="board-tool-templates"
         side={side}
       />
+      {onOpenAi && (
+        <ToolButton
+          label={t('AI assist')}
+          hint=""
+          description={t('Generate a mind map from a topic')}
+          icon={Sparkles}
+          onClick={onOpenAi}
+          testId="board-tool-ai"
+          side={side}
+        />
+      )}
     </nav>
   );
 }

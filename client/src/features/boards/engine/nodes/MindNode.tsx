@@ -1,5 +1,5 @@
 import { memo, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { Check, Link2, Plus, StickyNote } from 'lucide-react';
+import { Check, Link2, Loader2, Plus, StickyNote } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { BOARD_LIMITS } from '@shared/schema/boards';
 import { useBoardStore, useBoardStoreApi } from '../../store/boardStore';
@@ -176,6 +176,7 @@ export const MindNode = memo(function MindNode({ id, data, selected }: BoardNode
   const editing = useBoardStore((s) => s.editingNodeId === id);
   const seed = useBoardStore((s) => (s.editingNodeId === id ? s.editingSeed : null));
   const isDropTarget = useBoardStore((s) => s.dropTargetId === id);
+  const aiBusy = useBoardStore((s) => s.aiBusyNodeId === id);
   const color = meta.branchColor ?? CTA_BLUE;
   const direction = meta.direction ?? (meta.layout === 'vertical' ? 'down' : 'right');
   const childCount = meta.childCount ?? 0;
@@ -285,6 +286,16 @@ export const MindNode = memo(function MindNode({ id, data, selected }: BoardNode
           </a>
         )}
       </div>
+      {aiBusy && (
+        <span
+          className="pointer-events-none absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-[#5173D6] text-white shadow-md"
+          role="status"
+          aria-label="Thinking"
+          data-testid="mind-ai-busy"
+        >
+          <Loader2 className="h-3 w-3 animate-spin" />
+        </span>
+      )}
       {childCount > 0 && (!isRoot || collapsed) && (
         <CollapseToggle id={id} collapsed={collapsed} hiddenCount={meta.hiddenCount ?? 0} color={color} direction={direction} alwaysVisible={readOnly} />
       )}

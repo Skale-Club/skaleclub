@@ -46,6 +46,10 @@ export interface BoardCanvasApi {
   focusNode: (id: string, opts?: { ifOffscreen?: boolean }) => void;
   /** The flow-space point at the centre of the visible canvas. */
   getViewportCenter: () => { x: number; y: number };
+  /** Frames everything on the board (nodes and pen strokes). */
+  fitContent: (opts?: { duration?: number }) => void;
+  /** PNG / SVG of the whole board, or of one frame; rejects with EmptyBoardError when there is nothing to draw. */
+  renderImage: (opts: { format: 'png' | 'svg'; frameId?: string | null }) => Promise<Blob>;
 }
 
 export interface BoardState {
@@ -77,6 +81,10 @@ export interface BoardState {
   /** Mind node highlighted as the drop target while a branch is dragged. */
   dropTargetId: string | null;
   canvasApi: BoardCanvasApi | null;
+  /** Present mode: the nodes kept at full strength (the rest is dimmed); null = nothing dimmed. */
+  presentFocus: string[] | null;
+  /** Mind node an AI request is expanding (shows a spinner on it). */
+  aiBusyNodeId: string | null;
   /** Sizes React Flow measured in the DOM, so derived nodes keep them across renders. */
   measured: Record<string, MeasuredSize>;
   readOnly: boolean;
@@ -122,6 +130,8 @@ export interface BoardState {
   setSnapToGrid: (value: boolean) => void;
   setDropTarget: (id: string | null) => void;
   setCanvasApi: (api: BoardCanvasApi | null) => void;
+  setPresentFocus: (ids: string[] | null) => void;
+  setAiBusyNode: (id: string | null) => void;
   /** Called after a successful save with what was sent. */
   markSaved: (sent: { documentVersion: number; viewportVersion: number; title: string }) => void;
   // History
@@ -226,6 +236,8 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
           snapToGrid: false,
           dropTargetId: null,
           canvasApi: null,
+          presentFocus: null,
+          aiBusyNodeId: null,
           measured: {},
           readOnly: init?.readOnly ?? false,
 
@@ -485,6 +497,8 @@ export function createBoardStore(init?: { document?: BoardDocument; title?: stri
             if (get().dropTargetId !== id) set({ dropTargetId: id });
           },
           setCanvasApi: (canvasApi) => set({ canvasApi }),
+          setPresentFocus: (presentFocus) => set({ presentFocus }),
+          setAiBusyNode: (aiBusyNodeId) => set({ aiBusyNodeId }),
           markSaved: (sent) =>
             set({ savedVersion: sent.documentVersion, savedViewportVersion: sent.viewportVersion, savedTitle: sent.title }),
 

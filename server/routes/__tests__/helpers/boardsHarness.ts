@@ -7,6 +7,7 @@ import { storage } from "../../../storage.js";
 import { LARGE_BODY_LIMIT, LARGE_BODY_RE } from "../../../lib/bodyLimits.js";
 import { requireAdmin } from "../../_shared.js";
 import { registerBoardsRoutes } from "../../boards.js";
+import { registerBoardsAiRoutes, type BoardsAiProvider } from "../../boardsAi.js";
 import { EMPTY_BOARD_DOCUMENT, type InsertBoard, type Board, type BoardSummary } from "#shared/schema.js";
 
 // The board routes against an in-memory table, with production's body
@@ -75,7 +76,7 @@ function stubAdminLookup() {
 }
 
 export function createBoardsApp(
-  opts: { alwaysAdmin?: boolean; beforeRoutes?: (app: Express) => void } = {},
+  opts: { alwaysAdmin?: boolean; beforeRoutes?: (app: Express) => void; ai?: BoardsAiProvider } = {},
 ): Express {
   stubAdminLookup();
   const app = express();
@@ -93,6 +94,8 @@ export function createBoardsApp(
     LARGE_BODY_RE.test(req.path) ? requireAdmin(req, res, () => jsonLarge(req, res, next)) : next(),
   );
   registerBoardsRoutes(app);
+  // The AI routes only when a stub provider is given (never the real one).
+  if (opts.ai) registerBoardsAiRoutes(app, opts.ai);
   return app;
 }
 
