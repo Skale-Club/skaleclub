@@ -11,7 +11,6 @@ import {
   SiFacebook,
   SiGithub,
   SiInstagram,
-  SiLinkedin,
   SiPinterest,
   SiTelegram,
   SiTiktok,
@@ -19,6 +18,7 @@ import {
   SiX,
   SiYoutube,
 } from "react-icons/si";
+import { FaLinkedin } from "react-icons/fa";
 import QRCode from "react-qr-code";
 import { downloadVCard } from "@/lib/vcard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,7 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const iconMap: Record<string, React.ReactNode> = {
   instagram: <SiInstagram className="w-5 h-5" />,
-  linkedin: <SiLinkedin className="w-5 h-5" />,
+  linkedin: <FaLinkedin className="w-5 h-5" />,
   twitter: <SiX className="w-5 h-5" />,
   x: <SiX className="w-5 h-5" />,
   youtube: <SiYoutube className="w-5 h-5" />,

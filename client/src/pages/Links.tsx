@@ -6,7 +6,6 @@ import {
   SiFacebook,
   SiGithub,
   SiInstagram,
-  SiLinkedin,
   SiPinterest,
   SiTelegram,
   SiTiktok,
@@ -14,6 +13,7 @@ import {
   SiX,
   SiYoutube,
 } from "react-icons/si";
+import { FaLinkedin } from "react-icons/fa";
 import { getLinkIcon as getCuratedIcon } from '@/components/links/linkIcons';
 import type { LinksPageLink } from '@shared/schema';
 import { DEFAULT_LINKS_PAGE_THEME } from '@shared/links';
@@ -29,7 +29,7 @@ import { usePageSeo } from "@/hooks/use-seo";
 
 const iconMap: Record<string, React.ReactNode> = {
   instagram: <SiInstagram className="w-5 h-5" />,
-  linkedin: <SiLinkedin className="w-5 h-5" />,
+  linkedin: <FaLinkedin className="w-5 h-5" />,
   twitter: <SiX className="w-5 h-5" />,
   x: <SiX className="w-5 h-5" />,
   youtube: <SiYoutube className="w-5 h-5" />,
