@@ -1,0 +1,37 @@
+/* Board content colors. They follow the board's own theme (document.theme.dark
+   or the viewer toggle), never the admin/site theme around the editor, so a
+   light board stays light inside a dark admin. Editing chrome (toolbar, zoom
+   bar, panels) keeps using the app tokens. */
+.board-surface {
+  --board-bg: #ffffff;
+  /* Mind-map root: brand navy; on a dark board navy would vanish, so CTA blue. */
+  --board-root-bg: #0A162E;
+  --board-node-bg: #ffffff;
+  --board-node-fg: #1e293b;
+  --board-node-border: #cbd5e1;
+  --board-muted: #64748b;
+  --board-frame-bg: rgba(248, 250, 252, 0.7);
+  --board-frame-border: #e2e8f0;
+  background: var(--board-bg);
+  color: var(--board-node-fg);
+}
+
+.board-surface.board-dark {
+  --board-bg: #0f172a;
+  --board-root-bg: #5173D6;
+  --board-node-bg: #1e293b;
+  --board-node-fg: #f1f5f9;
+  --board-node-border: #475569;
+  --board-muted: #94a3b8;
+  --board-frame-bg: rgba(30, 41, 59, 0.55);
+  --board-frame-border: #334155;
+}
+
+.board-surface .react-flow {
+  --xy-background-color: var(--board-bg);
+}
+
+.board-surface .react-flow__attribution {
+  background: transparent;
+  opacity: 0.6;
+}

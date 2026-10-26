@@ -32,6 +32,7 @@ const LinksSection = lazy(() => import('@/components/admin/LinksSection').then(m
 const VCardsManager = lazy(() => import('@/components/admin/VCardsManager').then(m => ({ default: m.VCardsManager })));
 const EstimatesSection = lazy(() => import('@/components/admin/EstimatesSection').then(m => ({ default: m.EstimatesSection })));
 const PresentationsSection = lazy(() => import('@/components/admin/PresentationsSection').then(m => ({ default: m.PresentationsSection })));
+const BoardsSection = lazy(() => import('@/components/admin/BoardsSection').then(m => ({ default: m.BoardsSection })));
 const WhiteboardsSection = lazy(() => import('@/components/admin/WhiteboardsSection').then(m => ({ default: m.WhiteboardsSection })));
 const SkaleHubSection = lazy(() => import('@/components/admin/SkaleHubSection').then(m => ({ default: m.SkaleHubSection })));
 const PagesSection = lazy(() => import('@/components/admin/pages/PagesSection').then(m => ({ default: m.PagesSection })));
@@ -66,6 +67,7 @@ function AdminContent() {
       estimates: 'estimates',
       presentations: 'presentations',
       whiteboards: 'whiteboards',
+      boards: 'boards',
       'skale-hub': 'skaleHub',
       pages: 'pages',
       notifications: 'notifications',
@@ -129,6 +131,7 @@ function AdminContent() {
       estimates: 'estimates',
       presentations: 'presentations',
       whiteboards: 'whiteboards',
+      boards: 'boards',
       skaleHub: 'skale-hub',
       pages: 'pages',
       notifications: 'notifications',
@@ -223,7 +226,7 @@ function AdminContent() {
           {activeSection !== 'chat' && (
             <div className="flex-1 overflow-y-auto min-h-0 p-6 pb-16 md:p-8 md:pb-10">
               {(() => {
-                const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'whiteboards', 'skaleHub', 'pages', 'notifications', 'traffic', 'redirects', 'vectorizer'];
+                const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'whiteboards', 'boards', 'skaleHub', 'pages', 'notifications', 'traffic', 'redirects', 'vectorizer'];
                 if (sectionsWithOwnHeader.includes(activeSection)) return null;
                 // Dashboard renders its own SectionHeader (with form selector action)
                 if (activeSection === 'dashboard') return null;
@@ -252,6 +255,7 @@ function AdminContent() {
               {activeSection === 'estimates' && <EstimatesSection />}
               {activeSection === 'presentations' && <PresentationsSection />}
               {activeSection === 'whiteboards' && <WhiteboardsSection />}
+              {activeSection === 'boards' && <BoardsSection />}
               {activeSection === 'skaleHub' && <SkaleHubSection />}
               {activeSection === 'pages' && <PagesSection />}
               {activeSection === 'notifications' && <NotificationsSection />}

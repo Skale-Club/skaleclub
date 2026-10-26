@@ -1,4 +1,4 @@
-import { Building2, Briefcase, ClipboardList, FileText, HelpCircle, Image, LayoutDashboard, LayoutPanelLeft, Link, Puzzle, Receipt, Search, Sparkles, Users, Smartphone, Presentation, RadioTower, Bell, TrendingUp, Shapes, PenTool } from 'lucide-react';
+import { Building2, Briefcase, ClipboardList, FileText, HelpCircle, Image, LayoutDashboard, LayoutPanelLeft, Link, Puzzle, Receipt, Search, Sparkles, Users, Smartphone, Presentation, RadioTower, Bell, TrendingUp, Shapes, PenTool, Workflow } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { AdminSection, BusinessHours, IntakeObjective } from './types';
 
@@ -57,6 +57,7 @@ export const SIDEBAR_MENU_ITEMS: SidebarMenuItem[] = [
   { id: 'website', title: 'Website', description: 'Customize homepage content and sections', icon: Image, group: 'content' },
   { id: 'portfolio', title: 'Portfolio', description: 'Services shown on the portfolio page — drag to reorder, click to edit', icon: Briefcase, group: 'content' },
   { id: 'pages', title: 'Pages', description: 'Build managed pages at any /slug — composable sections, no code.', icon: LayoutPanelLeft, group: 'content' },
+  { id: 'boards', title: 'Boards', description: 'Mind maps and free canvases. Share any board by link.', icon: Workflow, group: 'content' },
   { id: 'whiteboards', title: 'Whiteboards', description: 'Draw for your YouTube videos. Every saved board is public at its link.', icon: PenTool, group: 'content' },
   { id: 'blog', title: 'Blog', description: 'Articles, drafts and SEO-optimized content', icon: FileText, group: 'content' },
   { id: 'faqs', title: 'FAQs', description: 'Questions and answers shown on the FAQ page', icon: HelpCircle, group: 'content' },

@@ -53,6 +53,7 @@ const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <Pa
 const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PresentationViewer = lazy(() => import("@/pages/PresentationViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const WhiteboardViewer = lazy(() => import("@/pages/WhiteboardViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const BoardViewer = lazy(() => import("@/pages/BoardViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PrintFolder = lazy(() => import("@/pages/PrintFolder").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const DynamicPage = lazy(() => import("@/pages/DynamicLanding").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 // Admin + OAuth live in one lazy shell so AuthProvider and @supabase/* leave the entry chunk.
@@ -131,6 +132,7 @@ const RESERVED_LANDING_SEGMENTS = new Set<string>([
   "e",
   "p",
   "w",
+  "b",
   "f",
   "print",
   "api",
@@ -174,6 +176,7 @@ function Router() {
   const isEstimateRoute = location.startsWith('/e/');
   const isPresentationRoute = location.startsWith('/p/');
   const isWhiteboardRoute = location.startsWith('/w/');
+  const isBoardRoute = location.startsWith('/b/');
   const isPrintRoute = location.startsWith('/print/');
   // Full-screen order pages: no navbar, footer or chat widget.
   const isOrderRoute = location === '/nfc-order' || location === '/plaque-order';
@@ -267,6 +270,17 @@ function Router() {
       <Suspense fallback={fallback}>
         <Switch>
           <Route path="/w/:slug" component={WhiteboardViewer} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
+    );
+  }
+
+  if (isBoardRoute) {
+    return (
+      <Suspense fallback={fallback}>
+        <Switch>
+          <Route path="/b/:slug" component={BoardViewer} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>
