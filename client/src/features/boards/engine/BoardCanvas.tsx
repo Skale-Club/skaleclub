@@ -142,10 +142,27 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
   );
   // Unchanged nodes keep their flow object, so React Flow re-renders only what moved.
   const flowCache = useRef<FlowNodeCache>(new Map()).current;
+  // React Flow flags a clicked node as selected on its own internal copy (it mutates it so a
+  // second drag does not carry the first node along). When the store then drops that selection
+  // in the same batch (a connector click selects the new edge, say), the cached flow node is
+  // unchanged, React Flow keeps its internal flag and the node stays drawn as selected while the
+  // store has none. `resync` rebuilds such nodes so React Flow adopts the store's answer.
+  const [resync, setResync] = useState(0);
   const nodes = useMemo(
     () => toFlowNodes(document.nodes, document.edges, { selection, measured, readOnly, mind, cache: flowCache }),
-    [document.nodes, document.edges, selection, measured, readOnly, mind, flowCache],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [document.nodes, document.edges, selection, measured, readOnly, mind, flowCache, resync],
   );
+  useEffect(() => {
+    let stale = false;
+    for (const node of nodes) {
+      if (!node.selected && reactFlow.getInternalNode(node.id)?.selected) {
+        flowCache.delete(node.id);
+        stale = true;
+      }
+    }
+    if (stale) setResync((n) => n + 1);
+  }, [nodes, reactFlow, flowCache]);
   const edges = useMemo(
     () => toFlowEdges(document.edges, document.nodes, { selection, measured, readOnly, mind }),
     [document.edges, document.nodes, selection, measured, readOnly, mind],
@@ -221,7 +238,12 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
         });
       } finally {
         if (culled) void reactFlow.setViewport(camera);
-        if (selection.nodeIds.length || selection.edgeIds.length) storeApi.getState().select(selection);
+        // Put the selection back only if nobody changed it while the image rendered
+        // (a click, or present mode starting, must not be undone by a late restore).
+        const now = storeApi.getState().selection;
+        if ((selection.nodeIds.length || selection.edgeIds.length) && now.nodeIds.length === 0 && now.edgeIds.length === 0) {
+          storeApi.getState().select(selection);
+        }
       }
     },
     [dark, measuredSizes, reactFlow, storeApi],

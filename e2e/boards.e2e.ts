@@ -564,6 +564,7 @@ function canvasSuite(browserName: EngineName) {
       const [edge] = board().document.edges;
       assert.equal(edge.kind, "connector");
       assert.equal(edge.data?.label, "depends on");
+      assert.equal(await page.locator(".react-flow__node.selected").count(), 0, "connecting leaves no node drawn as selected");
       await screenshot(page, "editor");
     });
 
@@ -833,10 +834,14 @@ function finishingSuite(browserName: EngineName) {
     });
 
     it("presents the frames in reading order; arrows, Space and the buttons step; Escape leaves", async () => {
+      await byTestId("board-node-sticky").click();
+      await page.locator(".react-flow__node.selected").waitFor();
       await byTestId("board-present").click();
       await byTestId("present-controls").waitFor();
       await waitForCounter("1 / 3");
       assert.equal(await byTestId("board-editor").getAttribute("data-presenting"), "true");
+      await page.waitForTimeout(400);
+      assert.equal(await page.locator(".react-flow__node.selected").count(), 0, "no selection chrome while presenting");
       assert.equal(await byTestId("board-toolbar").count(), 0, "the editor chrome is gone");
       await page.waitForTimeout(600);
       assert.equal(await closestFrame(), "Alpha");
