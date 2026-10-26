@@ -9,7 +9,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import type { Server } from "node:http";
 import express from "express";
-import { chromium, devices, firefox, webkit, type Browser, type BrowserContext, type Locator, type Page } from "playwright";
+import { chromium, devices, firefox, webkit, type Browser, type BrowserContext, type Download, type Locator, type Page } from "playwright";
 import type { Board, BoardDocument, MindNodeData } from "#shared/schema.js";
 import { createBoardsApp, installMemoryBoards, listen } from "../server/routes/__tests__/helpers/boardsHarness.js";
 import type { BoardsAiProvider, BoardsAiRequest } from "../server/routes/boardsAi.js";
@@ -38,9 +38,9 @@ for (const browserName of BROWSERS) {
   resilienceSuite(browserName);
 }
 
-async function startBoardsServer(opts: { ai?: BoardsAiProvider } = {}) {
+async function startBoardsServer(opts: { ai?: BoardsAiProvider; beforeRoutes?: (app: express.Express) => void } = {}) {
   const rows = installMemoryBoards();
-  const app = createBoardsApp({ alwaysAdmin: true, ai: opts.ai });
+  const app = createBoardsApp({ alwaysAdmin: true, ai: opts.ai, beforeRoutes: opts.beforeRoutes });
   app.get("/api/admin/session", (_req, res) => {
     res.json({ isAdmin: true, email: "admin@skale.club", firstName: "Admin", lastName: "" });
   });
@@ -50,6 +50,13 @@ async function startBoardsServer(opts: { ai?: BoardsAiProvider } = {}) {
   app.use(express.static(DIST, { index: false }));
   app.get("*", (_req, res) => res.sendFile(path.join(DIST, "index.html")));
   return { rows, ...(await listen(app)) };
+}
+
+// The name a download is saved under. WebKit's download path swaps spaces for
+// underscores in the name the page suggested; every other character must match.
+function assertDownloadName(file: Download, expected: string) {
+  const name = file.suggestedFilename();
+  assert.ok(name === expected || name === expected.replace(/ /g, "_"), `download named ${JSON.stringify(name)}, expected ${JSON.stringify(expected)}`);
 }
 
 async function waitForSaved(target: Page) {
@@ -531,7 +538,12 @@ function canvasSuite(browserName: EngineName) {
       assert.equal(board().kind, "canvas");
       assert.equal(board().document.nodes.length, 0);
 
+      // The create dialog fades out over the editor; until it is gone its overlay
+      // takes clicks and, in WebKit (which never focuses a clicked button), its
+      // title field still has focus and takes the shortcut key.
+      await page.getByTestId("board-create-dialog").waitFor({ state: "detached" });
       await page.keyboard.press("m");
+      await page.waitForFunction(() => document.querySelector('[data-testid="board-canvas"]')?.getAttribute("data-tool") === "mind");
       await page.mouse.click(700, 650);
       await page.waitForFunction(() => document.activeElement?.getAttribute("data-testid") === "mind-node-editor");
       await page.keyboard.press("Escape");
@@ -841,7 +853,7 @@ function finishingSuite(browserName: EngineName) {
 
     it("exports the board as a PNG named after the title, pen strokes included", async () => {
       const file = await exportViaMenu("board-export-png");
-      assert.equal(file.suggestedFilename(), "Quarterly Review.png");
+      assertDownloadName(file, "Quarterly Review.png");
       const { w, h } = await pngSize((await file.path())!);
       // 2x the content (frames and the far-away pen stroke) plus 32px on every side.
       const bounds = boardContentBounds(DOCUMENT)!;
@@ -854,14 +866,14 @@ function finishingSuite(browserName: EngineName) {
       await byTestId("frame-title").getByText("Alpha", { exact: true }).click();
       await page.waitForFunction(() => document.querySelector(".react-flow__node-frame.selected") !== null);
       const file = await exportViaMenu("board-export-png");
-      assert.equal(file.suggestedFilename(), "Quarterly Review - Alpha.png");
+      assertDownloadName(file, "Quarterly Review - Alpha.png");
       const { w, h } = await pngSize((await file.path())!);
       assert.ok(Math.abs(w - 2 * (400 + 64)) <= 4 && Math.abs(h - 2 * (300 + 64)) <= 4, `frame png ${w}x${h}`);
 
       await page.keyboard.press("Escape");
       await page.waitForFunction(() => document.querySelector(".react-flow__node-frame.selected") === null);
       const svg = await exportViaMenu("board-export-svg");
-      assert.equal(svg.suggestedFilename(), "Quarterly Review.svg");
+      assertDownloadName(svg, "Quarterly Review.svg");
       const text = await readFile((await svg.path())!, "utf8");
       assert.match(text, /^<svg/);
       assert.match(text, /Hello/, "node content is in the SVG");
@@ -870,7 +882,7 @@ function finishingSuite(browserName: EngineName) {
       // The Share menu offers the same exports.
       await byTestId("board-share").click();
       const viaShare = await download(() => byTestId("board-share-export-png").click());
-      assert.equal(viaShare.suggestedFilename(), "Quarterly Review.png");
+      assertDownloadName(viaShare, "Quarterly Review.png");
       await closeOverlays();
     });
 
@@ -914,7 +926,7 @@ function finishingSuite(browserName: EngineName) {
 
     it("round-trips the document through JSON, undoably", async () => {
       const file = await exportViaMenu("board-export-json");
-      assert.equal(file.suggestedFilename(), "Quarterly Review.json");
+      assertDownloadName(file, "Quarterly Review.json");
       const path = (await file.path())!;
       const exported = JSON.parse(await readFile(path, "utf8")) as BoardDocument;
       assert.equal(exported.nodes.length, 4);
@@ -1089,8 +1101,9 @@ function resilienceSuite(browserName: EngineName) {
   const board = () => rows.get(boardId)!;
   const stickyTexts = (doc: BoardDocument) =>
     doc.nodes.flatMap((n) => (n.data.type === "sticky" ? [n.data.text] : [])).sort();
+  // A save made by another tab or device (never dropped by blockSaves).
   const put = (body: unknown) =>
-    fetch(`${baseUrl}/api/boards/${boardId}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    fetch(`${baseUrl}/api/boards/${boardId}`, { method: "PUT", headers: { "content-type": "application/json", "x-test-elsewhere": "1" }, body: JSON.stringify(body) });
 
   async function openBoard(target: Page = page) {
     await target.goto(`${baseUrl}/admin/boards/${boardId}`);
@@ -1108,13 +1121,27 @@ function resilienceSuite(browserName: EngineName) {
     await target.waitForFunction((value) => document.querySelector('[data-testid="board-save-status"]')?.getAttribute("data-status") === value, expected, { timeout: 15_000 });
   }
   const snapshotKey = () => `skale:board-snapshot:${boardId}`;
-  // Saves fail like a dropped connection, so a tab can "die" with changes only in its snapshot.
-  const SAVE_URL = /\/api\/boards\/[0-9a-f-]{36}$/;
-  const blockSaves = () => context.route(SAVE_URL, (route) => (route.request().method() === "PUT" ? route.abort() : route.continue()));
+  // Saves fail like a dropped connection, so a tab can "die" with changes only in
+  // its snapshot. Dropped on the server rather than with context.route(): the
+  // production build's service worker claims the page, and in WebKit a request
+  // the worker lets through (it ignores PUTs) never reaches Playwright's routing.
+  const SAVE_PATH = /^\/api\/boards\/[0-9a-f-]{36}$/;
+  let dropSaves = false;
+  const dropBrowserSaves = (app: express.Express) =>
+    app.use((req, _res, next) => {
+      if (dropSaves && req.method === "PUT" && SAVE_PATH.test(req.path) && !req.get("x-test-elsewhere")) req.socket.destroy();
+      else next();
+    });
+  const blockSaves = () => {
+    dropSaves = true;
+  };
+  const unblockSaves = () => {
+    dropSaves = false;
+  };
 
   describe(`boards saving: offline, conflict, local snapshot (${browserName})`, { timeout: 150_000 }, () => {
     before(async () => {
-      ({ server, baseUrl, rows } = await startBoardsServer());
+      ({ server, baseUrl, rows } = await startBoardsServer({ beforeRoutes: dropBrowserSaves }));
       browser = await ENGINES[browserName].launch();
       context = await browser.newContext({ viewport: { width: 1440, height: 860 } });
       page = await context.newPage();
@@ -1167,14 +1194,14 @@ function resilienceSuite(browserName: EngineName) {
     });
 
     it("offers the local snapshot of a tab that died with unsaved changes: restore it, or discard it", async () => {
-      await blockSaves();
+      blockSaves();
       await addSticky("unsaved work", 800, 520);
       await waitForStatus("offline");
       // The snapshot is written (throttled to 1s) while changes are pending.
       await page.waitForFunction((key) => !!window.localStorage.getItem(key)?.includes("unsaved work"), snapshotKey(), { timeout: 5_000 });
       assert.ok(!stickyTexts(board().document).includes("unsaved work"));
       await page.close(); // the tab dies; its localStorage stays
-      await context.unroute(SAVE_URL);
+      unblockSaves();
 
       page = await context.newPage();
       await openBoard();
@@ -1186,12 +1213,12 @@ function resilienceSuite(browserName: EngineName) {
       assert.equal(await page.evaluate((key) => window.localStorage.getItem(key), snapshotKey()), null, "the snapshot is cleared after saving");
 
       // Discard: a second dead tab, this time thrown away.
-      await blockSaves();
+      blockSaves();
       await addSticky("discard me", 800, 300);
       await waitForStatus("offline");
       await page.waitForFunction((key) => !!window.localStorage.getItem(key)?.includes("discard me"), snapshotKey(), { timeout: 5_000 });
       await page.close();
-      await context.unroute(SAVE_URL);
+      unblockSaves();
       page = await context.newPage();
       await openBoard();
       await byTestId("board-restore").waitFor();
@@ -1204,7 +1231,7 @@ function resilienceSuite(browserName: EngineName) {
 
     it("a restored snapshot saves against the version it was based on: a save made elsewhere raises the conflict dialog", async () => {
       await waitForStatus("saved");
-      await blockSaves();
+      blockSaves();
       // Another device saves while this tab still works on the version it loaded.
       const base = board();
       const theirs: BoardDocument = { ...base.document, nodes: [...base.document.nodes, { id: "other-device", position: { x: 1000, y: 650 }, data: { type: "sticky", text: "from another device" } }] };
@@ -1213,7 +1240,7 @@ function resilienceSuite(browserName: EngineName) {
       await waitForStatus("offline");
       await page.waitForFunction((key) => !!window.localStorage.getItem(key)?.includes("stale draft"), snapshotKey(), { timeout: 5_000 });
       await page.close();
-      await context.unroute(SAVE_URL);
+      unblockSaves();
 
       page = await context.newPage();
       await openBoard();

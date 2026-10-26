@@ -570,6 +570,41 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
     return () => cancelAnimationFrame(frame);
   }, [fitContent, fitOnOpen, nodesInitialized, storeApi]);
 
+  // The read-only viewer keeps the board framed while its layout settles: a
+  // web font that swaps in after the first fit (Safari often loads it late)
+  // re-measures the topics and the map grows past the edges. It stops at the
+  // visitor's first touch, wheel or key, and while presenting.
+  const presentingRef = useRef(presenting);
+  presentingRef.current = presenting;
+  useEffect(() => {
+    if (!readOnly || !fitOnOpen) return;
+    const el = wrapperRef.current;
+    let frame = 0;
+    let settled = false;
+    const refit = () => {
+      if (settled || !didInitialFit.current || presentingRef.current) return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => fitContent({ duration: 0 }));
+    };
+    const unsubscribe = storeApi.subscribe((s, prev) => {
+      if (s.document !== prev.document || s.measured !== prev.measured) refit();
+    });
+    const stop = () => {
+      settled = true;
+      cancelAnimationFrame(frame);
+    };
+    el?.addEventListener('pointerdown', stop, true);
+    el?.addEventListener('wheel', stop, { capture: true, passive: true });
+    window.addEventListener('keydown', stop, true);
+    return () => {
+      unsubscribe();
+      cancelAnimationFrame(frame);
+      el?.removeEventListener('pointerdown', stop, true);
+      el?.removeEventListener('wheel', stop, true);
+      window.removeEventListener('keydown', stop, true);
+    };
+  }, [fitContent, fitOnOpen, readOnly, storeApi]);
+
   // Camera -> store, throttled (the store bumps viewportVersion for autosave).
   // Moves without a DOM event (the initial fit, the zoom bar) are remembered
   // silently: they ride along with the next save instead of causing one.
