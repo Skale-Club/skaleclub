@@ -549,8 +549,19 @@ function boardsSuite(browserName: EngineName) {
         assert.equal(await phone.getByTestId("mind-add-child").count(), 0, "nothing editable");
         assert.equal(await phone.getByTestId("board-toolbar").count(), 0);
 
-        // The viewer fits the whole board on screen.
-        await phone.waitForTimeout(500);
+        // The viewer fits the whole board on screen. It refits once late layout settles,
+        // which on WebKit can land after a fixed delay: wait for it, then check.
+        await phone
+          .waitForFunction(
+            () =>
+              [...document.querySelectorAll('[data-testid="board-node-mind"]')].every((el) => {
+                const r = el.getBoundingClientRect();
+                return r.left >= -1 && r.top >= -1 && r.right <= window.innerWidth + 1 && r.bottom <= window.innerHeight + 1;
+              }),
+            null,
+            { timeout: 10_000 },
+          )
+          .catch(() => undefined);
         const viewport = phone.viewportSize()!;
         const all = await phone.$$eval('[data-testid="board-node-mind"]', (els) => els.map((el) => el.getBoundingClientRect().toJSON()));
         for (const r of all) {
