@@ -25,7 +25,7 @@
     "test:e2e:run": "cross-env DATABASE_URL=postgresql://test:test@127.0.0.1:1/test POSTGRES_URL=postgresql://test:test@127.0.0.1:1/test tsx --test \"e2e/**/*.e2e.ts\""
   },
   "dependencies": {
-    "@google/genai": "^1.50.1",
+    "@google/genai": "^2.31.0",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@sentry/node": "^11.8.0",
     "@supabase/supabase-js": "^2.118.0",
