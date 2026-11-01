@@ -22,6 +22,15 @@ const CHANNEL_ICONS: Record<AiReceptionProps["channels"][number]["icon"], Channe
   messages: SiMessenger,
 };
 
+const CHANNEL_ICON_COLORS: Partial<Record<AiReceptionProps["channels"][number]["icon"], string>> = {
+  imessage: "#34C759",
+  facebook: "#0866FF",
+  instagram: "#E4405F",
+  whatsapp: "#25D366",
+  messenger: "#00B2FF",
+  messages: "#00B2FF",
+};
+
 export function AiReceptionSection({ props }: { props: AiReceptionProps }) {
   const { t } = useTranslation();
   const dark = props.theme !== "light";
@@ -83,7 +92,8 @@ export function AiReceptionSection({ props }: { props: AiReceptionProps }) {
                     return (
                       <span
                         key={iconName}
-                        className={`grid h-8 w-8 place-items-center rounded-full ${dark ? "bg-white/5 text-cta-soft" : "bg-cta-ink/10 text-cta-ink"}`}
+                        className={`grid h-8 w-8 place-items-center rounded-full ${dark ? "bg-white/[0.06] text-cta-soft" : "bg-ink/[0.06] text-cta-ink"}`}
+                        style={{ color: CHANNEL_ICON_COLORS[iconName] }}
                       >
                         <Icon className="h-4 w-4" />
                       </span>

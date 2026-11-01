@@ -173,7 +173,7 @@ function IndustryHeroMedia({ props, fallbackUrl, fallbackAlt }: {
 
   return (
     <div
-      className="relative w-full max-w-[500px]"
+      className="relative w-full max-w-[500px] lg:flex lg:h-full lg:flex-col"
       role={items.length > 1 ? "region" : undefined}
       aria-roledescription={items.length > 1 ? "carousel" : undefined}
       aria-label={items.length > 1 ? t("Hero image carousel") : undefined}
@@ -201,7 +201,7 @@ function IndustryHeroMedia({ props, fallbackUrl, fallbackAlt }: {
         step(endX < startX ? 1 : -1);
       }}
     >
-      <div className={`relative overflow-hidden border border-white/10 bg-navy-800 shadow-2xl ${aspectClass} ${radiusClass}`}>
+      <div className={`relative overflow-hidden border border-white/10 bg-navy-800 shadow-2xl ${aspectClass} ${radiusClass} lg:min-h-0 lg:flex-1 lg:aspect-auto`}>
         <img
           key={activeItem.imageUrl}
           src={activeItem.imageUrl}
@@ -352,12 +352,12 @@ function IndustryLandingHero({ props }: { props: HeroWebsitesProps }) {
         className="relative isolate flex min-h-[720px] overflow-hidden tablet:min-h-[600px] lg:min-h-[560px] xl:min-h-[580px]"
         containerClassName="relative z-10 flex min-w-0 flex-1 pt-nav"
       >
-        <div className="grid min-w-0 flex-1 grid-cols-1 content-center items-center gap-10 py-10 sm:py-14 lg:grid-cols-2 lg:gap-12 lg:py-12 xl:gap-14">
-          <div className="order-2 min-w-0 lg:order-1">
+        <div className="grid min-w-0 flex-1 grid-cols-1 content-center items-center gap-10 py-10 sm:py-14 lg:grid-cols-2 lg:items-stretch lg:gap-12 lg:py-12 xl:gap-14">
+          <div className="order-2 min-w-0 lg:order-1 lg:h-full">
             <IndustryHeroMedia props={props} fallbackUrl={bgUrl} fallbackAlt={bgAlt} />
           </div>
 
-          <div className="order-1 min-w-0 lg:order-2">
+          <div className="order-1 min-w-0 lg:order-2 lg:self-center">
             {props.eyebrow && (
               <div className="flex items-center gap-3">
                 {props.accentMark === "barber-pole" && <BarberPoleMark inline />}
