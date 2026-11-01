@@ -207,7 +207,7 @@ function IndustryHeroMedia({ props, fallbackUrl, fallbackAlt }: {
           src={activeItem.imageUrl}
           alt={t(activeItem.imageAlt ?? "")}
           className={`h-full w-full object-cover ${focalPointClass}`}
-          {...(activeIndex === 0 ? ({ fetchpriority: "high" } as Record<string, string>) : {})}
+          fetchPriority={activeIndex === 0 ? "high" : undefined}
           decoding="async"
           loading={activeIndex === 0 ? "eager" : "lazy"}
           width={activeItem.imageWidth ?? KNOWN_IMAGE_SIZES[activeItem.imageUrl]?.width}
@@ -317,7 +317,7 @@ function DarkProductHero({ props }: { props: HeroWebsitesProps }) {
                 src={bgUrl}
                 alt={t(props.backgroundImageAlt ?? "")}
                 className="w-full object-contain drop-shadow-2xl"
-                {...({ fetchpriority: "high" } as Record<string, string>)}
+                fetchPriority="high"
                 decoding="async"
                 loading="eager"
                 {...(KNOWN_IMAGE_SIZES[bgUrl] ?? {})}
@@ -436,7 +436,7 @@ function WebsitesHero({ props }: { props: HeroWebsitesProps }) {
                   alt={t(bgAlt)}
                   className="block w-[70vw] max-w-[260px] origin-bottom object-contain object-bottom drop-shadow-2xl sm:w-[75vw] md:max-w-[300px] lg:w-[340px] lg:max-w-[340px] xl:w-[380px] xl:max-w-[380px]"
                   // React 18 does not know the camelCase prop; the lowercase attribute reaches the DOM as-is.
-                  {...({ fetchpriority: "high" } as Record<string, string>)}
+                  fetchPriority="high"
                   decoding="async"
                   loading="eager"
                   {...(KNOWN_IMAGE_SIZES[bgUrl] ?? {})}

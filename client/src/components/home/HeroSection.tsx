@@ -104,7 +104,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 // React 18's DOM only forwards the lowercase attribute (camelCase
                 // triggers an unknown-prop warning), but the TS types only know
                 // the camelCase spelling — hence the spread.
-                {...({ fetchpriority: "high" } as Record<string, string>)}
+                fetchPriority="high"
                 loading="eager"
                 // max-h caps the photo at the visible band's height so short
                 // viewports scale it down instead of clipping the hair at the
