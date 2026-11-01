@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { rejectUnservableMcpRequest } from "./requestGuard.js";
 import type { Request, Response } from "express";
 import { registerEstimateTools } from "./tools/estimates.js";
 import { registerPresentationTools } from "./tools/presentations.js";
@@ -23,6 +24,12 @@ function buildMcpServer(tokenId: string, tokenPrefix: string, ip: string): McpSe
 }
 
 export async function handleMcpRequest(req: Request, res: Response, tokenId: string, tokenPrefix: string) {
+  const rejected = rejectUnservableMcpRequest(req.method, req.headers.accept);
+  if (rejected) {
+    res.status(rejected.status).set(rejected.headers).json(rejected.body);
+    return;
+  }
+
   // `req.ip` honours the configured trust-proxy depth; the leftmost
   // X-Forwarded-For entry is caller-supplied (see server/lib/turnstile.ts).
   const ip = req.ip ?? req.socket.remoteAddress ?? "";
