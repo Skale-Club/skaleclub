@@ -84,7 +84,7 @@ export interface BoardCanvasProps {
   className?: string;
   /** Extra classes for the zoom bar panel (e.g. lift it above a mobile toolbar). */
   zoomBarClassName?: string;
-  /** Shows a "?" button in the zoom bar. */
+  /** Shows a "?" button in the zoom bar (the public viewer; the editor opens shortcuts from its menu). */
   onShowShortcuts?: () => void;
   /** Present mode: the minimap and the zoom bar get out of the way. */
   presenting?: boolean;
@@ -266,6 +266,25 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
           if (inside) return;
         }
         void reactFlow.setCenter(cx, cy, { zoom, duration: 250 });
+      },
+      panClearOf: (rect, margin = 16) => {
+        const el = wrapperRef.current;
+        if (!el) return;
+        let box: { left: number; right: number; top: number; bottom: number } | null = null;
+        el.querySelectorAll('.react-flow__node.selected, .react-flow__edge.selected').forEach((item) => {
+          const r = item.getBoundingClientRect();
+          box = box
+            ? { left: Math.min(box.left, r.left), right: Math.max(box.right, r.right), top: Math.min(box.top, r.top), bottom: Math.max(box.bottom, r.bottom) }
+            : { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+        });
+        const sel = box as { left: number; right: number; top: number; bottom: number } | null;
+        if (!sel || sel.left >= rect.right || sel.right <= rect.left || sel.top >= rect.bottom || sel.bottom <= rect.top) return;
+        // Never push the selection's left edge under the tool rail.
+        const railEdge = el.getBoundingClientRect().left + 88;
+        const dx = Math.max(rect.left - margin - sel.right, railEdge - sel.left);
+        if (dx >= 0) return;
+        const { x, y, zoom } = reactFlow.getViewport();
+        void reactFlow.setViewport({ x: x + dx, y, zoom }, { duration: 200 });
       },
       getViewportCenter: () => {
         const rect = wrapperRef.current?.getBoundingClientRect();
@@ -855,7 +874,7 @@ function CanvasInner({ readOnly = false, dark: darkOverride, snapToGrid: snapOve
         )}
         {!presenting && (
           <Panel position="bottom-left" className={zoomBarClassName}>
-            <ZoomBar showHistory={!readOnly} showSnap={!readOnly && snapOverride === undefined} onShowShortcuts={onShowShortcuts} />
+            <ZoomBar showHistory={!readOnly} onShowShortcuts={onShowShortcuts} />
           </Panel>
         )}
         {children}

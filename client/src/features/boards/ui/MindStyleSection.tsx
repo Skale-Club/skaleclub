@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { AlignHorizontalJustifyCenter, ArrowRightFromLine, Loader2, Network, Sparkles, X } from 'lucide-react';
+import { AlignHorizontalJustifyCenter, ArrowRightFromLine, ChevronDown, Loader2, Network, Plus, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -69,8 +70,8 @@ function normalizeUrl(raw: string): string | null {
   }
 }
 
-// Style controls for one selected mind node: color, icon, task, note, link,
-// plus the root's layout and a first-level branch's side.
+// Style controls for one selected mind node: color, icon, the root's layout or
+// a first-level branch's side, and a collapsible "Details" (note, link, task).
 export function MindStyleSection({ id }: { id: string }) {
   const { t } = useTranslation();
   const store = useBoardStoreApi();
@@ -91,6 +92,8 @@ export function MindStyleSection({ id }: { id: string }) {
   const depth = Number(depthText);
   const data = node?.data.type === 'mind' ? node.data : null;
 
+  const [detailsOpen, setDetailsOpen] = useState(() => !!(data?.note || data?.link || data?.task));
+  const [iconOpen, setIconOpen] = useState(false);
   const [note, setNote] = useState(data?.note ?? '');
   const [link, setLink] = useState(data?.link ?? '');
   const [linkError, setLinkError] = useState(false);
@@ -133,7 +136,7 @@ export function MindStyleSection({ id }: { id: string }) {
           type="button"
           variant="outline"
           size="sm"
-          className="w-full gap-2 rounded-xl"
+          className="h-8 w-full gap-2 rounded-xl text-xs"
           onClick={() => void expandWithAi(id)}
           disabled={aiBusy}
           data-testid="mind-style-ai-expand"
@@ -176,77 +179,61 @@ export function MindStyleSection({ id }: { id: string }) {
       </div>
 
       <div>
-        <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm">{t('Icon')}</p>
-          {data.icon && (
-            <button type="button" onClick={() => clearMindData(store, id, ['icon'])} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground" data-testid="mind-icon-clear">
-              <X className="h-3 w-3" />
-              {t('Remove')}
-            </button>
-          )}
-        </div>
-        <div className="grid grid-cols-8 gap-1">
-          {MIND_ICONS.map((icon) => (
+        <p className="mb-2 text-sm">{t('Icon')}</p>
+        <Popover open={iconOpen} onOpenChange={setIconOpen}>
+          <PopoverTrigger asChild>
             <button
-              key={icon}
               type="button"
-              onClick={() => setMindData(store, id, { icon })}
-              aria-pressed={data.icon === icon}
-              data-testid="mind-icon-option"
-              className={cn('flex h-7 items-center justify-center rounded-lg text-base transition-colors hover:bg-muted', data.icon === icon && 'bg-[#5173D6]/15 ring-1 ring-[#5173D6]')}
+              className={cn(
+                'flex h-9 w-full items-center gap-2 rounded-xl border px-3 text-sm transition-colors hover:bg-muted',
+                data.icon ? 'text-foreground' : 'text-muted-foreground',
+              )}
+              data-testid="mind-icon-button"
             >
-              {icon}
+              {data.icon ? (
+                <span className="text-base leading-none">{data.icon}</span>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  {t('Add icon')}
+                </>
+              )}
             </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-2">
-        <Label htmlFor="mind-task" className="text-sm font-normal">
-          {t('Task checkbox')}
-        </Label>
-        <Switch
-          id="mind-task"
-          checked={!!data.task}
-          onCheckedChange={(checked) => (checked ? setMindData(store, id, { task: { done: false } }) : clearMindData(store, id, ['task']))}
-          data-testid="mind-task-toggle"
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="mind-note" className="text-sm font-normal">
-          {t('Note')}
-        </Label>
-        <Textarea
-          id="mind-note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          onBlur={commitNote}
-          placeholder={t('Add details shown on hover')}
-          className="min-h-[72px] resize-y rounded-xl text-sm"
-          maxLength={5_000}
-          data-testid="mind-note-input"
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="mind-link" className="text-sm font-normal">
-          {t('Link')}
-        </Label>
-        <Input
-          id="mind-link"
-          value={link}
-          onChange={(e) => setLink(e.target.value)}
-          onBlur={commitLink}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-          }}
-          placeholder="https://"
-          className={cn('h-9 rounded-xl text-sm', linkError && 'border-destructive focus-visible:ring-destructive')}
-          aria-invalid={linkError}
-          data-testid="mind-link-input"
-        />
-        {linkError && <p className="text-xs text-destructive">{t('Enter a valid web address.')}</p>}
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-64 rounded-xl p-3" data-testid="mind-icon-popover">
+            <div className="grid grid-cols-8 gap-1">
+              {MIND_ICONS.map((icon) => (
+                <button
+                  key={icon}
+                  type="button"
+                  onClick={() => {
+                    setMindData(store, id, { icon });
+                    setIconOpen(false);
+                  }}
+                  aria-pressed={data.icon === icon}
+                  data-testid="mind-icon-option"
+                  className={cn('flex h-7 items-center justify-center rounded-lg text-base transition-colors hover:bg-muted', data.icon === icon && 'bg-[#5173D6]/15 ring-1 ring-[#5173D6]')}
+                >
+                  {icon}
+                </button>
+              ))}
+            </div>
+            {data.icon && (
+              <button
+                type="button"
+                onClick={() => {
+                  clearMindData(store, id, ['icon']);
+                  setIconOpen(false);
+                }}
+                className="mt-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                data-testid="mind-icon-clear"
+              >
+                <X className="h-3 w-3" />
+                {t('Remove')}
+              </button>
+            )}
+          </PopoverContent>
+        </Popover>
       </div>
 
       {depth === 0 && (
@@ -276,6 +263,69 @@ export function MindStyleSection({ id }: { id: string }) {
           />
         </div>
       )}
+      <div>
+        <button
+          type="button"
+          onClick={() => setDetailsOpen((open) => !open)}
+          aria-expanded={detailsOpen}
+          className="flex w-full items-center justify-between rounded-lg py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          data-testid="mind-details-toggle"
+        >
+          {t('Details')}
+          <ChevronDown className={cn('h-4 w-4 transition-transform', detailsOpen && 'rotate-180')} />
+        </button>
+        {detailsOpen && (
+          <div className="mt-2 space-y-4" data-testid="mind-details">
+            <div className="space-y-1.5">
+              <Label htmlFor="mind-note" className="text-sm font-normal">
+                {t('Note')}
+              </Label>
+              <Textarea
+                id="mind-note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                onBlur={commitNote}
+                placeholder={t('Add details shown on hover')}
+                className="min-h-[72px] resize-y rounded-xl text-sm"
+                maxLength={5_000}
+                data-testid="mind-note-input"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="mind-link" className="text-sm font-normal">
+                {t('Link')}
+              </Label>
+              <Input
+                id="mind-link"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                onBlur={commitLink}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                }}
+                placeholder="https://"
+                className={cn('h-9 rounded-xl text-sm', linkError && 'border-destructive focus-visible:ring-destructive')}
+                aria-invalid={linkError}
+                data-testid="mind-link-input"
+              />
+              {linkError && <p className="text-xs text-destructive">{t('Enter a valid web address.')}</p>}
+            </div>
+
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="mind-task" className="text-sm font-normal">
+                {t('Task checkbox')}
+              </Label>
+              <Switch
+                id="mind-task"
+                checked={!!data.task}
+                onCheckedChange={(checked) => (checked ? setMindData(store, id, { task: { done: false } }) : clearMindData(store, id, ['task']))}
+                data-testid="mind-task-toggle"
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

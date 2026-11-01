@@ -118,6 +118,8 @@ export function useBoardAutosave({ boardId, store, enabled, getThumbnail, onSave
   const [saving, setSaving] = useState(false);
   const [offline, setOffline] = useState(false);
   const [conflict, setConflict] = useState(false);
+  // The last save was refused by the server (not a dropped connection): nothing retries it, so the editor offers "Save now".
+  const [lastSaveFailed, setLastSaveFailed] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
   // The stored version the editor's content is based on (sent with each save).
@@ -179,6 +181,7 @@ export function useBoardAutosave({ boardId, store, enabled, getThumbnail, onSave
       store.getState().markSaved(sent);
       setConflict(false);
       setOffline(false);
+      setLastSaveFailed(false);
       setLastSavedAt(Date.now());
       refreshSnapshot();
       callbacksRef.current.onSaved?.(updated);
@@ -194,6 +197,7 @@ export function useBoardAutosave({ boardId, store, enabled, getThumbnail, onSave
         setOffline(true);
         scheduleRetry();
       } else {
+        setLastSaveFailed(true);
         callbacksRef.current.onError?.(err);
         if (err instanceof HttpError && err.status >= 500) scheduleRetry();
       }
@@ -353,7 +357,7 @@ export function useBoardAutosave({ boardId, store, enabled, getThumbnail, onSave
   const dismissConflict = useCallback(() => setConflict(false), []);
 
   return useMemo(
-    () => ({ status, isDirty, lastSavedAt, save, flush, flushThumbnail, setBaseVersion, getBaseVersion, dismissConflict }),
-    [status, isDirty, lastSavedAt, save, flush, flushThumbnail, setBaseVersion, getBaseVersion, dismissConflict],
+    () => ({ status, isDirty, lastSaveFailed, lastSavedAt, save, flush, flushThumbnail, setBaseVersion, getBaseVersion, dismissConflict }),
+    [status, isDirty, lastSaveFailed, lastSavedAt, save, flush, flushThumbnail, setBaseVersion, getBaseVersion, dismissConflict],
   );
 }

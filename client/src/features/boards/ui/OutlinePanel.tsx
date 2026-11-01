@@ -87,9 +87,10 @@ function OutlineRow({
         ) : (
           <button
             type="button"
-            onClick={(e) => {
+            onClick={() => {
               // Hand the keyboard back to the board (Tab, Enter, arrows act on the topic).
-              e.currentTarget.blur();
+              // Safari never focuses a clicked button, so focus sits on the panel itself, not on this button.
+              if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
               selectNode(store, id);
               store.getState().canvasApi?.focusNode(id);
             }}

@@ -1,28 +1,14 @@
-import { useState } from 'react';
-import { Grid3x3, MousePointerClick, Moon, Square, CircleDot } from 'lucide-react';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslation } from '@/hooks/useTranslation';
 import { cn } from '@/lib/utils';
-import type { BoardTheme } from '@shared/schema';
-import { selectSelectionCount, selectTheme, useBoardStore, type BoardState } from '../store/boardStore';
-import { branchPalette } from '../engine/palette';
+import { selectSelectionCount, useBoardStore, type BoardState } from '../store/boardStore';
 import { MindStyleSection } from './MindStyleSection';
 import { OutlinePanel } from './OutlinePanel';
 import { CanvasStyleSection } from './CanvasStyleSection';
 
-const BACKGROUNDS: { id: BoardTheme['background']; label: string; icon: typeof Grid3x3 }[] = [
-  { id: 'dots', label: 'Dots', icon: CircleDot },
-  { id: 'grid', label: 'Grid', icon: Grid3x3 },
-  { id: 'plain', label: 'Plain', icon: Square },
-];
-
-const PALETTES: { id: BoardTheme['palette']; label: string }[] = [
-  { id: 'brand', label: 'Brand' },
-  { id: 'pastel', label: 'Pastel' },
-  { id: 'mono', label: 'Mono' },
-];
+export type PanelTab = 'style' | 'outline';
 
 // Does the selection hold any canvas item (non-mind node or connector)?
 const selectHasCanvasItems = (s: BoardState) => {
@@ -42,116 +28,55 @@ const selectSingleMindId = (s: BoardState) => {
   return node?.data.type === 'mind' ? node.id : null;
 };
 
-/** Style controls for the selection, then the board settings. */
+/** Style controls for the selection (the board's own settings live in the ⋯ menu). */
 export function StylePanelContent() {
   const { t } = useTranslation();
   const count = useBoardStore(selectSelectionCount);
   const mindId = useBoardStore(selectSingleMindId);
   const hasCanvas = useBoardStore(selectHasCanvasItems);
-  const theme = useBoardStore(selectTheme);
-  const setTheme = useBoardStore((s) => s.setTheme);
 
+  if (mindId) return <MindStyleSection key={mindId} id={mindId} />;
+  if (hasCanvas) return <CanvasStyleSection />;
+  if (count === 0) return <p className="text-sm text-muted-foreground">{t('Select something on the board to style it.')}</p>;
   return (
-    <div className="flex flex-col gap-6">
-      {mindId ? (
-        <MindStyleSection id={mindId} />
-      ) : hasCanvas ? (
-        <CanvasStyleSection />
-      ) : (
-        <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('Selection')}</h3>
-          {count === 0 ? (
-            <div className="mt-3 flex items-start gap-2 rounded-xl border border-dashed p-3 text-sm text-muted-foreground">
-              <MousePointerClick className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{t('Select something on the board to style it.')}</span>
-            </div>
-          ) : (
-            <p className="mt-3 text-sm font-medium" data-testid="board-selection-count">
-              {count === 1 ? t('1 item selected') : `${count} ${t('items selected')}`}
-            </p>
-          )}
-        </section>
-      )}
-
-      <section className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('Board')}</h3>
-        <div>
-          <p className="mb-2 text-sm">{t('Branch colors')}</p>
-          <div className="grid grid-cols-3 gap-1.5">
-            {PALETTES.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setTheme({ palette: id })}
-                aria-pressed={theme.palette === id}
-                data-testid={`board-palette-${id}`}
-                className={cn(
-                  'flex flex-col items-center gap-1.5 rounded-xl border px-2 py-2 text-xs transition-colors',
-                  theme.palette === id ? 'border-[#5173D6] bg-[#5173D6]/10 text-foreground' : 'text-muted-foreground hover:bg-muted',
-                )}
-              >
-                <span className="flex -space-x-1">
-                  {branchPalette(id).slice(0, 4).map((color) => (
-                    <span key={color} className="h-3 w-3 rounded-full ring-1 ring-background" style={{ backgroundColor: color }} />
-                  ))}
-                </span>
-                {t(label)}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <p className="mb-2 text-sm">{t('Background')}</p>
-          <div className="grid grid-cols-3 gap-1.5">
-            {BACKGROUNDS.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setTheme({ background: id })}
-                aria-pressed={theme.background === id}
-                data-testid={`board-background-${id}`}
-                className={cn(
-                  'flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs transition-colors',
-                  theme.background === id ? 'border-[#5173D6] bg-[#5173D6]/10 text-foreground' : 'text-muted-foreground hover:bg-muted',
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {t(label)}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <Label htmlFor="board-dark-mode" className="flex items-center gap-2 text-sm font-normal">
-            <Moon className="h-4 w-4 text-muted-foreground" />
-            {t('Dark board')}
-          </Label>
-          <Switch
-            id="board-dark-mode"
-            checked={!!theme.dark}
-            onCheckedChange={(checked) => setTheme({ dark: checked })}
-            data-testid="board-dark-toggle"
-          />
-        </div>
-      </section>
-    </div>
+    <p className="text-sm font-medium" data-testid="board-selection-count">
+      {count === 1 ? t('1 item selected') : `${count} ${t('items selected')}`}
+    </p>
   );
 }
 
-// Right-hand side panel: "Style" (what is selected + board settings) and
-// "Outline" (the mind map as an indented list).
-export function StylePanel({ className, variant = 'aside' }: { className?: string; variant?: 'aside' | 'sheet' }) {
+// Style (what is selected) and Outline (the mind map as an indented list).
+// "card" floats over the canvas's top-right corner and takes no layout width;
+// "sheet" fills a bottom/side sheet on small screens.
+export function StylePanel({
+  tab,
+  onTabChange,
+  onClose,
+  variant = 'card',
+  className,
+}: {
+  tab: PanelTab;
+  onTabChange: (tab: PanelTab) => void;
+  /** Closes the card (card variant only). */
+  onClose?: () => void;
+  variant?: 'card' | 'sheet';
+  className?: string;
+}) {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<'style' | 'outline'>('style');
-  const Root = variant === 'aside' ? 'aside' : 'div';
+  const card = variant === 'card';
+  const Root = card ? 'aside' : 'div';
   return (
     <Root
-      className={cn('flex flex-col bg-background', variant === 'aside' ? 'w-72 border-l' : 'h-full w-full', className)}
-      data-testid={variant === 'aside' ? 'board-style-panel' : 'board-style-sheet-panel'}
+      className={cn(
+        'flex flex-col bg-background',
+        card ? 'absolute right-3 top-3 z-10 max-h-[calc(100%-1.5rem)] w-72 overflow-hidden rounded-2xl border bg-background/95 shadow-md backdrop-blur animate-in fade-in-0 slide-in-from-right-2 duration-150' : 'h-full w-full',
+        className,
+      )}
+      data-testid={card ? 'board-style-panel' : 'board-style-sheet-panel'}
     >
-      <Tabs value={tab} onValueChange={(value) => setTab(value as 'style' | 'outline')} className="flex min-h-0 flex-1 flex-col">
-        <div className="border-b p-3">
-          <TabsList className="grid h-9 w-full grid-cols-2 rounded-xl">
+      <Tabs value={tab} onValueChange={(value) => onTabChange(value as PanelTab)} className="flex min-h-0 flex-1 flex-col">
+        <div className={cn('flex items-center gap-2 border-b p-3', !card && 'pr-12')}>
+          <TabsList className="grid h-9 min-w-0 flex-1 grid-cols-2 rounded-xl">
             <TabsTrigger value="style" className="rounded-lg text-xs" data-testid="board-panel-tab-style">
               {t('Style')}
             </TabsTrigger>
@@ -159,6 +84,11 @@ export function StylePanel({ className, variant = 'aside' }: { className?: strin
               {t('Outline')}
             </TabsTrigger>
           </TabsList>
+          {card && onClose && (
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onClose} aria-label={t('Close panel')} data-testid="board-panel-close">
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         <TabsContent value="style" className="mt-0 min-h-0 flex-1 overflow-y-auto p-4">
           <StylePanelContent />

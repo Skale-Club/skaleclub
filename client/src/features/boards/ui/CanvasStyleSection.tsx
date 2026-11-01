@@ -13,15 +13,11 @@ import {
   AlignStartHorizontal,
   AlignStartVertical,
   AlignVerticalDistributeCenter,
-  ArrowDown,
   ArrowDownToLine,
-  ArrowUp,
   ArrowUpToLine,
   Copy,
-  Lock,
   Replace,
   Trash2,
-  Unlock,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,7 +35,6 @@ import {
   duplicateSelection,
   reorderSelection,
   replaceImage,
-  setSelectionLocked,
   updateSelectedData,
   updateSelectedEdges,
 } from '../canvas/actions';
@@ -390,15 +385,12 @@ function Arrange({ nodes }: { nodes: BoardNode[] }) {
   return (
     <section className="space-y-3" data-testid="board-arrange">
       <SectionTitle>{t('Arrange')}</SectionTitle>
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
         <IconAction label={t('Duplicate')} icon={Copy} onClick={() => duplicateSelection(store)} testId="board-arrange-duplicate" />
-        <IconAction label={allLocked ? t('Unlock') : t('Lock')} icon={allLocked ? Unlock : Lock} onClick={() => setSelectionLocked(store, !allLocked)} testId="board-arrange-lock" />
         <IconAction label={t('Delete')} icon={Trash2} onClick={() => store.getState().removeSelection()} disabled={allLocked} testId="board-arrange-delete" destructive />
       </div>
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
         <IconAction label={t('Bring to front')} icon={ArrowUpToLine} onClick={() => reorderSelection(store, 'front')} testId="board-arrange-front" />
-        <IconAction label={t('Bring forward')} icon={ArrowUp} onClick={() => reorderSelection(store, 'forward')} testId="board-arrange-forward" />
-        <IconAction label={t('Send backward')} icon={ArrowDown} onClick={() => reorderSelection(store, 'backward')} testId="board-arrange-backward" />
         <IconAction label={t('Send to back')} icon={ArrowDownToLine} onClick={() => reorderSelection(store, 'back')} testId="board-arrange-back" />
       </div>
       {movable >= 2 && (
