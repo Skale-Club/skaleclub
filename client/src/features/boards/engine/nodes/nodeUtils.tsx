@@ -209,7 +209,7 @@ export function NodeTextEditor({
  * Shrinks the font of `ref`'s content until it fits the box (binary search
  * between `min` and `max`). Re-runs when `key` (text, size) changes.
  */
-export function useFitText(ref: RefObject<HTMLElement>, key: unknown[], max: number, min = 10) {
+export function useFitText(ref: RefObject<HTMLElement | null>, key: unknown[], max: number, min = 10) {
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;

@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import { FileText, Pencil, Plus, Trash2 } from 'lucide-react';
 import { AdminCard, EmptyState } from '../shared';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';

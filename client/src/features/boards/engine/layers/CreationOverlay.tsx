@@ -13,7 +13,7 @@ const MIN_DRAWN = { shape: 40, frame: 120 } as const;
 // While a placement tool is active: a click places the node (sticky, text,
 // default-size shape or frame); a drag draws a shape or a frame. The tool then
 // goes back to Select; stickies and text open for typing right away.
-export function CreationOverlay({ tool, containerRef }: { tool: CreationTool; containerRef: React.RefObject<HTMLElement> }) {
+export function CreationOverlay({ tool, containerRef }: { tool: CreationTool; containerRef: React.RefObject<HTMLElement | null> }) {
   const store = useBoardStoreApi();
   const reactFlow = useReactFlow();
   const start = useRef<{ x: number; y: number; id: number } | null>(null);

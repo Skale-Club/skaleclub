@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import { Save, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 

@@ -73,7 +73,7 @@ export function registerMonitoringRoute(app: Express) {
             // Lets Sentry attribute the event to the visitor, not this server.
             ...(req.ip ? { "X-Forwarded-For": req.ip } : {}),
           },
-          body,
+          body: new Uint8Array(body),
           signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
         });
         return res.status(upstream.status).end();

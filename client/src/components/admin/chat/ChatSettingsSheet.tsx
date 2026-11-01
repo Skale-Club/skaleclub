@@ -26,7 +26,7 @@ export type ChatSettingsSheetProps = {
   updateField: <K extends keyof ChatSettingsData>(field: K, value: ChatSettingsData[K]) => void;
   onToggleChat: (checked: boolean) => Promise<void>;
   isUploadingAvatar: boolean;
-  avatarFileInputRef: RefObject<HTMLInputElement>;
+  avatarFileInputRef: RefObject<HTMLInputElement | null>;
   onAvatarUpload: (e: ChangeEvent<HTMLInputElement>) => Promise<void>;
   formsList: Array<{ id: number; slug: string; name: string; isDefault: boolean; isActive: boolean }> | undefined;
   openaiSettings: { enabled: boolean; hasKey: boolean } | undefined;

@@ -83,7 +83,7 @@ export function PortfolioMegaMenu({ portfolioHref }: { portfolioHref: string }) 
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
-  const closeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const lastPointerType = useRef("");
   const panelId = useId();
 

@@ -310,8 +310,8 @@ function VoiceAnswerInput({
   const [levels, setLevels] = useState<number[]>(Array(18).fill(0));
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const intervalRef = useRef<number>();
-  const animationRef = useRef<number>();
+  const intervalRef = useRef<number | undefined>(undefined);
+  const animationRef = useRef<number | undefined>(undefined);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -578,7 +578,7 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
   const [phoneCountrySelected, setPhoneCountrySelected] = useState<PhoneCountry>(() => detectDefaultPhoneCountry());
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 256 });
-  const autoSaveRef = useRef<number>();
+  const autoSaveRef = useRef<number | undefined>(undefined);
   const answersRef = useRef<Answers>(buildInitialAnswers(DEFAULT_FORM_CONFIG));
   const syncedOnOpenRef = useRef(false);
   const containerRef = useRef<HTMLDivElement | null>(null);

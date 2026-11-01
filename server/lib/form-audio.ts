@@ -99,7 +99,7 @@ export async function transcribeFormAudio(args: {
 
   const Groq = (await import("groq-sdk")).default;
   const groq = new Groq({ apiKey });
-  const file = new File([buffer], `form-audio-${Date.now()}.${format}`, { type: mimeType });
+  const file = new File([new Uint8Array(buffer)], `form-audio-${Date.now()}.${format}`, { type: mimeType });
   const transcription = await groq.audio.transcriptions.create({
     file,
     model: settings.model || "whisper-large-v3-turbo",

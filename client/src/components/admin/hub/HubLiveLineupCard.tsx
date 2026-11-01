@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import { CalendarDays, CheckCircle2, RefreshCcw } from 'lucide-react';
 
 import { AdminCard, EmptyState } from '../shared';

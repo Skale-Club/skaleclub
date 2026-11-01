@@ -50,7 +50,6 @@ async function downloadTo(url: string, dest: string): Promise<void> {
   if (!res.ok || !res.body) {
     throw new Error(`Failed to download ${url}: HTTP ${res.status}`);
   }
-  // @ts-expect-error — Node ReadableStream / web stream interop
   await pipeline(res.body, createWriteStream(dest));
 }
 

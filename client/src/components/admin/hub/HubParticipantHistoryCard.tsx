@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import { useState } from 'react';
 import { Download, Search, Users } from 'lucide-react';
 

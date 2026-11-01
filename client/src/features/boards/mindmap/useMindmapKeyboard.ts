@@ -32,7 +32,7 @@ const ARROWS: Record<string, MindNavDirection> = { ArrowUp: 'up', ArrowDown: 'do
  * phase so it runs before the canvas' generic Delete handler and the browser's
  * focus moves on Tab.
  */
-export function useMindmapKeyboard(store: BoardStore, opts: { readOnly: boolean; containerRef: React.RefObject<HTMLElement> }) {
+export function useMindmapKeyboard(store: BoardStore, opts: { readOnly: boolean; containerRef: React.RefObject<HTMLElement | null> }) {
   const { readOnly, containerRef } = opts;
   useEffect(() => {
     // Space folds on key up, unless the space bar was held to pan the board.

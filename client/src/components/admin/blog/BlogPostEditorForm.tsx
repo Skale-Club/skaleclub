@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import type React from 'react';
 import { ArrowLeft, Calendar, Check, Image, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,7 @@ type BlogPostEditorFormProps = {
   onAddTag: (tag: string) => void;
   isEditorExpanded: boolean;
   onEditorExpandedChange: (v: boolean) => void;
-  contentRef: React.RefObject<HTMLDivElement>;
+  contentRef: React.RefObject<HTMLDivElement | null>;
   onSyncEditorContent: () => void;
   onRunEditorCommand: (command: string, value?: string) => void;
   onSetEditorBlock: (tag: 'p' | 'h2') => void;

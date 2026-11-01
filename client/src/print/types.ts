@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import type { CompanySettings } from "@shared/schema";
 import type { FolderItem } from "./items";
 import type { FolderProduct } from "./products";

@@ -63,7 +63,7 @@ export const StrokesLayer = memo(function StrokesLayer({ strokes }: { strokes: B
 });
 
 /** Captures the pointer while the pen tool is active: draws, or erases whole strokes. */
-export function PenOverlay({ containerRef }: { containerRef: React.RefObject<HTMLElement> }) {
+export function PenOverlay({ containerRef }: { containerRef: React.RefObject<HTMLElement | null> }) {
   const store = useBoardStoreApi();
   const pen = useBoardStore((s) => s.pen);
   const strokes = useBoardStore((s) => s.document.strokes);

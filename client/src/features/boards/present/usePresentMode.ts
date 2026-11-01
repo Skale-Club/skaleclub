@@ -25,7 +25,7 @@ function exitFullscreen() {
  * whenever `active` is true. Leaving full screen with the browser's own Escape
  * ends the presentation too.
  */
-export function usePresentMode(rootRef: RefObject<HTMLElement>) {
+export function usePresentMode(rootRef: RefObject<HTMLElement | null>) {
   const [active, setActive] = useState(false);
   const inFullscreen = useRef(false);
 
