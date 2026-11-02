@@ -1,6 +1,6 @@
 import "dotenv/config";
 import * as Sentry from "@sentry/node";
-import { SENTRY_IGNORE_ERRORS, scrubQueryParams } from "./lib/sentry-scrub";
+import { SENTRY_IGNORE_ERRORS, isMcpClientError, scrubQueryParams } from "./lib/sentry-scrub";
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
@@ -12,5 +12,5 @@ Sentry.init({
   // Most handlers log with console.error and answer 500 without throwing.
   integrations: [Sentry.captureConsoleIntegration({ levels: ["error"] })],
   ignoreErrors: SENTRY_IGNORE_ERRORS,
-  beforeSend: scrubQueryParams,
+  beforeSend: (event) => (isMcpClientError(event) ? null : scrubQueryParams(event)),
 });

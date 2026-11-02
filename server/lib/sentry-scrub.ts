@@ -35,7 +35,7 @@ function scrubValue<T>(value: T): T {
 interface ScrubbableEvent {
   message?: string;
   logentry?: unknown;
-  exception?: { values?: Array<{ value?: string }> };
+  exception?: { values?: Array<{ value?: string; mechanism?: { type?: string } }> };
   extra?: unknown;
   breadcrumbs?: unknown;
 }
@@ -49,4 +49,20 @@ export function scrubQueryParams<T extends ScrubbableEvent>(event: T): T {
     if (exception.value !== undefined) exception.value = scrubValue(exception.value);
   }
   return event;
+}
+
+/**
+ * The MCP transport tells its onerror hook about every request it refuses, and Sentry's MCP
+ * instrumentation files each one as an unhandled error, though the client got the correct 4xx.
+ * SKALECLUB-BACKEND-H collected HEAD probes this way, then a client offering a protocol version
+ * newer than the SDK's, which retries and works. These are the client-error messages the SDK
+ * reports. Anything else from that mechanism, such as a failing tool, still reaches Sentry.
+ */
+const MCP_CLIENT_ERROR = /^(Bad Request|Not Acceptable|Unsupported Media Type|Method not allowed|Parse error|Invalid Request|Session not found|Conflict)/;
+
+export function isMcpClientError(event: ScrubbableEvent): boolean {
+  return (event.exception?.values ?? []).some(
+    (exception) =>
+      exception.mechanism?.type === "auto.ai.mcp_server" && MCP_CLIENT_ERROR.test(exception.value ?? ""),
+  );
 }

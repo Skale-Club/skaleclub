@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { SENTRY_IGNORE_ERRORS, scrubQueryParams } from "../sentry-scrub";
+import { SENTRY_IGNORE_ERRORS, isMcpClientError, scrubQueryParams } from "../sentry-scrub";
 
 const SQL = 'Failed query: select "id" from "api_tokens" where "api_tokens"."token_hash" = $1';
 
@@ -44,4 +44,29 @@ test("ignores Node deprecation warnings and nothing else", () => {
   assert.equal(ignored("(node:1) [DEP0040] DeprecationWarning: The `punycode` module is deprecated."), true);
   assert.equal(ignored("(node:1) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized"), true);
   assert.equal(ignored("Error: DeprecationWarning handler crashed"), false);
+});
+
+function mcpEvent(value: string, type = "auto.ai.mcp_server") {
+  return { exception: { values: [{ value, mechanism: { type } }] } };
+}
+
+test("drops requests the MCP transport refused", () => {
+  // SKALECLUB-BACKEND-H, verbatim.
+  for (const message of [
+    "Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25)",
+    "Not Acceptable: Client must accept text/event-stream",
+    "Method not allowed.",
+  ]) {
+    assert.equal(isMcpClientError(mcpEvent(message)), true, message);
+  }
+});
+
+test("keeps real failures from the MCP server", () => {
+  assert.equal(isMcpClientError(mcpEvent("Failed query: select 1")), false);
+  assert.equal(isMcpClientError(mcpEvent("Cannot read properties of undefined")), false);
+});
+
+test("keeps the same text when it did not come from the MCP transport", () => {
+  assert.equal(isMcpClientError(mcpEvent("Bad Request: upstream rejected the call", "generic")), false);
+  assert.equal(isMcpClientError({ message: "Bad Request" }), false);
 });
