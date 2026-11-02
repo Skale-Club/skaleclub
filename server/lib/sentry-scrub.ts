@@ -58,7 +58,7 @@ export function scrubQueryParams<T extends ScrubbableEvent>(event: T): T {
  * newer than the SDK's, which retries and works. These are the client-error messages the SDK
  * reports. Anything else from that mechanism, such as a failing tool, still reaches Sentry.
  */
-const MCP_CLIENT_ERROR = /^(Bad Request|Not Acceptable|Unsupported Media Type|Method not allowed|Parse error|Invalid Request|Session not found|Conflict)/;
+const MCP_CLIENT_ERROR = /^(Bad Request|Not Acceptable|Unsupported Media Type|Method not allowed|Parse error|Invalid Request|Session not found|Conflict)/;
 
 export function isMcpClientError(event: ScrubbableEvent): boolean {
   return (event.exception?.values ?? []).some(
