@@ -127,7 +127,7 @@ export function registerPresentationTools(server: McpServer, audit: AuditFn, tok
         });
 
         const toolCall = response.choices[0]?.message?.tool_calls?.[0];
-        if (!toolCall) throw new Error("Gemini did not invoke update_slides");
+        if (toolCall?.type !== "function") throw new Error("Gemini did not invoke update_slides");
 
         const rawInput = JSON.parse(toolCall.function.arguments);
         const validation = zod.array(slideBlockSchema).safeParse(rawInput.slides);

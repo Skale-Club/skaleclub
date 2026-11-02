@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 async function testTranslation() {
   console.log("🧪 Testing Translation API...\n");
 
