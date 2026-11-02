@@ -21,7 +21,10 @@ import { translations as staticDictionary } from "#shared/i18n/pt.js";
 const MAX_TEXTS_PER_REQUEST = 100;
 const MAX_TEXT_LENGTH = 5_000;
 const MAX_TOTAL_TEXT_LENGTH = 50_000;
-const AI_TRANSLATE_TIMEOUT_MS = 20_000;
+// Only decides whether the result gets cached: useTranslation.ts stops waiting after 8s and
+// shows the original text either way. The configured model has taken from 6s to over 20s, and
+// a call cut off at 20s saved nothing, so the same text paid for another attempt next visit.
+const AI_TRANSLATE_TIMEOUT_MS = 45_000;
 
 // Anonymous callers get a much tighter budget than the admin panel.
 const ANON_MAX_TEXTS = 20;
