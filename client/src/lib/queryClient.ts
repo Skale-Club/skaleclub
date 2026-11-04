@@ -138,7 +138,7 @@ export const queryClient = new QueryClient({
 // Keys have no common prefix, so each is registered exactly (partial matching compares
 // whole array elements, so ["/api/forms"] does not touch ["/api/forms/slug/x"]).
 const ADMIN_ONLY_QUERY_KEYS = [
-  "/api/forms", "/api/form-leads", "/api/estimates", "/api/presentations", "/api/vcards",
+  "/api/forms", "/api/form-leads", "/api/estimates", "/api/contracts", "/api/presentations", "/api/vcards",
   "/api/integrations/groq", "/api/integrations/openai", "/api/integrations/openrouter",
   "/api/integrations/openrouter/models", "/api/integrations/gemini", "/api/integrations/sms",
   "/api/integrations/google-places", "/api/integrations/ghl", "/api/integrations/ghl/status",

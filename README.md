@@ -156,6 +156,69 @@ form the popup gallery. The legacy `imageUrl` is not shown anywhere public.
 - **Action Blue (CTAs/buttons)**: `#5173D6` (hover `#3B5BBE`, white bold text)
 - **Fonts**: Inter (headings and body)
 
+## Contracts
+
+**Admin → Growth & Sales → Contracts** (`/admin/contracts`) manages
+plain-text agreements with one recipient. Create and save a draft, review the
+saved version, and create a signing link. Issuing freezes the document. Copy the
+link into a text message/WhatsApp, or explicitly send an email invitation.
+The company is the sender; this version records the recipient's signature only.
+
+Before enabling this feature in production:
+
+- Apply `supabase/migrations/20261103120000_contract_signatures.sql` with the
+  existing migration runner. For this migration only:
+  `npm run db:migrate -- --only=20261103120000_contract_signatures.sql --apply`.
+- Enable **Resend** in Admin → Integrations with a working API key and verified
+  sender. Invitations, verification codes and signed copies use that integration.
+  Sharing a link by phone does not bypass email verification. There is no SMS
+  provider or paid signature-platform dependency in this flow.
+- Set a persistent `CONTRACT_SIGNING_SECRET` of at least 32 random characters
+  (falls back to `SESSION_SECRET`). Back it up separately from the database.
+  Rotating the effective secret invalidates existing links and prevents checking
+  existing receipt seals with the new key. Keep the original key to verify old
+  records. Set the canonical origin/host to the actual deployed public URL for
+  email invitations.
+- Keep database backups. Issued documents and final receipts cannot be edited
+  through the API; database triggers also protect issued content and append-only
+  events. A database owner can deliberately disable those protections.
+
+The recipient opens `/contracts/<id>#<secret>`, requests a 6-digit email code (10-minute
+expiry, five guesses, resend cooldown and durable per-document request limits),
+reviews the contract, checks the explicit electronic-signature consent and types
+the specified full name. Verification establishes access to the configured email
+inbox; it is not a government-ID or legal-capacity check. Link secrets stay in the
+fragment and authorization header, out of ordinary request URLs. Verification
+credentials stay in browser memory and expire after 24 hours; reopening requires
+email verification again. Voided/expired unsigned contracts cannot be signed.
+
+The database keeps the frozen contract, exact consent, verified email, typed name,
+server timestamps, IP and user agent. Signing uses a database row lock, so repeated
+or concurrent submissions produce only one signature. Copies are emailed to both
+parties after persistence; delivery failure never discards the signed record.
+The admin can resend a signed copy. No real emails are sent by the test harness.
+
+Download the self-contained HTML record, or use **Print / save PDF** to retain a
+PDF through the browser. Admins can also download JSON evidence including the
+audit trail and integrity-check result. Snapshot SHA-256 uses recursively sorted
+JSON object keys (no insignificant whitespace); arrays retain their order. The
+receipt HMAC-SHA-256 covers `receipt:v1:` plus that canonical encoding of the
+receipt excluding `seal`. This is a server evidence seal, not a certificate-based
+PDF signature or an independent timestamp authority. Contract pages bypass
+marketing attribution, analytics initialization, client error/replay reporting,
+search indexing and service-worker caching.
+
+This flow is designed for ordinary US service/partnership agreements. Electronic
+signatures are recognized under the federal E-SIGN Act; enforceability still
+depends on the agreement, parties, applicable law and any special requirements.
+See [15 USC §7001](https://www.govinfo.gov/content/pkg/USCODE-2024-title15/html/USCODE-2024-title15-chap96-subchapI-sec7001.htm).
+
+Validation: `npm test`; `npm run check`; `npm run build`; and
+`npm run test:e2e` (or, after building the client, run only
+`node --import tsx --test e2e/contracts.e2e.ts` with the same dummy database URLs
+as `test:e2e:run`). The browser tests use real routes with memory storage and a
+simulated email outbox, never a live database.
+
 ## License
 
 MIT

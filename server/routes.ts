@@ -28,6 +28,7 @@ import { registerAttributionRoutes } from "./routes/attribution.js";
 import { registerMarketingRoutes } from "./routes/marketing.js";
 import { registerIntegrationRoutes } from "./routes/integrations.js";
 import { registerEstimatesRoutes } from "./routes/estimates.js";
+import { registerContractRoutes } from "./routes/contracts.js";
 import { registerPresentationsRoutes } from "./routes/presentations.js";
 import { registerWhiteboardsRoutes } from "./routes/whiteboards.js";
 import { registerBoardsRoutes } from "./routes/boards.js";
@@ -132,6 +133,7 @@ export async function registerRoutes(
   registerNotificationRoutes(app);
   registerContactRoutes(app);
   registerEstimatesRoutes(app);
+  registerContractRoutes(app);
   registerSkaleHubRoutes(app);
   registerMcpRoutes(app);
   registerOAuthRoutes(app);

@@ -53,6 +53,7 @@ export const SIDEBAR_MENU_ITEMS: SidebarMenuItem[] = [
   { id: 'leads', title: 'Leads', description: 'All captured leads with ratings and follow-up status', icon: Sparkles, group: 'growth' },
   { id: 'forms', title: 'Forms', description: 'Manage lead capture forms — questions, scoring, and thresholds', icon: ClipboardList, group: 'growth' },
   { id: 'estimates', title: 'Estimates', description: 'Client proposals with shareable links', icon: Receipt, group: 'growth' },
+  { id: 'contracts', title: 'Contracts', description: 'Write contracts, collect signatures and keep signed records', icon: PenTool, group: 'growth' },
   { id: 'presentations', title: 'Presentations', description: 'Build AI-powered slide decks and share them as immersive fullscreen experiences.', icon: Presentation, group: 'growth' },
   { id: 'website', title: 'Website', description: 'Customize homepage content and sections', icon: Image, group: 'content' },
   { id: 'portfolio', title: 'Portfolio', description: 'Services shown on the portfolio page — drag to reorder, click to edit', icon: Briefcase, group: 'content' },

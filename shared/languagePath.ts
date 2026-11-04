@@ -11,6 +11,7 @@ export type SiteLanguage = "en" | "pt";
 // protection) no longer holds for the customised path.
 const LANGUAGE_EXEMPT_PREFIXES = [
   "/admin",
+  "/contracts",
   "/api",
   "/assets",
   "/e",

@@ -4,6 +4,8 @@
 export const translations = {
   pt: {
     // Navbar
+    'Contracts': 'Contratos',
+    'Write contracts, collect signatures and keep signed records': 'Redija contratos, colete assinaturas e guarde os registros',
     'Home': 'Início', 'Login': 'Entrar', 'Logout': 'Sair', 'Admin Panel': 'Painel Admin',
     // Hero Section
     'Learn How to Generate Your Own Clients in the USA': 'Aprenda a Gerar Seus Próprios Clientes nos EUA',

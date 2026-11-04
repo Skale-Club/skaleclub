@@ -17,6 +17,7 @@ function sentryEnvironment(): string {
 // replay; every later one does (replaysOnErrorSampleRate below).
 let replayRequested = false;
 function loadReplayOnce() {
+  if (window.location.pathname.startsWith('/contracts/')) return;
   if (replayRequested) return;
   replayRequested = true;
   Sentry.lazyLoadIntegration("replayIntegration")
@@ -32,7 +33,7 @@ Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
   environment: sentryEnvironment(),
   release: import.meta.env.VITE_RELEASE || undefined,
-  enabled: !!import.meta.env.VITE_SENTRY_DSN && import.meta.env.PROD,
+  enabled: !!import.meta.env.VITE_SENTRY_DSN && import.meta.env.PROD && !window.location.pathname.startsWith('/contracts/'),
   integrations: [Sentry.browserTracingIntegration()],
   // Same-origin relay (server/routes/monitoring.ts) so ad blockers do not drop events.
   tunnel: "/api/monitoring",
@@ -56,8 +57,12 @@ Sentry.init({
     /^safari-(web-)?extension:\/\//i,
   ],
   beforeSend(event) {
+    if (window.location.pathname.startsWith('/contracts/')) return null;
     loadReplayOnce();
     return event;
+  },
+  beforeSendTransaction(event) {
+    return window.location.pathname.startsWith('/contracts/') ? null : event;
   },
 });
 

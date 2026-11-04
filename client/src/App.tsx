@@ -51,6 +51,7 @@ const SkaleHub = lazy(() => import("@/pages/SkaleHub").then(m => ({ default: () 
 const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const ContractSigning = lazy(() => import("@/pages/ContractSigning").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PresentationViewer = lazy(() => import("@/pages/PresentationViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const WhiteboardViewer = lazy(() => import("@/pages/WhiteboardViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const BoardViewer = lazy(() => import("@/pages/BoardViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -95,7 +96,7 @@ function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (settings) {
+    if (settings && !pathname.startsWith('/contracts/')) {
       initAnalytics({
         gtmContainerId: settings.gtmContainerId || undefined,
         ga4MeasurementId: settings.ga4MeasurementId || undefined,
@@ -105,10 +106,10 @@ function AnalyticsProvider({ children }: { children: React.ReactNode }) {
         facebookPixelEnabled: settings.facebookPixelEnabled || false,
       });
     }
-  }, [settings]);
+  }, [settings, pathname]);
 
   useEffect(() => {
-    trackPageView(pathname);
+    if (!pathname.startsWith('/contracts/')) trackPageView(pathname);
   }, [pathname]);
 
   // Phase 45 — mount the marketing attribution lifecycle alongside GTM/GA4 tracking.
@@ -128,6 +129,7 @@ function SEOProvider({ children }: { children: React.ReactNode }) {
 // dedicated route above the DynamicPage catch-all, or reserved static UI paths.
 const RESERVED_LANDING_SEGMENTS = new Set<string>([
   "admin",
+  "contracts",
   "oauth",
   "e",
   "p",
@@ -207,6 +209,10 @@ function Router() {
         <AdminShell kind={isOAuthRoute ? "oauth" : "admin"} showLoader={!isInitialLoad} />
       </Suspense>
     );
+  }
+
+  if (location.startsWith('/contracts/')) {
+    return <Suspense fallback={fallback}><Switch><Route path="/contracts/:id" component={ContractSigning} /><Route component={NotFound} /></Switch></Suspense>;
   }
 
   // Block only the first load. A refetch after a failure puts the query back in

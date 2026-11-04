@@ -16,3 +16,4 @@ export * from "./schema/bootstrap.js";
 export * from "./schema/content.js";
 export * from "./schema/whiteboards.js";
 export * from "./schema/boards.js";
+export * from "./schema/contracts.js";
