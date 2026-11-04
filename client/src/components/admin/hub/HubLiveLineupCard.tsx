@@ -31,7 +31,7 @@ export function HubLiveLineupCard(props: HubLiveLineupCardProps): JSX.Element {
   const { lives, isLoading, selectedId, onSelect, onEdit, onActivate, onRefresh } = props;
 
   return (
-    <AdminCard className="space-y-4">
+    <AdminCard className="space-y-4 xl:sticky xl:top-0 xl:self-start xl:max-h-[calc(100vh-4rem)] xl:overflow-y-auto">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold">Live lineup</h3>

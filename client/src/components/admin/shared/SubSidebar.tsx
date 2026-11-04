@@ -69,7 +69,7 @@ export function SubSidebar({
         aria-label="Section navigation"
         data-collapsed={collapsed || undefined}
         className={cn(
-          "shrink-0 self-start rounded-2xl border bg-muted/40 p-1.5 transition-[width] duration-200",
+          "shrink-0 self-start rounded-2xl border bg-muted/40 p-1.5 transition-[width] duration-200 md:sticky md:top-0 md:max-h-[calc(100vh-4rem)] md:overflow-y-auto",
           collapsed ? "w-14" : "w-56",
           className,
         )}
