@@ -1,57 +1,97 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAdminAuth } from '@/context/AuthContext';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { AuthHeading, AuthLayout, AUTH_INPUT, AUTH_INPUT_ICON, AUTH_LABEL, AUTH_SECONDARY_BUTTON } from '@/components/admin/AuthLayout';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { AuthHeading, AuthLayout, AUTH_SECONDARY_BUTTON } from '@/components/admin/AuthLayout';
+import { PhoneCodeFlow, type PhoneCodeResult } from '@/components/admin/PhoneCodeFlow';
 import { Loader2 } from '@/components/ui/loader';
 import { AppLoader } from '@/components/ui/spinner';
-import { TurnstileWidget } from '@/components/TurnstileWidget';
-import { ArrowRight, Lock, Mail } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import type { CompanySettings } from '@shared/schema';
 import { usePageSeo } from '@/hooks/use-seo';
+import {
+  isPopupDismissed,
+  loadAuthConfig,
+  googlePhoneError,
+  signInErrorMessage,
+  signInGoogleAlternative,
+  type AuthConfig,
+} from '@/lib/googleIdentity';
 
 const POST_LOGIN_KEY = 'adminLoginNext';
 
-// Only same-app admin paths — never an arbitrary URL.
-function safeAdminPath(value: string | null | undefined): string | null {
-  if (!value || !/^\/admin\/[A-Za-z0-9/_-]*$/.test(value)) return null;
-  return /^\/admin\/(login|signup)\b/.test(value) ? null : value;
+// Same-app destinations only, never an arbitrary URL: an admin page, or the MCP
+// OAuth consent page (which carries its request in the query string).
+function safePostLoginPath(value: string | null | undefined): string | null {
+  if (!value) return null;
+  if (/^\/admin\/[A-Za-z0-9/_-]*$/.test(value)) {
+    return /^\/admin\/(login|not-invited)\b/.test(value) ? null : value;
+  }
+  if (/^\/oauth\/authorize\?[A-Za-z0-9%&=._~:/+*-]*$/.test(value)) return value;
+  return null;
 }
 
-// ?next= survives the email form; sessionStorage carries it across the Google OAuth round trip.
+// ?next= survives the round trip; sessionStorage keeps it if the page reloads.
 function readPostLoginPath(): string {
-  const fromQuery = safeAdminPath(new URLSearchParams(window.location.search).get('next'));
+  const fromQuery = safePostLoginPath(new URLSearchParams(window.location.search).get('next'));
   try {
     if (fromQuery) window.sessionStorage.setItem(POST_LOGIN_KEY, fromQuery);
-    return fromQuery ?? safeAdminPath(window.sessionStorage.getItem(POST_LOGIN_KEY)) ?? '/admin';
+    return fromQuery ?? safePostLoginPath(window.sessionStorage.getItem(POST_LOGIN_KEY)) ?? '/admin';
   } catch {
     return fromQuery ?? '/admin';
   }
 }
 
+async function exchangeIdToken(idToken: string): Promise<PhoneCodeResult & { notInvited?: boolean }> {
+  try {
+    const res = await fetch('/api/auth/identity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ idToken }),
+    });
+    if (res.ok) return { ok: true };
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 403 && data.code === 'not_invited') return { ok: false, notInvited: true };
+    return { ok: false, code: data.code };
+  } catch {
+    return { ok: false, code: 'generic' };
+  }
+}
+
+function GoogleMark() {
+  return (
+    <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" className="mr-2 h-4 w-4 shrink-0">
+      <path fill="#4285F4" d="M22.56 12.25c0-.73-.06-1.42-.19-2.09H12v3.96h5.92c-.26 1.28-1.02 2.37-2.15 3.1v2.58h3.48c2.04-1.88 3.21-4.65 3.21-7.55Z" />
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.48-2.58c-.98.66-2.24 1.06-3.8 1.06-2.87 0-5.3-1.94-6.17-4.54H2.23v2.66C4.04 20.53 7.73 23 12 23Z" />
+      <path fill="#FBBC05" d="M5.83 14.28A6.6 6.6 0 0 1 5.48 12c0-.79.14-1.55.35-2.28V7.06H2.23A10.94 10.94 0 0 0 1 12c0 1.78.43 3.45 1.23 4.94l3.6-2.66Z" />
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.65l3.15-3.15C17.45 2.09 14.97 1 12 1 7.73 1 4.04 3.47 2.23 7.06l3.6 2.66C6.7 7.12 9.13 5.38 12 5.38Z" />
+    </svg>
+  );
+}
+
 export default function AdminLogin() {
   usePageSeo({ title: 'Admin login', noindex: true });
 
-  const googleLogoUrl = 'https://commons.wikimedia.org/wiki/Special:FilePath/Google_Favicon_2025.svg';
-  const { isAdmin, loading, signIn, isSupabaseAuth, turnstileSiteKey } = useAdminAuth();
+  const { isAdmin, loading, checkSession } = useAdminAuth();
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
   const [, setLocation] = useLocation();
   const [postLoginPath] = useState(readPostLoginPath);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [config, setConfig] = useState<AuthConfig | null>(null);
   const [error, setError] = useState('');
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
-  const [emailSubmitting, setEmailSubmitting] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState('');
-  const captchaRequired = isSupabaseAuth && !!turnstileSiteKey;
-  const captchaReady = !captchaRequired || !!captchaToken;
-  const handleCaptchaVerify = useCallback((token: string) => setCaptchaToken(token), []);
-  const handleCaptchaExpire = useCallback(() => setCaptchaToken(''), []);
+
+  useEffect(() => {
+    let active = true;
+    void loadAuthConfig().then((value) => {
+      if (active) setConfig(value);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!loading && isAdmin) {
@@ -60,7 +100,9 @@ export default function AdminLogin() {
       } catch {
         // Ignore storage errors.
       }
-      setLocation(postLoginPath);
+      // The consent page is served by its own shell, so it needs a full load.
+      if (postLoginPath.startsWith('/oauth/')) window.location.assign(postLoginPath);
+      else setLocation(postLoginPath);
     }
   }, [loading, isAdmin, setLocation, postLoginPath]);
 
@@ -68,45 +110,34 @@ export default function AdminLogin() {
     return <AppLoader />;
   }
 
-  const handleSupabaseLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (captchaRequired && !captchaToken) {
-      setError('Please complete the verification before signing in.');
-      return;
+  // Exchanges a verified Firebase ID token for the Express session.
+  const finishSignIn = async (idToken: string): Promise<PhoneCodeResult> => {
+    const result = await exchangeIdToken(idToken);
+    if (result.ok) {
+      await checkSession();
+      return result;
     }
-    setError('');
-    setEmailSubmitting(true);
-
-    try {
-      await signIn(email, password, undefined, captchaToken ? { captchaToken } : undefined);
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
-      setCaptchaToken('');
-    } finally {
-      setEmailSubmitting(false);
+    if (result.notInvited) {
+      setLocation('/admin/not-invited');
+      return { ok: true };
     }
+    return result;
   };
 
   const handleGoogleLogin = async () => {
+    if (!config?.enabled) return;
     setError('');
     setGoogleSubmitting(true);
-
     try {
-      // After OAuth callback, Supabase can sometimes land the user on "/" (Site URL fallback).
-      // Keep a small hint so the app can send admins into the admin panel post-login.
-      try {
-        window.sessionStorage.setItem('adminPostLoginRedirect', JSON.stringify({ to: '/admin', ts: Date.now() }));
-      } catch {
-        // Ignore storage errors.
+      const result = await finishSignIn(await signInGoogleAlternative(config));
+      if (!result.ok) setError(signInErrorMessage(result.code));
+    } catch (err) {
+      if (!isPopupDismissed(err)) {
+        // Firebase's own code, for whoever looks into a failed Google sign-in.
+        console.warn('[signin] Google sign-in failed', (err as { code?: string })?.code ?? err);
+        setError(signInErrorMessage(googlePhoneError(err)));
       }
-      await signIn(undefined, undefined, 'google');
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
-      try {
-        window.sessionStorage.removeItem('adminPostLoginRedirect');
-      } catch {
-        // Ignore storage errors.
-      }
+    } finally {
       setGoogleSubmitting(false);
     }
   };
@@ -120,32 +151,25 @@ export default function AdminLogin() {
       <AuthHeading
         eyebrow="Admin access"
         title="Welcome back"
-        description="Sign in to access the admin dashboard."
+        description="Sign in with your phone to access the admin dashboard."
       />
 
       <div className="space-y-5">
-        {isSupabaseAuth ? (
+        {config === null ? (
+          <div className="flex justify-center py-8" data-testid="signin-loading">
+            <Loader2 className="h-6 w-6 animate-spin text-fog-400" />
+          </div>
+        ) : !config.enabled ? (
+          <div
+            role="alert"
+            data-testid="signin-unavailable"
+            className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-fog-300"
+          >
+            Sign-in unavailable right now. Try again in a moment.
+          </div>
+        ) : (
           <>
-            {error && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                {error}
-              </div>
-            )}
-
-            <Button
-              type="button"
-              onClick={handleGoogleLogin}
-              className={AUTH_SECONDARY_BUTTON}
-              disabled={googleSubmitting}
-              data-testid="button-login-google"
-            >
-              {googleSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <img src={googleLogoUrl} alt="" aria-hidden="true" className="mr-2 h-4 w-4" />
-              )}
-              Continue with Google
-            </Button>
+            <PhoneCodeFlow config={config} variant="auth" onVerified={finishSignIn} />
 
             <div className="flex items-center gap-3">
               <div className="h-px flex-1 bg-white/10" />
@@ -153,85 +177,26 @@ export default function AdminLogin() {
               <div className="h-px flex-1 bg-white/10" />
             </div>
 
-            <form onSubmit={handleSupabaseLogin} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email" className={AUTH_LABEL}>Email</Label>
-                <div className="group relative">
-                  <Mail className={AUTH_INPUT_ICON} />
-                  <Input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={AUTH_INPUT}
-                    required
-                  />
-                </div>
+            {error && (
+              <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                {error}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className={AUTH_LABEL}>Password</Label>
-                <div className="group relative">
-                  <Lock className={AUTH_INPUT_ICON} />
-                  <Input
-                    id="password"
-                    type="password"
-                    autoComplete="current-password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={AUTH_INPUT}
-                    required
-                  />
-                </div>
-              </div>
-              {captchaRequired && (
-                <TurnstileWidget
-                  siteKey={turnstileSiteKey}
-                  onVerify={handleCaptchaVerify}
-                  onExpire={handleCaptchaExpire}
-                  onError={handleCaptchaExpire}
-                />
-              )}
-              <Button
-                type="submit"
-                className="group !mt-8 h-12 w-full rounded-full bg-cta text-base font-bold text-white hover:bg-cta-hover focus-visible:ring-2 focus-visible:ring-cta/40 focus-visible:ring-offset-0 disabled:opacity-60"
-                disabled={emailSubmitting || !captchaReady}
-                data-testid="button-login"
-              >
-                {emailSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Sign In
-                {!emailSubmitting && (
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                )}
-              </Button>
-            </form>
+            )}
 
-            <p className="pt-2 text-center text-sm text-fog-400">
-              Don&apos;t have an account?{' '}
-              <button
-                type="button"
-                onClick={() => setLocation('/admin/signup')}
-                className="font-semibold text-cta-soft transition-colors hover:text-fog-50"
-              >
-                Sign up
-              </button>
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-fog-400">
-              Use your Google account to sign in. Only authorized administrators can access this panel.
-            </p>
             <Button
-              onClick={() => signIn()}
-              className={AUTH_SECONDARY_BUTTON}
-              data-testid="button-login"
+              type="button"
+              onClick={handleGoogleLogin}
+              className={`${AUTH_SECONDARY_BUTTON} !border-white/30 hover:!border-white/50`}
+              disabled={googleSubmitting}
+              data-testid="button-login-google"
             >
-              <img src={googleLogoUrl} alt="" aria-hidden="true" className="mr-2 h-4 w-4" />
+              {googleSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleMark />}
               Continue with Google
             </Button>
+
+            <p className="pt-2 text-center text-sm text-fog-400">
+              Access is by invitation only. Ask an administrator to add your phone or Google email.
+            </p>
           </>
         )}
       </div>

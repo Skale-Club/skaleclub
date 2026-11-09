@@ -55,7 +55,7 @@ export function registerCanonicalHostRedirects(app: Express) {
       (legacyPath ? PATH_REDIRECTS[legacyPath] || legacyPath : null);
 
     // req.hostname strips the port and honours X-Forwarded-Host (trust proxy
-    // is set to 1 in supabaseAuth.ts, so this is the client-facing host).
+    // is set in server/app.ts, so this is the client-facing host).
     const host = req.hostname.toLowerCase();
     // Any host other than the canonical one (staging FQDN, raw IP, preview)
     // serves the same site: keep every response there out of search indexes.

@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { SectionHeader } from '@/components/admin/shared';
 import { Loader2 } from '@/components/ui/loader';
+import { SignInSettings } from '@/components/admin/SignInSettings';
+import { formatSignInPhone } from '@shared/signInPhone';
 
 async function uploadFileToServer(file: File): Promise<string> {
   const base64Data = await new Promise<string>((resolve, reject) => {
@@ -50,14 +52,14 @@ async function uploadFileToServer(file: File): Promise<string> {
 // User type for the users section
 interface UserData {
   id: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   firstName: string;
   lastName: string;
   profileImageUrl: string;
   isAdmin: boolean;
   createdAt: string;
   lastSignInAt: string | null;
-  emailConfirmed: boolean;
 }
 
 export function UsersSection() {
@@ -69,6 +71,7 @@ export function UsersSection() {
   const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
   const [newUser, setNewUser] = useState({
     email: '',
+    phone: '',
     firstName: '',
     lastName: '',
     isAdmin: false,
@@ -83,7 +86,7 @@ export function UsersSection() {
   });
 
   const updateUser = useMutation({
-    mutationFn: async (data: { id: string; isAdmin?: boolean; firstName?: string; lastName?: string; profileImageUrl?: string }) => {
+    mutationFn: async (data: { id: string; isAdmin?: boolean; firstName?: string; lastName?: string; profileImageUrl?: string; phone?: string }) => {
       const { id, ...body } = data;
       const res = await apiRequest('PATCH', `/api/users/${id}`, body);
       return res.json();
@@ -134,7 +137,7 @@ export function UsersSection() {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       toast({ title: 'User created successfully' });
       setIsAddDialogOpen(false);
-      setNewUser({ email: '', firstName: '', lastName: '', isAdmin: false });
+      setNewUser({ email: '', phone: '', firstName: '', lastName: '', isAdmin: false });
     },
     onError: (error: any) => {
       toast({
@@ -165,8 +168,11 @@ export function UsersSection() {
   const handleSaveUser = () => {
     if (!editingUser) return;
 
+    const original = users?.find((u) => u.id === editingUser.id);
     updateUser.mutate({
       id: editingUser.id,
+      // Only sent when changed: a different phone replaces the old sign-in number.
+      phone: editingUser.phone !== original?.phone ? (editingUser.phone ?? '') : undefined,
       isAdmin: Boolean(editingUser.isAdmin),
       firstName: editingUser.firstName ?? '',
       lastName: editingUser.lastName ?? '',
@@ -178,7 +184,7 @@ export function UsersSection() {
     <div className="space-y-6">
       <SectionHeader
         title="Users"
-        description="Manage admin and team member accounts"
+        description="Manage admin and team member accounts. People sign in with a phone code or Google."
         icon={<Users className="w-5 h-5" />}
         action={
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -194,7 +200,7 @@ export function UsersSection() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -202,6 +208,19 @@ export function UsersSection() {
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+1 508 555 0100"
+                  value={newUser.phone}
+                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Add an email, a phone, or both. They sign in with a code texted to the phone, or with the Google account that uses the email.
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -238,7 +257,7 @@ export function UsersSection() {
               </Button>
               <Button
                 onClick={() => createUser.mutate(newUser)}
-                disabled={!newUser.email || createUser.isPending}
+                disabled={(!newUser.email && !newUser.phone) || createUser.isPending}
               >
                 {createUser.isPending ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -254,6 +273,8 @@ export function UsersSection() {
       />
 
       {/* Users Table */}
+      <SignInSettings />
+
       <div className="rounded-2xl border overflow-hidden">
           {isLoading ? (
             <div className="flex w-full items-center justify-center h-64">
@@ -270,7 +291,7 @@ export function UsersSection() {
                 <thead>
                   <tr className="border-b bg-muted/40">
                     <th className="text-left px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">User</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Email</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Email / phone</th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Role</th>
                     <th className="text-right px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Actions</th>
                   </tr>
@@ -295,7 +316,10 @@ export function UsersSection() {
                           <span className="font-medium text-sm">{getDisplayName(user)}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">{user.email}</td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        <div>{user.email}</div>
+                        {user.phone ? <div>{formatSignInPhone(user.phone)}</div> : null}
+                      </td>
                       <td className="px-6 py-4">
                         {user.isAdmin ? (
                           <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground">Admin</Badge>
@@ -365,7 +389,7 @@ export function UsersSection() {
                                   </div>
                                   <div>
                                     <p className="font-medium">{editingUser ? getDisplayName(editingUser) : ''}</p>
-                                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                                    <p className="text-sm text-muted-foreground">{user.email ?? formatSignInPhone(user.phone)}</p>
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -385,6 +409,16 @@ export function UsersSection() {
                                       onChange={(e) => setEditingUser(prev => prev ? { ...prev, lastName: e.target.value } : null)}
                                     />
                                   </div>
+                                </div>
+                                <div>
+                                  <Label htmlFor="edit-phone">Phone</Label>
+                                  <Input
+                                    id="edit-phone"
+                                    type="tel"
+                                    placeholder="+1 508 555 0100"
+                                    value={editingUser?.phone || ''}
+                                    onChange={(e) => setEditingUser(prev => prev ? { ...prev, phone: e.target.value } : null)}
+                                  />
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <Checkbox
@@ -434,7 +468,7 @@ export function UsersSection() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Delete User</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete <strong>{getDisplayName(user)}</strong> ({user.email})?
+                                  Are you sure you want to delete <strong>{getDisplayName(user)}</strong> ({user.email ?? formatSignInPhone(user.phone)})?
                                   This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>

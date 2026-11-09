@@ -3,8 +3,8 @@ import type { Express } from "express";
 import { db } from "../db.js";
 import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
-import { getSupabaseAdmin } from "../lib/supabase.js";
 import { createApiToken, createOAuthCode, consumeOAuthCode, TOKEN_TTL_MS } from "../lib/mcp-storage.js";
+import { isSameAuthOrigin } from "../auth/sameOrigin.js";
 
 const BASE_URL = "https://skale.club";
 const CORS_HEADERS = {
@@ -142,11 +142,11 @@ export function registerOAuthRoutes(app: Express) {
   });
 
   // ── Authorization endpoint (POST — called by our React page) ─────────────
-  // Body: { accessToken, client_id, redirect_uri, state, code_challenge,
+  // Requires the Express admin session (cookie) from the phone/Google sign-in.
+  // Body: { client_id, redirect_uri, state, code_challenge,
   //         code_challenge_method, scope, response_type }
   app.post("/api/oauth/authorize", async (req, res) => {
     const {
-      accessToken,
       client_id,
       redirect_uri,
       state,
@@ -156,7 +156,12 @@ export function registerOAuthRoutes(app: Express) {
       response_type,
     } = req.body ?? {};
 
-    if (!accessToken) return res.status(400).json({ message: "accessToken required" });
+    // The session cookie is now the credential, so a cross-site POST must not be able to use it.
+    if (!isSameAuthOrigin(req)) return res.status(403).json({ message: "Origin not allowed", code: "origin_denied" });
+    const sessionUserId = (req.session as { userId?: unknown } | undefined)?.userId;
+    if (typeof sessionUserId !== "string" || !sessionUserId) {
+      return res.status(401).json({ message: "Sign in required", code: "login_required" });
+    }
     if (!redirect_uri) return res.status(400).json({ message: "redirect_uri required" });
     if (!code_challenge) return res.status(400).json({ message: "code_challenge required" });
     if (response_type !== "code") return res.status(400).json({ message: "response_type must be code" });
@@ -169,13 +174,8 @@ export function registerOAuthRoutes(app: Express) {
       return res.status(400).json({ error: "invalid_redirect_uri" });
     }
 
-    // Validate Supabase access token
-    const supabase = getSupabaseAdmin();
-    const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(accessToken);
-    if (error || !supabaseUser) return res.status(401).json({ message: "Invalid access token" });
-
-    // Check admin status
-    const [dbUser] = await db.select().from(users).where(eq(users.id, supabaseUser.id));
+    // Check admin status against the database, not the session copy of it.
+    const [dbUser] = await db.select().from(users).where(eq(users.id, sessionUserId));
     if (!dbUser?.isAdmin) return res.status(403).json({ message: "Admin access required" });
 
     // Create API token for this OAuth session

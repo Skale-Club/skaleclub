@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { initSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { usePageSeo } from "@/hooks/use-seo";
 
 function parseParams() {
@@ -24,10 +21,27 @@ export default function OAuthAuthorize() {
 
   const [, navigate] = useLocation();
   const [params] = useState(parseParams);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // undefined while checking; the Express admin session decides who may authorize.
+  const [admin, setAdmin] = useState<{ isAdmin: boolean; email: string | null } | undefined>();
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/admin/session", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => active && setAdmin({ isAdmin: Boolean(data.isAdmin), email: data.email ?? null }))
+      .catch(() => active && setAdmin({ isAdmin: false, email: null }));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Sign-in lives on /admin/login; it brings the person back here afterwards.
+  function goToSignIn() {
+    const next = `${window.location.pathname}${window.location.search}`;
+    window.location.assign(`/admin/login?next=${encodeURIComponent(next)}`);
+  }
 
   // If required params are missing, show error
   if (!params.redirect_uri || !params.code_challenge) {
@@ -46,25 +60,19 @@ export default function OAuthAuthorize() {
     setLoading(true);
 
     try {
-      const supabase = await initSupabase();
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
-
-      if (authError || !data.session) {
-        setError("Email ou senha incorretos.");
-        setLoading(false);
-        return;
-      }
-
       const res = await fetch("/api/oauth/authorize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          accessToken: data.session.access_token,
-          ...params,
-        }),
+        credentials: "include",
+        body: JSON.stringify(params),
       });
 
       const json = await res.json();
+
+      if (res.status === 401) {
+        goToSignIn();
+        return;
+      }
 
       if (!res.ok) {
         setError(json.message ?? "Erro ao autorizar.");
@@ -115,44 +123,43 @@ export default function OAuthAuthorize() {
           </ul>
         </div>
 
-        {/* Login form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label className="text-zinc-300 text-sm">Email</Label>
-            <Input
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              className="bg-zinc-900 border-zinc-700 text-white"
-              placeholder="admin@skale.club"
-            />
+        {/* Authorization: uses the signed-in admin session */}
+        {admin === undefined ? (
+          <p className="text-center text-sm text-zinc-500">Verificando sessão…</p>
+        ) : !admin.isAdmin ? (
+          <div className="space-y-4">
+            <p className="text-sm text-zinc-400 text-center">
+              Entre com a sua conta de administrador para autorizar o acesso.
+            </p>
+            <Button
+              type="button"
+              onClick={goToSignIn}
+              className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+            >
+              Entrar
+            </Button>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-zinc-300 text-sm">Senha</Label>
-            <Input
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              className="bg-zinc-900 border-zinc-700 text-white"
-            />
-          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {admin.email && (
+              <p className="text-center text-sm text-zinc-400">
+                Conectado como <span className="text-white font-medium">{admin.email}</span>
+              </p>
+            )}
 
-          {error && (
-            <p className="text-red-400 text-sm">{error}</p>
-          )}
+            {error && (
+              <p className="text-red-400 text-sm">{error}</p>
+            )}
 
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-          >
-            {loading ? "Autorizando…" : "Autorizar Claude"}
-          </Button>
-        </form>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+            >
+              {loading ? "Autorizando…" : "Autorizar Claude"}
+            </Button>
+          </form>
+        )}
 
         <p className="text-center text-xs text-zinc-600">
           Ao autorizar, um token de acesso será gerado e vinculado à sua conta.

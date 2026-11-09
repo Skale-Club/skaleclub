@@ -4,8 +4,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import { PageLoader } from "@/components/ui/spinner";
 import { lazyPage } from "@/lib/initialLoad";
 
-// Everything that needs Supabase (AuthProvider, admin pages, OAuth consent) lives
-// behind this lazy shell so `@supabase/*` stays out of the public entry chunk.
+// Everything that needs sign-in (AuthProvider, admin pages, OAuth consent) lives
+// behind this lazy shell so Firebase and the admin code stay out of the public entry chunk.
 const loadAdmin = () => import("@/pages/Admin");
 const Admin = lazyPage(loadAdmin);
 // Start the (large) admin chunk now instead of after the shell renders.
@@ -13,7 +13,7 @@ if (window.location.pathname.startsWith("/admin")) {
   void loadAdmin();
 }
 const AdminLogin = lazyPage(() => import("@/pages/AdminLogin"));
-const AdminSignup = lazyPage(() => import("@/pages/AdminSignup"));
+const AdminNotInvited = lazyPage(() => import("@/pages/AdminNotInvited"));
 const NotFound = lazyPage(() => import("@/pages/not-found"));
 const OAuthAuthorize = lazyPage(() => import("@/pages/OAuthAuthorize"));
 
@@ -36,7 +36,7 @@ export default function AdminShell({ kind, showLoader }: { kind: "admin" | "oaut
       <Suspense fallback={fallback}>
         <Switch>
           <Route path="/admin/login" component={AdminLogin} />
-          <Route path="/admin/signup" component={AdminSignup} />
+          <Route path="/admin/not-invited" component={AdminNotInvited} />
           <Route path="/admin/*?" component={Admin} />
           <Route component={NotFound} />
         </Switch>

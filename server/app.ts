@@ -105,8 +105,8 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
     next();
   });
 
-  const { setupSupabaseAuth } = await import("./auth/supabaseAuth.js");
-  await setupSupabaseAuth(app);
+  const { setupAuth } = await import("./auth/session.js");
+  await setupAuth(app);
 
   const { requireAdmin } = await import("./routes/_shared.js");
   app.use((req, res, next) => {
