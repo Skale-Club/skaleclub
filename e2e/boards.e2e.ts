@@ -1626,6 +1626,9 @@ function resilienceSuite(browserName: EngineName) {
 
     it("a save the server refuses (400) leaves the board unsaved and offers Save now, which works once the server accepts", async () => {
       await page.goto(`${baseUrl}/admin/boards`);
+      // Let the list settle before the next goto: Firefox aborts a goto issued while the
+      // previous SPA page is still finishing its own routing (NS_BINDING_ABORTED).
+      await byTestId(`board-card-${boardId}`).waitFor({ timeout: 30_000 });
       await openBoard();
       rejectSaves = true;
       try {
