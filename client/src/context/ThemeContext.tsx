@@ -42,16 +42,16 @@ function isInAdminThemeArea(): boolean {
   const { pathname } = window.location;
   if (!pathname.startsWith('/admin')) return false;
 
-  return pathname !== '/admin/login' && pathname !== '/admin/signup';
+  return pathname !== '/admin/login' && pathname !== '/admin/not-invited';
 }
 
-// Login & signup have a dedicated light design and must always render light,
+// Login & not-invited have a dedicated light design and must always render light,
 // regardless of the site-wide dark default — otherwise color-scheme:dark leaks
 // into the inputs (and browser autofill renders them dark).
 function isAuthPage(): boolean {
   if (typeof window === 'undefined') return false;
   const { pathname } = window.location;
-  return pathname === '/admin/login' || pathname === '/admin/signup';
+  return pathname === '/admin/login' || pathname === '/admin/not-invited';
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

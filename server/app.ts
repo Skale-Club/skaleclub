@@ -46,6 +46,8 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
   app.use(helmet({
     contentSecurityPolicy: false, // managed per-route via meta tags in the SPA
     crossOriginEmbedderPolicy: false, // needed for embedded iframes (maps, etc.)
+    // The Google sign-in popup (Firebase signInWithPopup) must keep its link to this window.
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
   }));
 
   // www→apex and /skale-hub/* redirects. These lived in vercel.json's edge
@@ -105,8 +107,8 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
     next();
   });
 
-  const { setupSupabaseAuth } = await import("./auth/supabaseAuth.js");
-  await setupSupabaseAuth(app);
+  const { setupAuth } = await import("./auth/session.js");
+  await setupAuth(app);
 
   const { requireAdmin } = await import("./routes/_shared.js");
   app.use((req, res, next) => {

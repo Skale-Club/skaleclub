@@ -81,7 +81,7 @@ export async function verifyTurnstileToken(
  * check on gated estimates was the worst of them: 10 guesses per 5 minutes
  * became unlimited.
  *
- * `app.set("trust proxy", 1)` is configured (see server/auth/supabaseAuth.ts),
+ * `app.set("trust proxy", 1)` is configured (see server/app.ts),
  * so `req.ip` already resolves the correct hop and cannot be spoofed past the
  * configured trust depth. Use it, and never parse the header by hand again.
  */

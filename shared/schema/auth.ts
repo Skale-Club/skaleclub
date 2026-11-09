@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, boolean, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, jsonb, index, primaryKey } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -22,9 +22,32 @@ export const users = pgTable("users", {
   lastName: text("last_name"),
   profileImageUrl: text("profile_image_url"),
   isAdmin: boolean("is_admin").default(false),
+  // E.164 ("+15085550100"). A verified phone is a sign-in method; unique when set.
+  phone: text("phone"),
+  // Stamped on every successful sign-in (shown as "last sign-in" in Users).
+  lastSeenAt: timestamp("last_seen_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// Binds a Google Identity Platform subject (a phone or a Google account) to the
+// local user it signs in. The Firebase ID token is only proof of that identity;
+// who may do what stays in `users`.
+export const authGoogleIdentities = pgTable(
+  "auth_google_identities",
+  {
+    projectId: text("project_id").notNull(),
+    subject: text("subject").notNull(),
+    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider"),
+    email: text("email"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.projectId, table.subject] }),
+    index("auth_google_identities_user").on(table.userId),
+  ],
+);
 
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;

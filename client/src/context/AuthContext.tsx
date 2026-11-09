@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
-import { initSupabase } from '@/lib/supabase';
 
 interface AdminSession {
   isAdmin: boolean;
@@ -14,52 +13,23 @@ interface AuthContextType {
   firstName: string | null;
   lastName: string | null;
   loading: boolean;
-  isSupabaseAuth: boolean;
-  turnstileSiteKey: string;
-  signIn: (
-    email?: string,
-    password?: string,
-    provider?: 'google',
-    options?: { captchaToken?: string }
-  ) => Promise<void>;
-  signUp: (
-    email: string,
-    password: string,
-    options?: { captchaToken?: string }
-  ) => Promise<{ needsEmailConfirmation: boolean }>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
   checkSession: () => Promise<AdminSession | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-let _isSupabaseAuth: boolean | null = null;
-let _turnstileSiteKey: string | null = null;
-
-function getCanonicalOrigin() {
-  const env = (import.meta as any).env?.VITE_CANONICAL_ORIGIN as string | undefined;
-  const normalizedEnv = env?.trim().replace(/\/+$/, '');
-  if (normalizedEnv) return normalizedEnv;
-
-  // Keep localhost (and other non-prod origins) intact for dev.
-  const { hostname, origin } = window.location;
-  if (hostname === 'localhost' || hostname === '127.0.0.1') return origin;
-
-  // If user started on a Vercel alias, force the real domain.
-  if (hostname.endsWith('.vercel.app')) return 'https://skale.club';
-
-  // Default: current origin.
-  return origin;
-}
-
+/**
+ * The Express session cookie is the only login state. Signing in (phone code or
+ * Google) happens on AdminLogin, which exchanges a Firebase ID token for that
+ * cookie at POST /api/auth/identity and then calls checkSession().
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [firstName, setFirstName] = useState<string | null>(null);
   const [lastName, setLastName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSupabaseAuth, setIsSupabaseAuth] = useState(false);
-  const [turnstileSiteKey, setTurnstileSiteKey] = useState('');
 
   const checkSession = useCallback(async () => {
     try {
@@ -84,47 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Detect auth mode
     (async () => {
-      if (_isSupabaseAuth === null) {
-        try {
-          const res = await fetch('/api/supabase-config');
-          const config = await res.json();
-          _isSupabaseAuth = !!(config.url && config.anonKey);
-          _turnstileSiteKey = typeof config.turnstileSiteKey === 'string' ? config.turnstileSiteKey : '';
-        } catch {
-          _isSupabaseAuth = false;
-          _turnstileSiteKey = '';
-        }
-      }
-      setIsSupabaseAuth(_isSupabaseAuth);
-      setTurnstileSiteKey(_turnstileSiteKey ?? '');
-      let sess = await checkSession();
-
-      // If Supabase has a browser session (e.g. after OAuth redirect) but the server session
-      // is missing, sync it by exchanging the access token for a server-side session.
-      if (_isSupabaseAuth && !sess?.email) {
-        try {
-          const supabase = await initSupabase();
-          const { data } = await supabase.auth.getSession();
-          const accessToken = data.session?.access_token;
-
-          if (accessToken) {
-            const res = await fetch('/api/auth/login', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({ accessToken }),
-            });
-
-            if (res.ok) {
-              sess = await checkSession();
-            }
-          }
-        } catch {
-          // Best-effort sync; UI will stay logged out on the server if this fails.
-        }
-      }
+      const sess = await checkSession();
 
       // Clear any transient post-login redirect hint once the admin session is established.
       if (sess?.isAdmin) {
@@ -137,147 +68,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
   }, [checkSession]);
 
-  const signIn = async (
-    emailArg?: string,
-    passwordArg?: string,
-    provider?: 'google',
-    options?: { captchaToken?: string }
-  ) => {
-    if (isSupabaseAuth) {
-      const supabase = await initSupabase();
-
-      if (provider === 'google') {
-        // Ensure we always return to the canonical domain even if the user started on a Vercel alias.
-        const canonicalOrigin = getCanonicalOrigin();
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: `${canonicalOrigin}/admin/login`,
-          },
-        });
-        if (error) throw new Error(error.message);
-        return;
-      }
-
-      if (emailArg && passwordArg) {
-        // Supabase Auth: sign in with email/password (captcha verified server-side at /api/auth/login)
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: emailArg,
-          password: passwordArg,
-        });
-
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        if (data.session?.access_token) {
-          // Send the token to our server to create a server session; include the captcha token
-          // so the server can verify it before issuing the session.
-          const res = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-              accessToken: data.session.access_token,
-              captchaToken: options?.captchaToken,
-            }),
-          });
-
-          if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.message || 'Login failed');
-          }
-
-          await checkSession();
-        }
-
-        return;
-      }
-
-      throw new Error('Email and password are required');
-    }
-
-    // Replit Auth: redirect to OIDC login
-    window.location.href = '/api/login';
-  };
-
-  const signUp = async (
-    emailArg: string,
-    passwordArg: string,
-    options?: { captchaToken?: string }
-  ) => {
-    if (!isSupabaseAuth) {
-      throw new Error('Sign up is only available in Supabase auth mode');
-    }
-
-    const supabase = await initSupabase();
-    const canonicalOrigin = getCanonicalOrigin();
-
-    // Captcha verified server-side at /api/auth/login (not at Supabase).
-    const { data, error } = await supabase.auth.signUp({
-      email: emailArg,
-      password: passwordArg,
-      options: {
-        emailRedirectTo: `${canonicalOrigin}/admin/login`,
-      },
-    });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    const accessToken = data.session?.access_token;
-    if (accessToken) {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          accessToken,
-          captchaToken: options?.captchaToken,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Sign up failed');
-      }
-
-      await checkSession();
-      return { needsEmailConfirmation: false };
-    }
-
-    return { needsEmailConfirmation: true };
-  };
-
   const signOut = async () => {
-    if (isSupabaseAuth) {
-      try {
-        const supabase = await initSupabase();
-        await supabase.auth.signOut();
-      } catch {
-        // Ignore supabase signout errors
-      }
+    // Destroy the Express session first, then drop Firebase's in-memory sign-in.
+    try {
       await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
       });
+    } finally {
+      try {
+        const { signOutGoogleIdentity } = await import('@/lib/googleIdentity');
+        await signOutGoogleIdentity();
+      } catch {
+        // Firebase may never have loaded; nothing to sign out of.
+      }
       setIsAdmin(false);
       setEmail(null);
       setFirstName(null);
       setLastName(null);
       window.location.href = '/admin/login';
-    } else {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      window.location.href = '/admin/login';
     }
   };
 
   return (
-    <AuthContext.Provider value={{ isAdmin, email, firstName, lastName, loading, isSupabaseAuth, turnstileSiteKey, signIn, signUp, signOut, checkSession }}>
+    <AuthContext.Provider value={{ isAdmin, email, firstName, lastName, loading, signOut, checkSession }}>
       {children}
     </AuthContext.Provider>
   );

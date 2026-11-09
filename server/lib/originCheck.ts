@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
-const ALLOWED_ORIGINS = new Set([
+export const ALLOWED_ORIGINS = new Set([
   "https://skale.club",
   "https://www.skale.club",
   "https://skaleclub-stage.skale.club",
@@ -16,7 +16,7 @@ const EXEMPT_PATH_RES = [
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
-function isLocalOrigin(origin: string): boolean {
+export function isLocalOrigin(origin: string): boolean {
   try {
     const { hostname } = new URL(origin);
     return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";

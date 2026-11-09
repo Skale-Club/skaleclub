@@ -1,9 +1,10 @@
 import type { Express } from "express";
 import { z } from "zod";
-import { and, eq, ne } from "drizzle-orm";
+import { and, asc, eq, ne, sql } from "drizzle-orm";
 import { db } from "../db.js";
-import { users } from "#shared/schema.js";
-import { requireAdmin } from "./_shared.js";
+import { authGoogleIdentities, users } from "#shared/schema.js";
+import { normalizePhone } from "#shared/signInPhone.js";
+import { requireAdmin, sendError } from "./_shared.js";
 
 async function countOtherAdmins(excludeUserId: string): Promise<number> {
   const rows = await db
@@ -13,127 +14,90 @@ async function countOtherAdmins(excludeUserId: string): Promise<number> {
   return rows.length;
 }
 
+// A phone typed by an admin: stored in E.164 so it matches the verified phone claim.
+const phoneInput = z
+  .string()
+  .transform((value, ctx) => {
+    const normalized = normalizePhone(value);
+    if (!normalized) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Enter a valid phone number" });
+    return normalized as string;
+  });
+
+function publicUser(user: typeof users.$inferSelect) {
+  return {
+    id: user.id,
+    email: user.email,
+    phone: user.phone,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    profileImageUrl: user.profileImageUrl,
+    isAdmin: user.isAdmin,
+    createdAt: user.createdAt,
+    lastSignInAt: user.lastSeenAt,
+  };
+}
+
+/**
+ * Users are plain rows. An admin invites someone by email and/or phone; that
+ * person signs in with the phone code or the Google account matching the row
+ * (see server/auth/googleLogin.ts). There is no password or auth-provider account.
+ */
 export function registerUserRoutes(app: Express) {
-  // Get all users from Supabase Auth and local DB
   app.get("/api/users", requireAdmin, async (_req, res) => {
     try {
-      const { getSupabaseAdmin } = await import("../lib/supabase.js");
-      const supabaseAdmin = getSupabaseAdmin();
-
-      const { data: authUsers, error } = await supabaseAdmin.auth.admin.listUsers();
-
-      if (error) {
-        console.error("Error fetching users from Supabase:", error);
-        return res.status(500).json({ message: "Failed to fetch users from Supabase" });
-      }
-
-      const localUsers = await db.select().from(users);
-      const localUserMap = new Map(localUsers.map((u) => [u.id, u]));
-
-      const mergedUsers = authUsers.users.map((authUser) => {
-        const localUser = localUserMap.get(authUser.id);
-        return {
-          id: authUser.id,
-          email: authUser.email,
-          firstName: localUser?.firstName ?? authUser.user_metadata?.first_name ?? "",
-          lastName: localUser?.lastName ?? authUser.user_metadata?.last_name ?? "",
-          profileImageUrl: localUser?.profileImageUrl ?? authUser.user_metadata?.avatar_url ?? "",
-          isAdmin: localUser?.isAdmin || false,
-          createdAt: authUser.created_at,
-          lastSignInAt: authUser.last_sign_in_at,
-          emailConfirmed: authUser.email_confirmed_at != null,
-        };
-      });
-
-      res.json(mergedUsers);
+      const rows = await db.select().from(users).orderBy(asc(users.createdAt));
+      res.json(rows.map(publicUser));
     } catch (err) {
-      console.error("Error in /api/users:", err);
-      res.status(500).json({ message: "Failed to fetch users" });
+      sendError(res, err, "Failed to fetch users");
     }
   });
 
   // Update user
   app.patch("/api/users/:id", requireAdmin, async (req, res) => {
     try {
-      const updateSchema = z.object({
-        isAdmin: z.boolean().optional(),
-        firstName: z.string().optional(),
-        lastName: z.string().optional(),
-        profileImageUrl: z.string().optional(),
-      });
-      const updates = updateSchema.parse(req.body);
+      const updates = z
+        .object({
+          isAdmin: z.boolean().optional(),
+          firstName: z.string().optional(),
+          lastName: z.string().optional(),
+          profileImageUrl: z.string().optional(),
+          // "" clears the phone (allowed only while the user still has an email).
+          phone: z.union([phoneInput, z.literal("")]).optional(),
+        })
+        .parse(req.body);
       const userId = req.params.id;
 
       const [existingUser] = await db.select().from(users).where(eq(users.id, userId));
+      if (!existingUser) return res.status(404).json({ message: "User not found" });
 
-      if (updates.isAdmin === false && existingUser?.isAdmin && (await countOtherAdmins(userId)) === 0) {
+      if (updates.isAdmin === false && existingUser.isAdmin && (await countOtherAdmins(userId)) === 0) {
         return res.status(409).json({ message: "Cannot demote the last remaining admin" });
       }
 
-      let localUser;
-      if (existingUser) {
-        const [updated] = await db
-          .update(users)
-          .set({ ...updates, updatedAt: new Date() })
-          .where(eq(users.id, userId))
-          .returning();
-        localUser = updated;
-      } else {
-        // User exists in Supabase Auth but not in local DB — create local record
-        const { getSupabaseAdmin } = await import("../lib/supabase.js");
-        const supabase = getSupabaseAdmin();
-        const { data: authUser } = await supabase.auth.admin.getUserById(userId);
-        const email = authUser?.user?.email ?? undefined;
-
-        const [newUser] = await db
-          .insert(users)
-          .values({
-            id: userId,
-            email: email ?? null,
-            isAdmin: updates.isAdmin ?? false,
-            firstName: updates.firstName ?? "",
-            lastName: updates.lastName ?? "",
-            profileImageUrl: updates.profileImageUrl ?? "",
-          })
-          .returning();
-        localUser = newUser;
-      }
-
-      // Also update Supabase Auth user_metadata so GET /api/users picks up changes
-      try {
-        const { getSupabaseAdmin } = await import("../lib/supabase.js");
-        const supabase = getSupabaseAdmin();
-
-        const metadata: Record<string, unknown> = {};
-        if (updates.firstName !== undefined) metadata.first_name = updates.firstName;
-        if (updates.lastName !== undefined) metadata.last_name = updates.lastName;
-        if (updates.profileImageUrl !== undefined) metadata.avatar_url = updates.profileImageUrl;
-
-        if (Object.keys(metadata).length > 0) {
-          await supabase.auth.admin.updateUserById(userId, {
-            user_metadata: metadata,
-          });
+      const { phone, ...rest } = updates;
+      const set: Partial<typeof users.$inferInsert> = { ...rest, updatedAt: new Date() };
+      const phoneChanged = phone !== undefined && (phone === "" ? null : phone) !== existingUser.phone;
+      if (phone !== undefined) {
+        if (phone === "" && !existingUser.email) {
+          return res.status(409).json({ message: "A user needs an email or a phone to sign in" });
         }
-      } catch (metaErr) {
-        console.error("[PATCH /api/users/:id] Failed to update Supabase metadata:", metaErr);
-        // Non-fatal — local DB was already updated
+        set.phone = phone === "" ? null : phone;
       }
 
-      res.json({
-        id: localUser.id,
-        email: localUser.email,
-        firstName: localUser.firstName,
-        lastName: localUser.lastName,
-        profileImageUrl: localUser.profileImageUrl,
-        isAdmin: localUser.isAdmin,
-        createdAt: localUser.createdAt,
+      const updated = await db.transaction(async (tx) => {
+        if (phoneChanged) {
+          // The old number stops signing in: its phone binding goes with it.
+          await tx
+            .delete(authGoogleIdentities)
+            .where(and(eq(authGoogleIdentities.userId, userId), eq(authGoogleIdentities.provider, "phone")));
+        }
+        const [row] = await tx.update(users).set(set).where(eq(users.id, userId)).returning();
+        return row;
       });
+
+      res.json(publicUser(updated));
     } catch (err) {
-      console.error("[PATCH /api/users/:id] Error:", err);
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: err.errors });
-      }
-      res.status(500).json({ message: "Failed to update user" });
+      sendError(res, err, "Failed to update user");
     }
   });
 
@@ -150,75 +114,58 @@ export function registerUserRoutes(app: Express) {
         return res.status(409).json({ message: "Cannot delete the last remaining admin" });
       }
 
-      const { getSupabaseAdmin } = await import("../lib/supabase.js");
-      const supabaseAdmin = getSupabaseAdmin();
-      const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
-
-      if (error) {
-        console.error("Error deleting user from Supabase:", error);
-        return res.status(500).json({ message: "Failed to delete user from Supabase" });
-      }
-
+      // auth_google_identities rows go with the user (ON DELETE CASCADE).
       await db.delete(users).where(eq(users.id, userId));
 
       res.json({ success: true, message: "User deleted successfully" });
     } catch (err) {
-      console.error("Error deleting user:", err);
-      res.status(500).json({ message: "Failed to delete user" });
+      sendError(res, err, "Failed to delete user");
     }
   });
 
-  // Invite/create new user
+  // Invite/create new user: email and/or phone, at least one.
   app.post("/api/users", requireAdmin, async (req, res) => {
     try {
-      const { email, firstName, lastName, isAdmin: makeAdmin } = z
+      const body = z
         .object({
-          email: z.string().email(),
+          email: z.string().trim().email().optional().or(z.literal("")),
+          phone: phoneInput.optional().or(z.literal("")),
           firstName: z.string().optional(),
           lastName: z.string().optional(),
           isAdmin: z.boolean().default(false),
         })
+        .refine((value) => Boolean(value.email || value.phone), {
+          message: "Enter an email or a phone number",
+          path: ["email"],
+        })
         .parse(req.body);
 
-      const { getSupabaseAdmin } = await import("../lib/supabase.js");
-      const supabaseAdmin = getSupabaseAdmin();
+      const email = body.email ? body.email.toLowerCase() : null;
+      const phone = body.phone || null;
 
-      const { data: authUser, error } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        email_confirm: true,
-        user_metadata: {
-          first_name: firstName,
-          last_name: lastName,
-        },
-      });
-
-      if (error) {
-        console.error("Error creating user in Supabase:", error);
-        return res.status(500).json({ message: "Failed to create user in Supabase" });
+      if (email) {
+        const [taken] = await db.select({ id: users.id }).from(users).where(sql`lower(${users.email}) = ${email}`).limit(1);
+        if (taken) return res.status(409).json({ message: "A user with this email already exists" });
       }
-
-      if (!authUser?.user) {
-        return res.status(500).json({ message: "Failed to create user" });
+      if (phone) {
+        const [taken] = await db.select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1);
+        if (taken) return res.status(409).json({ message: "A user with this phone already exists" });
       }
 
       const [newUser] = await db
         .insert(users)
         .values({
-          id: authUser.user.id,
           email,
-          firstName: firstName || "",
-          lastName: lastName || "",
-          isAdmin: makeAdmin,
+          phone,
+          firstName: body.firstName || "",
+          lastName: body.lastName || "",
+          isAdmin: body.isAdmin,
         })
         .returning();
 
-      res.status(201).json(newUser);
+      res.status(201).json(publicUser(newUser));
     } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: err.errors });
-      }
-      console.error("Error creating user:", err);
-      res.status(500).json({ message: "Failed to create user" });
+      sendError(res, err, "Failed to create user");
     }
   });
 }
