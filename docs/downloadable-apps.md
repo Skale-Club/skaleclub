@@ -27,6 +27,23 @@ this distinction. Existing URLs and API/database identifiers are preserved:
   validates the URL again and redirects with 302. Responses are `no-store` so
   withdrawing a release also withdraws its stable website download URL.
 
+## Shared landing template
+
+All application details use `client/src/components/downloads/AppLanding.tsx`.
+Change layout, sizes, spacing and behavior there once to update every sibling
+page. `shared/appLandings.ts` contains only the short EN/PT product copy and
+identity choices. New apps, including the future Xtudio, use this same component.
+
+Keep each page to a short hero, three benefits and downloads. Practical notes
+are one short line; there are no FAQ, long feature tours or repeated CTA bands.
+Product marks are real source assets under `client/public/apps/`.
+
+`shared/appCatalog.ts` records the six initial applications and nine pinned
+download choices. `20261111192000_app_landing_pages.sql` inserts them and upgrades
+only the exact unchanged Xnote placeholder from the foundation. Custom rows are
+preserved. Apply this migration after the foundation during an approved release;
+no database is changed by editing the source or generating the migration.
+
 ## Add an application
 
 1. Create its name, permanent lowercase slug, tagline, description and features.
@@ -72,12 +89,13 @@ Run the focused route suite with dummy database URLs:
 ```powershell
 $env:DATABASE_URL = 'postgresql://test:test@127.0.0.1:1/test'
 $env:POSTGRES_URL = $env:DATABASE_URL
-node --import tsx --test server/routes/__tests__/downloads.test.ts
+node --import tsx --test --test-concurrency=1 shared/appCatalog.test.ts shared/appLandingRendering.test.ts server/routes/__tests__/downloads.test.ts
 ```
 
-The suite uses in-memory application records and no database connection. It
-checks draft isolation, authentication wiring, create/update/withdrawal, URL and
-input validation, stable redirect behavior, server SEO and sitemap inclusion.
+The suites use in-memory application records and no database connection. They
+check draft isolation, authentication, create/update/withdrawal, URL validation,
+all nine download choices, EN/PT SEO, migration/catalog consistency, asset
+presence and rendering of every page through the same component.
 Before release, run type checking and visually inspect the index, app landing
 and admin editor on desktop/mobile using a disposable development database.
 
@@ -86,3 +104,19 @@ and 4.0 seconds on a warm run (8 tests passed). The esbuild syntax transform
 passed for all 5 changed TSX files, and `git diff --check` passed.
 Full type checking, build and browser verification
 were deferred while the machine was in critical memory mode.
+
+For the six-page implementation, all 13 targeted tests passed (59.2 seconds
+under Surface memory pressure), and syntax transforms passed for the changed
+TS/TSX modules. No executable installer was downloaded or run.
+
+Generate lightweight standalone previews of the actual shared component:
+
+```powershell
+node --import tsx scripts/preview-app-landings.ts C:/absolute/dedicated-preview-folder
+```
+
+This generates all six pages in EN/PT with local styles and embedded product
+marks, without a database, server or full application build. The review wrapper
+uses simple navigation and system font fallbacks; it is not a screenshot of the
+production site. Preview download links open the pinned GitHub assets because
+there is no local API server. Actual site pages use the publication-checked API.

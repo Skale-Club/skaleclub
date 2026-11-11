@@ -10,6 +10,9 @@ import { injectSeo } from "../../seo/inject.js";
 import { collectSitemapUrls } from "../../seo/sitemap.js";
 import { getPageSlugsValidationError } from "#shared/pageSlugs.js";
 import { isReservedSlug } from "#shared/reservedSlugs.js";
+import { APP_CATALOG } from "#shared/appCatalog.js";
+import { getAppLanding } from "#shared/appLandings.js";
+import { escapeHtml } from "../../seo/head.js";
 
 const input: DownloadableAppInput = {
   slug: "xnote", name: "XNote", tagline: "Notes for your day", description: "A note-taking application.",
@@ -118,7 +121,7 @@ test("SEO serves published app landings and keeps drafts and unknown paths out",
     assert.equal(route.status, 200);
     const html = injectSeo('<html lang="en"><head><title>Site</title></head><body></body></html>', "/downloads/xnote", { settings: null, route });
     assert.match(html, /XNote/);
-    assert.match(html, /Notes for your day/);
+    assert.ok(html.includes(escapeHtml(getAppLanding("xnote", "en")!.seo.description)));
     assert.match(html, /hreflang="pt-BR"/);
     assert.match(html, /BreadcrumbList/);
     assert.equal((await resolveRoute("/br/downloads/xnote")).status, 200);
@@ -127,6 +130,33 @@ test("SEO serves published app landings and keeps drafts and unknown paths out",
     row.isPublished = false;
     assert.equal((await resolveRoute("/downloads/xnote")).status, 404);
     assert.equal((await resolveRoute("/downloads")).status, 200);
+  } finally { downloadableAppStore.get = original; }
+});
+test("all six landing records and nine pinned downloads resolve through the real routes", async () => {
+  const original = downloadableAppStore.get;
+  downloadableAppStore.get = store.get;
+  try {
+    for (const application of APP_CATALOG) {
+      row = makeRow(application);
+      const response = await request(`/api/downloadable-apps/${application.slug}`);
+      assert.equal(response.status, 200);
+      assert.equal((await response.json()).releases.length, application.releases.length);
+      for (const release of application.releases) {
+        const download = await request(`/api/downloads/${application.slug}/${release.id}`, { redirect: "manual" });
+        assert.equal(download.status, 302);
+        assert.equal(download.headers.get("location"), release.downloadUrl);
+      }
+      for (const language of ["en", "pt"] as const) {
+        const path = `${language === "pt" ? "/br" : ""}/downloads/${application.slug}`;
+        const route = await resolveRoute(path);
+        assert.equal(route.status, 200);
+        const html = injectSeo('<html lang="en"><head><title>Site</title></head><body></body></html>', path, { settings: null, route });
+        const copy = getAppLanding(application.slug, language)!;
+        assert.ok(html.includes(escapeHtml(copy.seo.title)), `${application.slug}/${language} title`);
+        assert.ok(html.includes(escapeHtml(copy.seo.description)), `${application.slug}/${language} description`);
+        assert.ok(html.includes(`https://skale.club${path}`));
+      }
+    }
   } finally { downloadableAppStore.get = original; }
 });
 test("sitemap includes only published application landings", () => {

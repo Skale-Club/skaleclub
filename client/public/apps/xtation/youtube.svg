@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Logo do YouTube (botão de play) centralizado num quadrado transparente -->
+  <g transform="translate(48 185) scale(5.2727)">
+    <path fill="#FF0000" d="M172.3 19.4c-2-7.6-8-13.6-15.6-15.6C142.9 0 88 0 88 0S33.1 0 19.3 3.7c-7.6 2-13.6 8-15.6 15.6C0 33.1 0 62 0 62s0 28.9 3.7 42.6c2 7.6 8 13.6 15.6 15.6C33.1 124 88 124 88 124s54.9 0 68.7-3.7c7.6-2 13.6-8 15.6-15.6C176 90.9 176 62 176 62s0-28.9-3.7-42.6z"/>
+    <path fill="#FFFFFF" d="M70 88.5 115.7 62 70 35.5z"/>
+  </g>
+</svg>

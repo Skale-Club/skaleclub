@@ -11,6 +11,7 @@ import {
   type SeoImage,
 } from "#shared/landingSeo.js";
 import type { CompanySettings } from "#shared/schema.js";
+import { getAppLanding } from "#shared/appLandings.js";
 import { HeadEditor } from "./head.js";
 import type { RouteResolution } from "./routes.js";
 import { absoluteUrl, breadcrumbs, landingFaq, nfcGuideFaq, nfcProduct, organizationGraph } from "./structuredData.js";
@@ -149,8 +150,9 @@ export function injectSeo(html: string, pathname: string, ctx: InjectContext): s
     description = blog.metaDescription || undefined;
     imageUrl = blog.featureImageUrl ? absoluteUrl(origin, blog.featureImageUrl) : undefined;
   } else if (route.application) {
-    title = route.application.name;
-    description = route.application.tagline;
+    const copy = getAppLanding(route.application.slug, language);
+    title = copy?.seo.title ?? route.application.name;
+    description = copy?.seo.description ?? route.application.tagline;
   }
 
   if (title) {

@@ -54,6 +54,7 @@ Existing technical page paths can be `/downloads/xnote`, `/downloads/xink`,
 
 | Project | Evidence | Suggested treatment |
 | --- | --- | --- |
+| Xtudio | `C:\Users\Vanildo\Dev\xtudio\README.md` documents a planned Windows DJ/music assistant, with no executable yet. | The owner explicitly confirmed it belongs in Apps in the future. Prepare its landing when the product and distribution are ready; no public placeholder or seventh page now. |
 | Sublibr | [README](https://github.com/Skale-Club/sublibr/blob/main/README.md) describes an Electron subtitle generator/editor with build targets for desktop systems. GitHub identifies the repository as a fork of `stskr/sublibr`; its release collection was empty. | Hold for a separate product/branding decision and an actual distributable. Do not silently market it as an original X-branded app. |
 
 ## Exclude from this first download-page batch
@@ -62,7 +63,6 @@ Existing technical page paths can be `/downloads/xnote`, `/downloads/xink`,
 | --- | --- |
 | Xpeed | The owner explicitly classifies it as a Platform. Its PWA and Android variants do not move it into Apps. `C:\Users\Vanildo\Dev\xpeed\README.md` documents the automotive platform and native clients; APKs were not verified in this inventory. |
 | [Xcare](https://github.com/Skale-Club/xcare/blob/main/README.md), [Xpecs](https://github.com/Skale-Club/xpecs/blob/main/README.md) | Both repositories are archived; their READMEs and Xpace's README explicitly document consolidation into Xpace. Separate pages would duplicate a superseded product. |
-| Xtudio | `C:\Users\Vanildo\Dev\xtudio\README.md` explicitly says planning/bootstrap, with no executable or audio engine. Keep as future work rather than a download page. |
 | Xpot NFC Writer | `C:\Users\Vanildo\Dev\xpot\nfc-provisioner\README.md` describes a paired companion requiring Xpot Tags and a USB NFC reader, with no independent offline operation. Provide its download inside the relevant Xpot setup/help flow. |
 | Xpot Desktop and print bench | A Windows installer exists at `xpot/client/public/desktop/XpotDesktopSetup.exe`; `xpot/print-pipeline/README.md` ties the bench to paired production orders and Bambu Studio. These are operating tools for the Xpot workflow, not general public utilities. |
 | Xphere, XmartMenu, Xkedule, Xareable, Xcraper, Xtimator, Xmail, Xpend, PaperPair | Web platforms or account/server-backed products from the existing product line. Keep their marketing under Platforms; an installable PWA is not a reason to duplicate them in a binary-download catalog. |
@@ -75,16 +75,13 @@ utility candidates include Ads Insights AI, Xmart, Fluenverse, Fluenverse 2.0,
 Publik, Navigator, Watchapp, RSLC and Remotion. No independent public binary
 distribution was established for them by this inventory.
 
-## Next: prepare the six actual landings
+## Landing implementation follow-up
 
-For each selected product, prepare a specific value proposition, real screenshot
-or short demonstration, three to five verified benefits, installation/platform
-requirements, release notes, download choices and concise FAQ. Show provider
-costs/dependencies where they affect use. Use real product interfaces, not mock
-features or generated UI. Review the downloaded release before enabling public
-download buttons.
+The six pages now use one shared template: a short hero, three benefits and
+downloads, with EN/PT copy and real product marks. The owner explicitly requested
+simple sibling pages; long feature tours, FAQs and repeated CTA sections are
+excluded. Shared sizes, layout and functions change in one component for all apps.
 
-The foundation's Xnote draft is an editorial placeholder; replace it with the
-verified meeting-transcription positioning when creating the actual pages.
-This inventory did not create or publish app records, edit another repository,
-apply migrations or deploy the website.
+The app catalog migration replaces only the exact untouched Xnote placeholder
+and prepares nine pinned download choices. Xtudio remains a future Apps entry;
+Xpeed remains a Platform. No database write or deployment has been performed.

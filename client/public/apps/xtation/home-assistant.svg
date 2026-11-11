@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Casa azul do Home Assistant com o circuito branco -->
+  <path fill="#18BCF2" stroke="#18BCF2" stroke-width="40" stroke-linejoin="round"
+        d="M512 84 L948 520 L948 940 L76 940 L76 520 Z"/>
+  <g stroke="#FFFFFF" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M512 940 V 420"/>
+    <path d="M512 760 L 336 584 V 560"/>
+    <path d="M512 680 L 688 504 V 480"/>
+  </g>
+  <g fill="#18BCF2" stroke="#FFFFFF" stroke-width="44">
+    <circle cx="512" cy="380" r="62"/>
+    <circle cx="336" cy="520" r="62"/>
+    <circle cx="688" cy="440" r="62"/>
+  </g>
+</svg>
