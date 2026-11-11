@@ -1,7 +1,7 @@
 # Application landing-page inventory
 
-Reviewed: 2026-11-11. This is a proposed selection for the Apps catalog, not
-approval to publish every project. Public naming remains Apps / Aplicativos for
+Reviewed: 2026-11-11. The owner confirmed Xtation belongs in Apps and Xpeed in
+Platforms. This selection does not publish any project. Public naming remains Apps / Aplicativos for
 installable tools and Platforms / Plataformas for online products.
 
 ## Scope and evidence
@@ -17,7 +17,7 @@ Release assets below were confirmed through GitHub's release API. No executable
 was downloaded, run, tested or signature-verified. A published asset establishes
 distribution availability, not product acceptance or Windows certification.
 
-## Recommended first wave: five individual pages
+## Current first wave: six individual pages
 
 | Product | Main use and audience | Confirmed public release | Recommendation |
 | --- | --- | --- | --- |
@@ -26,8 +26,9 @@ distribution availability, not product acceptance or Windows certification.
 | [Xvert](https://github.com/Skale-Club/xvert/blob/main/README.md) | Batch conversion of video, audio and images, processed locally. | [v0.2.0](https://github.com/Skale-Club/xvert/releases/tag/v0.2.0), portable `Xvert.exe`, Windows | Strong utility page with formats, workflow and practical examples. |
 | [Xpace](https://github.com/Skale-Club/xpace/blob/main/README.md) | PC care, disk-space inspection, cleaning, startup/apps/drivers, hardware information, sensors and benchmarks. | [v0.2.1](https://github.com/Skale-Club/xpace/releases/tag/v0.2.1), portable `Xpace.exe`, Windows | One consolidated page, covering the former Xcare and Xpecs capabilities. |
 | [Xdeck](https://github.com/Skale-Club/xdeck/blob/main/README.md) | Audio-device and microphone control, controller battery/testing, shortcuts and OBS control from the tray, panel or controller. | [v0.7.4](https://github.com/Skale-Club/xdeck/releases/tag/v0.7.4), `XdeckSetup.exe` and portable `Xdeck-0.7.4.zip`, Windows 10/11 x64 | Good individual page for creators, streamers and people using controllers. |
+| Xtation | Dedicated desktop windows for YouTube, YouTube Music and Home Assistant; see `C:\Users\Vanildo\Dev\xtation\README.md`. | [v1.1.0](https://github.com/Skale-Club/xtation-releases/releases/tag/v1.1.0), three Windows x64 installers | Included by the owner. One Xtation page with three variants, presented as desktop companions for the third-party services. |
 
-Suggested implementation order: Xnote, Xink, Xvert, Xpace, Xdeck. This is editorial
+Suggested implementation order: Xnote, Xink, Xvert, Xpace, Xdeck, Xtation. This is editorial
 prioritization, not an assertion that the binaries have passed release review.
 Existing technical page paths can be `/downloads/xnote`, `/downloads/xink`,
 `/downloads/xvert`, `/downloads/xpace` and `/downloads/xdeck`.
@@ -49,18 +50,17 @@ Existing technical page paths can be `/downloads/xnote`, `/downloads/xink`,
   portable choices. The README distinguishes updater signing from paid Windows
   Authenticode signing; do not advertise Windows certification.
 
-## Optional or later
+## Deferred
 
 | Project | Evidence | Suggested treatment |
 | --- | --- | --- |
-| Xtation | `C:\Users\Vanildo\Dev\xtation\README.md` and [public v1.1.0](https://github.com/Skale-Club/xtation-releases/releases/tag/v1.1.0) confirm three Windows x64 installers wrapping YouTube, YouTube Music and Home Assistant. | Optional single Xtation page with three variants. Present them as desktop companions for third-party services, not three original Skale services. Lower priority than the five original utilities. |
-| Xpeed | `C:\Users\Vanildo\Dev\xpeed\README.md` documents OBD diagnostics/trip recording, PWA and Android live/offline variants; `.github/workflows/android-apk.yml` builds APKs. Physical adapter/device verification remains documented work. | Evaluate separately as an automotive product with download options. Define supported hardware, account/API operation and public support before including it among simple free utilities. APKs were not verified in this inventory. |
 | Sublibr | [README](https://github.com/Skale-Club/sublibr/blob/main/README.md) describes an Electron subtitle generator/editor with build targets for desktop systems. GitHub identifies the repository as a fork of `stskr/sublibr`; its release collection was empty. | Hold for a separate product/branding decision and an actual distributable. Do not silently market it as an original X-branded app. |
 
 ## Exclude from this first download-page batch
 
 | Project or group | Reason |
 | --- | --- |
+| Xpeed | The owner explicitly classifies it as a Platform. Its PWA and Android variants do not move it into Apps. `C:\Users\Vanildo\Dev\xpeed\README.md` documents the automotive platform and native clients; APKs were not verified in this inventory. |
 | [Xcare](https://github.com/Skale-Club/xcare/blob/main/README.md), [Xpecs](https://github.com/Skale-Club/xpecs/blob/main/README.md) | Both repositories are archived; their READMEs and Xpace's README explicitly document consolidation into Xpace. Separate pages would duplicate a superseded product. |
 | Xtudio | `C:\Users\Vanildo\Dev\xtudio\README.md` explicitly says planning/bootstrap, with no executable or audio engine. Keep as future work rather than a download page. |
 | Xpot NFC Writer | `C:\Users\Vanildo\Dev\xpot\nfc-provisioner\README.md` describes a paired companion requiring Xpot Tags and a USB NFC reader, with no independent offline operation. Provide its download inside the relevant Xpot setup/help flow. |
@@ -75,7 +75,7 @@ utility candidates include Ads Insights AI, Xmart, Fluenverse, Fluenverse 2.0,
 Publik, Navigator, Watchapp, RSLC and Remotion. No independent public binary
 distribution was established for them by this inventory.
 
-## Next: prepare the five actual landings
+## Next: prepare the six actual landings
 
 For each selected product, prepare a specific value proposition, real screenshot
 or short demonstration, three to five verified benefits, installation/platform
