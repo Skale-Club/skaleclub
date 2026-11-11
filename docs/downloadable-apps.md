@@ -27,6 +27,27 @@ this distinction. Existing URLs and API/database identifiers are preserved:
   validates the URL again and redirects with 302. Responses are `no-store` so
   withdrawing a release also withdraws its stable website download URL.
 
+## Automatic release updates
+
+The nine reviewed Windows x64 slots follow GitHub's latest stable public release.
+`shared/appReleaseChannels.ts` maps each product/variant to its repository and
+exact executable/ZIP filename. `server/lib/appReleases.ts` resolves version, URL
+and SHA-256 together, with a ten-minute per-repository cache, concurrent-request
+deduplication and a four-second timeout. Drafts and prereleases are ignored.
+On lookup failure or a missing asset, it keeps the last complete asset or the
+saved baseline. It never carries an old checksum onto a new file.
+
+Publication is checked from the database on every download. Admin reads retain
+the saved baseline; the public API resolves the current release without database
+writes. Uncheck **Follow the latest stable GitHub release** to pin a recognized
+slot (`autoUpdate: false`). Other repositories and custom URLs stay manual.
+The existing slot IDs and links remain stable, including legacy IDs containing
+the baseline version. No new migration or secret is needed for this resolver.
+
+The pages refresh their data when reopened, on window focus and periodically
+while visible. Standalone HTML previews remain saved snapshots, not live API
+clients. GitHub API reference: [latest release](https://docs.github.com/en/rest/releases/releases#get-the-latest-release).
+
 ## Shared landing template
 
 All application details use `client/src/components/downloads/AppLanding.tsx`.
@@ -58,12 +79,13 @@ no database is changed by editing the source or generating the migration.
    and the application. Applications may also publish without a release, in
    which case their landing shows that downloads are being prepared.
 5. A button inside XNote or another application can open
-   `https://skale.club/downloads/<slug>` for available platforms. An exact-release
+   `https://skale.club/downloads/<slug>` for available platforms. A download-slot
    button can open `https://skale.club/api/downloads/<slug>/<releaseId>`.
    The application repositories are not modified by this foundation.
 
-Release IDs identify a specific version/platform and should remain stable. A new
-version gets a new ID. Public URLs are public files: unpublishing the website
+Manual release IDs identify a version/platform; a new manual version gets a new
+ID. Automatic channel IDs remain stable as releases advance. Public URLs are
+public files: unpublishing the website
 link does not revoke files already downloaded or their upstream hosting URLs.
 The checksum is displayed metadata, not automatic binary verification. Code
 signing, installer production, update feeds, download analytics and monetization
@@ -120,3 +142,12 @@ marks, without a database, server or full application build. The review wrapper
 uses simple navigation and system font fallbacks; it is not a screenshot of the
 production site. Preview download links open the pinned GitHub assets because
 there is no local API server. Actual site pages use the publication-checked API.
+
+Release-following review (2026-11-11): a read-only live metadata probe returned
+HTTP 200 for all six configured repositories and resolved all nine file choices.
+It advanced Xtation from the saved 1.1.0 baseline to the published 1.1.1 release
+without a database edit. No binaries were fetched or executed.
+All 21 focused checks passed: 18 catalog/API/release tests in 69.1 seconds under
+memory pressure, plus 3 shared-template rendering tests in 1.7 seconds. Runtime
+syntax checks passed; full type checking and browser verification remain pending
+on a machine with adequate memory.

@@ -19,6 +19,7 @@ export const appReleaseSchema = z.object({
   notes: z.string().trim().max(5000).default(""),
   sha256: z.string().regex(/^[a-f0-9]{64}$/i).optional(),
   isPublished: z.boolean().default(false),
+  autoUpdate: z.boolean().optional(),
 }).strict();
 export type AppRelease = z.infer<typeof appReleaseSchema>;
 

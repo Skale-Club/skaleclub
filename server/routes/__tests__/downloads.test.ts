@@ -35,7 +35,7 @@ const store: typeof downloadableAppStore = {
 };
 const app = express();
 app.use(express.json());
-registerDownloadRoutes(app, store, (req, res, next) => req.get("x-test-admin") === "1" ? next() : void res.status(401).json({ message: "Unauthorized" }));
+registerDownloadRoutes(app, store, (req, res, next) => req.get("x-test-admin") === "1" ? next() : void res.status(401).json({ message: "Unauthorized" }), async (row) => row);
 const server = app.listen(0, "127.0.0.1");
 await new Promise<void>((resolve) => server.once("listening", resolve));
 const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;

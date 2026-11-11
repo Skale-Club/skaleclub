@@ -19,11 +19,12 @@ export default function Downloads() {
   const text = labels[language];
   const [, params] = useRoute("/downloads/:slug");
   const slug = params?.slug;
-  const indexQuery = useQuery<PublicDownloadableApp[]>({ queryKey: ["/api/downloadable-apps"], retry: false, enabled: !slug });
+  const freshness = { staleTime: 60_000, refetchOnMount: "always" as const, refetchOnWindowFocus: true, refetchInterval: 10 * 60_000 };
+  const indexQuery = useQuery<PublicDownloadableApp[]>({ queryKey: ["/api/downloadable-apps"], retry: false, enabled: !slug, ...freshness });
   const detailQuery = useQuery<PublicDownloadableApp>({
     queryKey: ["/api/downloadable-apps", slug],
     queryFn: () => fetchJson<PublicDownloadableApp>(`/api/downloadable-apps/${encodeURIComponent(slug!)}`),
-    retry: false, enabled: Boolean(slug),
+    retry: false, enabled: Boolean(slug), ...freshness,
   });
   const loading = slug ? detailQuery.isLoading : indexQuery.isLoading;
   const error = slug ? detailQuery.isError : indexQuery.isError;

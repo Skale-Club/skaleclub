@@ -1,7 +1,7 @@
 import type { AppRelease, DownloadableAppInput } from "./schema/downloads.js";
 
-// Pinned public release assets, verified against GitHub metadata on 2026-11-11.
-// Updating a release remains an explicit editorial/admin action.
+// Reviewed fallback assets from 2026-11-11. Recognized distribution slots follow
+// GitHub's latest stable release at runtime unless the admin pins the slot.
 function portable(slug: string, product: string, version: string, sha256: string, requirements: string): AppRelease {
   return {
     id: `windows-x64-portable-${version.replaceAll(".", "-")}`,

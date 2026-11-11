@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Download, Plus, Save, Trash2 } from "lucide-react";
 import type { DownloadableApp, DownloadableAppInput, AppRelease } from "@shared/schema/downloads";
 import { DOWNLOAD_ARCHITECTURES, DOWNLOAD_PLATFORMS } from "@shared/downloads";
+import { githubReleaseChannel } from "@shared/appReleaseChannels";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,7 @@ export function DownloadsSection() {
               <Field label="SHA-256 (optional)" className="sm:col-span-2"><Input pattern="[a-fA-F0-9]{64}" maxLength={64} value={release.sha256 ?? ""} onChange={(e) => updateRelease(index, { sha256: e.target.value || undefined })} placeholder="64 hex characters" /></Field>
               <Field label="Release notes" className="sm:col-span-2 lg:col-span-3"><Textarea rows={3} maxLength={5000} value={release.notes} onChange={(e) => updateRelease(index, { notes: e.target.value })} /></Field>
               <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={release.isPublished} onChange={(e) => updateRelease(index, { isPublished: e.target.checked })} />Publish this release</label>
+              {githubReleaseChannel(form.slug, release) && <label className="flex items-center gap-2 text-sm font-medium sm:col-span-2"><input type="checkbox" checked={release.autoUpdate !== false} onChange={(e) => updateRelease(index, { autoUpdate: e.target.checked })} />Follow the latest stable GitHub release</label>}
             </div>
           </fieldset>)}
           {form.releases.length === 0 && <p className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">Add a release when an app build is ready to share.</p>}

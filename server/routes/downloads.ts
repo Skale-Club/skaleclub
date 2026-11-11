@@ -2,27 +2,29 @@ import type { Express, RequestHandler } from "express";
 import { downloadableAppSchema, publicDownloadableApp, appReleaseSchema } from "#shared/schema/downloads.js";
 import { downloadableAppStore } from "../lib/downloadableApps.js";
 import { requireAdmin, sendError } from "./_shared.js";
+import { resolveAppReleases } from "../lib/appReleases.js";
 
-export function registerDownloadRoutes(app: Express, store = downloadableAppStore, admin: RequestHandler = requireAdmin) {
+export function registerDownloadRoutes(app: Express, store = downloadableAppStore, admin: RequestHandler = requireAdmin, resolve = resolveAppReleases) {
   // Do not cache: withdrawing a release must also withdraw its stable URL.
   app.use(["/api/downloadable-apps", "/api/downloads", "/api/admin/downloadable-apps"], (_req, res, next) => {
     res.setHeader("Cache-Control", "no-store");
     next();
   });
   app.get("/api/downloadable-apps", async (_req, res) => {
-    try { res.json((await store.list()).filter((row) => row.isPublished).map(publicDownloadableApp)); }
+    try { res.json(await Promise.all((await store.list()).filter((row) => row.isPublished).map(async (row) => publicDownloadableApp(await resolve(row))))); }
     catch (err) { sendError(res, err, "Failed to load applications"); }
   });
   app.get("/api/downloadable-apps/:slug", async (req, res) => {
     try {
       const row = await store.get(req.params.slug);
       if (!row?.isPublished) return res.status(404).json({ message: "Application not found" });
-      res.json(publicDownloadableApp(row));
+      res.json(publicDownloadableApp(await resolve(row)));
     } catch (err) { sendError(res, err, "Failed to load application"); }
   });
   app.get("/api/downloads/:slug/:releaseId", async (req, res) => {
     try {
-      const row = await store.get(req.params.slug);
+      const saved = await store.get(req.params.slug);
+      const row = saved?.isPublished ? await resolve(saved) : saved;
       const release = row?.isPublished ? row.releases.find((item) => item.id === req.params.releaseId && item.isPublished) : undefined;
       if (!release) return res.status(404).json({ message: "Download not found" });
       // Validate on read as well, including records edited outside this API.

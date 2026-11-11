@@ -41,3 +41,15 @@ test("the shared template also supports future apps and withdrawn downloads", ()
   const hidden = publicDownloadableApp(asRow({ ...APP_CATALOG[0], releases: APP_CATALOG[0].releases.map((release) => ({ ...release, isPublished: false })) }));
   assert.ok(!renderToStaticMarkup(React.createElement(AppLanding, { app: hidden, language: "en" })).includes("/api/downloads/xnote/"));
 });
+
+test("future Android entries use their platform and keep long catalog copy concise", () => {
+  const input = { ...APP_CATALOG[0], slug: "mobile-tool", name: "Mobile Tool", tagline: "A useful mobile tool for everyday tasks. ".repeat(6), description: "A detailed description of the tool. ".repeat(200), features: ["A long useful feature. ".repeat(12)], releases: [{ ...APP_CATALOG[0].releases[0], platform: "android" as const }] };
+  const app = publicDownloadableApp(asRow(input));
+  const html = renderToStaticMarkup(React.createElement(AppLanding, { app, language: "en" }));
+  assert.ok(html.includes("Android app"));
+  assert.ok(!html.includes("Windows"));
+  const headline = html.match(/<h1[^>]*>(.*?)<\/h1>/)?.[1] ?? "";
+  assert.ok(headline.length > 0 && headline.length <= 70);
+  assert.ok(!html.includes(input.description));
+  assert.ok(html.length < 15000, "catalog text cannot expand the simple layout indefinitely");
+});

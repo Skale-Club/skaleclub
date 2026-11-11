@@ -74,12 +74,14 @@ export function AppLanding({ app, language }: { app: PublicDownloadableApp; lang
   const Icon = productIcons[content.slug as keyof typeof productIcons] ?? Monitor;
   const visibleReleases = app.releases.filter((release) => release.isPublished);
   const copy = labels[language];
+  const platforms = [...new Set(visibleReleases.map((release) => platformName(release.platform)))].join(" / ");
+  const platformBadge = platforms ? (language === "pt" ? `App para ${platforms}` : `${platforms} app`) : (language === "pt" ? "Aplicativo" : "App");
 
   return (
     <article className="bg-navy-950 text-fog-50">
       <section className="container-custom mx-auto grid max-w-6xl items-center gap-8 px-4 pb-14 pt-[calc(var(--nav-offset,5rem)+2rem)] sm:px-6 md:grid-cols-[1.1fr_.9fr] md:gap-16 md:pb-20 md:pt-[calc(var(--nav-offset,5rem)+3rem)]">
         <div className="max-w-2xl">
-          <p className={`mb-5 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] ${accent.chip}`}><Monitor aria-hidden="true" className="h-3.5 w-3.5" />{copy.windows} <span aria-hidden="true">·</span> {copy.free}</p>
+          <p className={`mb-5 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] ${accent.chip}`}><Monitor aria-hidden="true" className="h-3.5 w-3.5" />{platformBadge} <span aria-hidden="true">·</span> {copy.free}</p>
           <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm tracking-wide text-fog-300"><span className="font-display text-lg font-semibold text-fog-50">{content.name}</span><span>{content.eyebrow}</span></p>
           <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.04] tracking-[-0.025em] sm:text-5xl lg:text-6xl">{content.headline}</h1>
           <p className="mt-5 max-w-xl text-lg leading-8 text-fog-300">{content.intro}</p>
@@ -146,22 +148,30 @@ function architectureName(architecture: string): string {
 
 function genericLanding(app: PublicDownloadableApp, language: AppLandingLanguage): AppLandingContent {
   const fallbackBenefits = language === "pt"
-    ? ["App gratuito para Windows", "Veja os detalhes do aplicativo", "Baixe uma versão disponível"]
-    : ["Free Windows app", "See what the application does", "Download an available release"];
-  const benefits = [...(app.features ?? []).slice(0, 3)];
+    ? ["Aplicativo gratuito", "Veja os detalhes do aplicativo", "Baixe uma versão disponível"]
+    : ["Free app", "See what the application does", "Download an available release"];
+  const benefits = [...(app.features ?? []).slice(0, 3)].map((feature) => concise(feature, 100));
   while (benefits.length < 3) benefits.push(fallbackBenefits[benefits.length]);
-  const intro = app.description?.trim() || app.tagline;
+  const intro = concise(app.description?.trim() || app.tagline, 200);
   return {
     slug: app.slug,
     name: app.name,
-    eyebrow: language === "pt" ? "App para Windows" : "Windows desktop app",
-    headline: app.tagline?.trim() || app.name,
+    eyebrow: language === "pt" ? "Ferramentas para o dia a dia" : "Tools for everyday work",
+    headline: concise(app.tagline?.trim() || app.name, 70),
     intro,
     benefits: benefits as [string, string, string],
     seo: {
-      title: `${app.name} | ${language === "pt" ? "Aplicativo Windows" : "Windows app"}`,
-      description: app.tagline?.trim() || intro,
+      title: `${app.name} | ${language === "pt" ? "Aplicativo" : "App"}`,
+      description: concise(app.tagline?.trim() || intro, 160),
     },
     brandAccent: "blue",
   };
+}
+
+function concise(value: string, limit: number): string {
+  const text = value.trim().replace(/\s+/g, " ");
+  if (text.length <= limit) return text;
+  const prefix = text.slice(0, limit - 1);
+  const boundary = prefix.lastIndexOf(" ");
+  return `${boundary > limit / 2 ? prefix.slice(0, boundary) : prefix}…`;
 }
