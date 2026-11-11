@@ -23,6 +23,7 @@ const CompanySettingsSection = lazy(() => import('@/components/admin/CompanySett
 const DashboardSection = lazy(() => import('@/components/admin/DashboardSection').then(m => ({ default: m.DashboardSection })));
 const FaqsSection = lazy(() => import('@/components/admin/FaqsSection').then(m => ({ default: m.FaqsSection })));
 const PortfolioSection = lazy(() => import('@/components/admin/PortfolioSection').then(m => ({ default: m.PortfolioSection })));
+const DownloadsSection = lazy(() => import('@/components/admin/DownloadsSection').then(m => ({ default: m.DownloadsSection })));
 const WebsiteSettingsSection = lazy(() => import('@/components/admin/WebsiteSettingsSection').then(m => ({ default: m.WebsiteSettingsSection })));
 const IntegrationsSection = lazy(() => import('@/components/admin/IntegrationsSection').then(m => ({ default: m.IntegrationsSection })));
 const LeadsSection = lazy(() => import('@/components/admin/LeadsSection').then(m => ({ default: m.LeadsSection })));
@@ -54,6 +55,7 @@ function AdminContent() {
       company: 'company',
       website: 'website',
       portfolio: 'portfolio',
+      downloads: 'downloads',
       leads: 'leads',
       forms: 'forms',
       chat: 'chat',
@@ -118,6 +120,7 @@ function AdminContent() {
       company: 'company',
       website: 'website',
       portfolio: 'portfolio',
+      downloads: 'downloads',
       leads: 'leads',
       forms: 'forms',
       chat: 'chat',
@@ -226,7 +229,7 @@ function AdminContent() {
           {activeSection !== 'chat' && (
             <div className="flex-1 overflow-y-auto min-h-0 p-6 pb-16 md:p-8 md:pb-10">
               {(() => {
-                const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'whiteboards', 'boards', 'skaleHub', 'pages', 'notifications', 'traffic', 'redirects', 'vectorizer'];
+                const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'downloads', 'links', 'vcards', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'whiteboards', 'boards', 'skaleHub', 'pages', 'notifications', 'traffic', 'redirects', 'vectorizer'];
                 if (sectionsWithOwnHeader.includes(activeSection)) return null;
                 // Dashboard renders its own SectionHeader (with form selector action)
                 if (activeSection === 'dashboard') return null;
@@ -244,6 +247,7 @@ function AdminContent() {
               {activeSection === 'forms' && <FormsSection />}
               {activeSection === 'website' && <WebsiteSettingsSection />}
               {activeSection === 'portfolio' && <PortfolioSection />}
+              {activeSection === 'downloads' && <DownloadsSection />}
               {activeSection === 'company' && <CompanySettingsSection />}
               {activeSection === 'seo' && <SEOSection />}
               {activeSection === 'faqs' && <FaqsSection />}

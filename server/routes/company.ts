@@ -9,6 +9,7 @@ import { storage } from "../storage.js";
 import { api } from "#shared/routes.js";
 import { getPageSlugsValidationError, resolvePageSlugs } from "#shared/pageSlugs.js";
 import { buildSitemapXml, collectSitemapUrls } from "../seo/sitemap.js";
+import { downloadableAppStore } from "../lib/downloadableApps.js";
 import { requireAdmin, sendError, setPublicCache, isAuthorizedCronRequest } from "./_shared.js";
 
 export function registerCompanyRoutes(app: Express) {
@@ -221,12 +222,13 @@ export function registerCompanyRoutes(app: Express) {
 
   app.get('/sitemap.xml', async (req, res) => {
     try {
-      const [settings, pages, posts] = await Promise.all([
+      const [settings, pages, posts, applications] = await Promise.all([
         storage.getCompanySettings(),
         storage.listPages(),
         storage.getPublishedBlogPosts(1000, 0),
+        downloadableAppStore.list(),
       ]);
-      const urls = collectSitemapUrls({ pageSlugs: settings?.pageSlugs, pages, posts });
+      const urls = collectSitemapUrls({ pageSlugs: settings?.pageSlugs, pages, posts, applications });
       const sitemap = buildSitemapXml(canonicalOrigin(settings?.seoCanonicalUrl, req), urls);
 
       setPublicCache(res, 3600);

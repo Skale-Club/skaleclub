@@ -8,6 +8,7 @@ export const RESERVED_SLUGS: readonly string[] = [
   "blog",
   "portfolio",
   "apps",       // /apps — portfolio category page
+  "downloads",  // /downloads/:slug — downloadable applications, separate from SaaS
   "services",   // /services — portfolio category page
   "contact",
   "faq",

@@ -13,6 +13,7 @@ export type CoreSeoKey =
   | "home"
   | "portfolio"
   | "apps"
+  | "downloads"
   | "services"
   | "contact"
   | "faq"
@@ -73,6 +74,13 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
       description: "Apps prontos que criamos e operamos, cada um com preço fechado. Você assina e começa.",
     },
     crumb: { en: "Apps", pt: "Apps" },
+    sitemap: true,
+    ogImage: CORE_OG_IMAGE,
+  },
+  downloads: {
+    en: { title: "Skale Club | Downloads", description: "Free applications from Skale Club. Explore our tools and download the version for your device." },
+    pt: { title: "Skale Club | Downloads", description: "Aplicativos gratuitos da Skale Club. Conheça nossas ferramentas e baixe a versão para seu dispositivo." },
+    crumb: { en: "Downloads", pt: "Downloads" },
     sitemap: true,
     ogImage: CORE_OG_IMAGE,
   },

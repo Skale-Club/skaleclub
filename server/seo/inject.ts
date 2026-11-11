@@ -92,6 +92,10 @@ export function injectSeo(html: string, pathname: string, ctx: InjectContext): s
       const other = landingPathForSlug(alternateSlug);
       alternates = isPt ? { en: other, pt: self } : { en: self, pt: other };
     }
+  } else if (route.application) {
+    const enPath = `/downloads/${route.application.slug}`;
+    alternates = { en: enPath, pt: withLanguage(enPath, "pt") };
+    canonicalPath = language === "pt" ? alternates.pt : alternates.en;
   } else if (coreKey) {
     const enPath = corePathForKey(coreKey, pageSlugs);
     canonicalPath = language === "pt" && !NO_LANGUAGE_PAIR.has(coreKey) ? withLanguage(enPath, "pt") : enPath;
@@ -144,6 +148,9 @@ export function injectSeo(html: string, pathname: string, ctx: InjectContext): s
     title = blog.title;
     description = blog.metaDescription || undefined;
     imageUrl = blog.featureImageUrl ? absoluteUrl(origin, blog.featureImageUrl) : undefined;
+  } else if (route.application) {
+    title = route.application.name;
+    description = route.application.tagline;
   }
 
   if (title) {
@@ -189,6 +196,14 @@ export function injectSeo(html: string, pathname: string, ctx: InjectContext): s
         { name: blog.title, path: canonicalPath },
       ]),
     );
+  }
+
+  if (route.application) {
+    blocks.push(breadcrumbs(origin, [
+      homeCrumb,
+      { name: CORE_SEO.downloads.crumb[lang], path: withLanguage("/downloads", language) },
+      { name: route.application.name, path: canonicalPath },
+    ]));
   }
 
   if (!landing && baseSlugOf(urlSlug) === "nfc-guide") {

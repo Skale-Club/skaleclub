@@ -5,6 +5,7 @@ import type { CompanySettings } from "@shared/schema";
 import { buildPagePaths } from "@shared/pageSlugs";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useSiteWhatsappHref } from "@/hooks/use-site-whatsapp";
+import { languageHref } from "@/lib/languageRouting";
 import { trackEvent } from "@/lib/analytics";
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
 import { formatPhoneDisplay, telHref } from "@shared/phone";
@@ -49,6 +50,7 @@ function FooterComponent() {
   // in the admin keeps the footer in step with the navbar.
   const navLinks = [
     { href: pagePaths.portfolio, label: "Portfolio" },
+    { href: languageHref("/downloads"), label: "Downloads" },
   ];
 
   const socialLinks = Array.isArray(companySettings?.socialLinks)
