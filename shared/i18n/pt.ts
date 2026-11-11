@@ -682,7 +682,7 @@ export const translations = {
     // Portfolio categories: /apps, /services, the /portfolio umbrella and the navbar menu (2026-10)
     'Apps': 'Aplicativos', 'Platforms': 'Plataformas', 'platforms': 'plataformas',
     '01 · Platforms': '01 · Plataformas', 'See the platforms': 'Ver as plataformas',
-    'Subscription-based online software for booking, content, websites, CRM and sales. Choose a platform and get started.': 'Software online por assinatura para agendamentos, conteúdo, sites, CRM e vendas. Escolha uma plataforma e comece.',
+    'Explore Skale Club platforms for your business and everyday work.': 'Conheça as plataformas da Skale Club para sua empresa e seu dia a dia.',
     'Subscription-based online platforms for booking, content, websites, CRM and sales, designed to simplify daily work and help your business grow.': 'Plataformas online por assinatura para agendamentos, conteúdo, sites, CRM e vendas, criadas para simplificar o dia a dia e ajudar sua empresa a crescer.',
     'Online platforms and the services we perform: AI, automation, websites, marketing and more.': 'Plataformas online e os serviços que prestamos: IA, automação, sites, marketing e mais.',
     'See all': 'Ver tudo', 'Portfolio menu': 'Menu do portfólio', '03 · Products': '03 · Produtos',

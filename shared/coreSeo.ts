@@ -67,11 +67,11 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   apps: {
     en: {
       title: "Skale Club | Platforms",
-      description: "Subscription-based online platforms for booking, content, websites, CRM and sales. Choose a platform and get started.",
+      description: "Explore Skale Club platforms for your business and everyday work.",
     },
     pt: {
       title: "Skale Club | Plataformas",
-      description: "Plataformas online por assinatura para agendamentos, conteúdo, sites, CRM e vendas. Escolha uma plataforma e comece.",
+      description: "Conheça as plataformas da Skale Club para sua empresa e seu dia a dia.",
     },
     crumb: { en: "Platforms", pt: "Plataformas" },
     sitemap: true,

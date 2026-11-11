@@ -4,10 +4,10 @@ import { CatalogPageShell } from "@/components/portfolio/CatalogPageShell";
 import { PortfolioHero } from "@/components/portfolio/PortfolioHero";
 import { PortfolioApps } from "@/components/portfolio/PortfolioApps";
 
-/** Every SaaS platform, in full. /portfolio shows the same list with a "See all" link. */
+/** Platform catalog. /portfolio shows the same list with a "See all" link. */
 export default function Apps() {
   const { t } = useTranslation();
-  usePageSeo({ title: t("Platforms"), description: t("Subscription-based online software for booking, content, websites, CRM and sales. Choose a platform and get started.") });
+  usePageSeo({ title: t("Platforms"), description: t("Explore Skale Club platforms for your business and everyday work.") });
 
   return (
     <CatalogPageShell source="apps">
@@ -16,7 +16,7 @@ export default function Apps() {
           <PortfolioHero
             badge={t("Platforms")}
             title={t("Tools to sell more and work less")}
-            subtitle={t("Subscription-based online platforms for booking, content, websites, CRM and sales, designed to simplify daily work and help your business grow.")}
+            subtitle={t("Explore Skale Club platforms for your business and everyday work.")}
             buttonText={buttonText}
             onCta={() => openForm("hero")}
           />

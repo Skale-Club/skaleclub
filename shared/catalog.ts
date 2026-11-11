@@ -3,7 +3,7 @@ import type { OurServicesCard, PortfolioService } from "./schema.js";
 /**
  * One catalog entry, whatever table it came from.
  *
- * The site keeps two catalogs: the X-branded apps live in `portfolio_services`
+ * The site keeps two catalogs: the X-branded platforms live in `portfolio_services`
  * (price, slug, logo), while the services we perform live as JSON in
  * `company_settings.homepage_content.ourServicesSection.cards`. Every surface
  * that shows them (home carousels, /portfolio, the popup, the print folder)

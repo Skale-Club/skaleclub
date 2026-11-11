@@ -222,13 +222,14 @@ export function registerCompanyRoutes(app: Express) {
 
   app.get('/sitemap.xml', async (req, res) => {
     try {
-      const [settings, pages, posts, applications] = await Promise.all([
+      const [settings, pages, posts, applications, platforms] = await Promise.all([
         storage.getCompanySettings(),
         storage.listPages(),
         storage.getPublishedBlogPosts(1000, 0),
         downloadableAppStore.list(),
+        storage.getPortfolioServices(),
       ]);
-      const urls = collectSitemapUrls({ pageSlugs: settings?.pageSlugs, pages, posts, applications });
+      const urls = collectSitemapUrls({ pageSlugs: settings?.pageSlugs, pages, posts, applications, platforms });
       const sitemap = buildSitemapXml(canonicalOrigin(settings?.seoCanonicalUrl, req), urls);
 
       setPublicCache(res, 3600);

@@ -6,6 +6,9 @@ import { productDbSlugForUrlSlug } from "#shared/landingSeo.js";
 import { getLandingRow, getPublishedBlogRow, type BlogRow, type LandingRow } from "./data.js";
 import { downloadableAppStore } from "../lib/downloadableApps.js";
 import { publicDownloadableApp, type PublicDownloadableApp } from "#shared/schema/downloads.js";
+import { storage } from "../storage.js";
+import { fromPortfolioService, type CatalogItem } from "#shared/catalog.js";
+import { platformDbSlug, platformSlug } from "#shared/platforms.js";
 
 // Decides, for a request that reached the SPA fallback, whether the URL is a
 // real page (200) or a soft 404, and whether it must stay out of the index.
@@ -28,6 +31,7 @@ export interface RouteResolution {
   /** The published blog post serving this URL, when it is one. */
   blog: BlogRow | null;
   application?: PublicDownloadableApp;
+  platform?: CatalogItem;
 }
 
 // First path segments the client routes explicitly before its `/:slug` landing
@@ -104,6 +108,17 @@ export async function resolveRoute(
       return application?.isPublished ? ok({ application: publicDownloadableApp(application) }) : { ...NOT_FOUND };
     } catch (err) {
       console.error("[seo] application lookup failed:", (err as Error).message);
+      return { ...NOT_FOUND };
+    }
+  }
+  if (path.startsWith("/platforms/")) {
+    const slug = platformDbSlug(path.slice("/platforms/".length));
+    if (!slug) return { ...NOT_FOUND };
+    try {
+      const row = await storage.getPortfolioServiceBySlug(slug);
+      return row?.isActive ? ok({ platform: { ...fromPortfolioService(row), slug: platformSlug(row.slug) } }) : { ...NOT_FOUND };
+    } catch (err) {
+      console.error("[seo] platform lookup failed:", (err as Error).message);
       return { ...NOT_FOUND };
     }
   }

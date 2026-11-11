@@ -134,6 +134,9 @@ export function getPageSlugsValidationError(pageSlugs?: Partial<PageSlugs> | nul
     if (value === "downloads" || value.startsWith("downloads/")) {
       return `The slug "${value}" is reserved for application downloads.`;
     }
+    if (value === "platforms" || value.startsWith("platforms/")) {
+      return `The slug "${value}" is reserved for platform pages.`;
+    }
 
     const existingKey = seen.get(value);
     if (existingKey) {

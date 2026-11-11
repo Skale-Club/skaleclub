@@ -16,6 +16,7 @@ import { sendCompletedLeadToTelegram } from "./lib/lead-telegram.js";
 import { registerStorageRoutes } from "./storage/storageAdapter.js";
 import { registerPortfolioRoutes } from "./routes/portfolio.js";
 import { registerDownloadRoutes } from "./routes/downloads.js";
+import { registerPlatformRoutes } from "./routes/platforms.js";
 import { registerFaqRoutes } from "./routes/faqs.js";
 import { registerBootstrapRoutes } from "./routes/bootstrap.js";
 import { registerRedirectRoutes, registerPublicRedirectResolver } from "./routes/redirects.js";
@@ -114,6 +115,7 @@ export async function registerRoutes(
   // Xpot was extracted to a standalone project at C:\Users\Vanildo\Dev\xpot on 2026-05-18.
   registerPortfolioRoutes(app);
   registerDownloadRoutes(app);
+  registerPlatformRoutes(app);
   registerFaqRoutes(app);
   registerBootstrapRoutes(app);
   // Before the /:slug vanity redirects: the tag system moved to Xpot (/nfc, /smart-tags, /n/:code, /q/:code).

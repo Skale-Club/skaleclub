@@ -46,6 +46,7 @@ const BlogPost = lazy(() => import("@/pages/BlogPost").then(m => ({ default: () 
 const Portfolio = lazy(() => import("@/pages/Portfolio").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Apps = lazy(() => import("@/pages/Apps").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Downloads = lazy(() => import("@/pages/Downloads").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const PlatformDetail = lazy(() => import("@/pages/PlatformDetail").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Services = lazy(() => import("@/pages/Services").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Products = lazy(() => import("@/pages/Products").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const SkaleHub = lazy(() => import("@/pages/SkaleHub").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -347,6 +348,7 @@ function Router() {
             {pagePaths.portfolio !== LEGACY_PATHS.portfolio && <Route path={LEGACY_PATHS.portfolio} component={Portfolio} />}
             {/* The portfolio's category pages; fixed paths, reserved in shared/reservedSlugs.ts. */}
             <Route path="/apps" component={Apps} />
+            <Route path="/platforms/:slug" component={PlatformDetail} />
             <Route path="/downloads" component={Downloads} />
             <Route path="/downloads/:slug" component={Downloads} />
             <Route path="/services" component={Services} />
