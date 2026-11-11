@@ -77,6 +77,11 @@ distribution was established for them by this inventory.
 
 ## Landing implementation follow-up
 
+Future scope confirmed by the owner: consider macOS and Linux ports and downloads
+for this app line. Keep the same shared LP, with per-platform/architecture release
+choices as actual builds become available. Availability must be verified per app;
+the current reviewed distribution remains Windows-only.
+
 The six pages now use one shared template: a short hero, three benefits and
 downloads, with EN/PT copy and real product marks. The owner explicitly requested
 simple sibling pages; long feature tours, FAQs and repeated CTA sections are

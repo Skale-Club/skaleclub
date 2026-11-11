@@ -50,6 +50,21 @@ clients. GitHub API reference: [latest release](https://docs.github.com/en/rest/
 
 ## Shared landing template
 
+### Future desktop platforms (owner direction)
+
+Plan for macOS and Linux as well as Windows. The release schema/admin already
+support these platforms and x64, ARM64 and universal architectures; the shared
+page derives availability from published downloads. Keep one landing per app,
+with platform/architecture choices inside it, rather than separate OS pages.
+Show a platform only after that application's port and distributable are ready.
+
+When those builds exist, add explicit GitHub asset mappings for each platform
+and architecture, preserving automatic version/URL/digest updates. The current
+automatic mappings cover Windows x64 only. Audit native OS dependencies and
+editorial/SEO wording for each port; a cross-platform UI framework alone does not
+establish macOS/Linux compatibility. No unsupported builds or buttons are added
+by this planning decision.
+
 All application details use `client/src/components/downloads/AppLanding.tsx`.
 Change layout, sizes, spacing and behavior there once to update every sibling
 page. `shared/appLandings.ts` contains only the short EN/PT product copy and
