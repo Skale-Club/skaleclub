@@ -56,7 +56,7 @@ export const SIDEBAR_MENU_ITEMS: SidebarMenuItem[] = [
   { id: 'presentations', title: 'Presentations', description: 'Build AI-powered slide decks and share them as immersive fullscreen experiences.', icon: Presentation, group: 'growth' },
   { id: 'website', title: 'Website', description: 'Customize homepage content and sections', icon: Image, group: 'content' },
   { id: 'portfolio', title: 'Portfolio', description: 'Services shown on the portfolio page — drag to reorder, click to edit', icon: Briefcase, group: 'content' },
-  { id: 'downloads', title: 'Downloads', description: 'Manage free desktop and mobile app downloads', icon: Download, group: 'content' },
+  { id: 'downloads', title: 'Apps', description: 'Manage free desktop and mobile app downloads', icon: Download, group: 'content' },
   { id: 'pages', title: 'Pages', description: 'Build managed pages at any /slug — composable sections, no code.', icon: LayoutPanelLeft, group: 'content' },
   { id: 'boards', title: 'Boards', description: 'Mind maps and free canvases. Share any board by link.', icon: Workflow, group: 'content' },
   { id: 'whiteboards', title: 'Whiteboards', description: 'Draw for your YouTube videos. Every saved board is public at its link.', icon: PenTool, group: 'content' },

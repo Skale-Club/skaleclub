@@ -10,7 +10,7 @@ import { PortfolioProducts } from "@/components/portfolio/PortfolioProducts";
 /** The umbrella: a taste of each category, with "See all" into its own page. */
 export default function Portfolio() {
   const { t } = useTranslation();
-  usePageSeo({ title: t("Our Solutions"), description: t("Ready-made apps and the services we perform: AI, automation, websites, marketing and more.") });
+  usePageSeo({ title: t("Our Solutions"), description: t("Online platforms and the services we perform: AI, automation, websites, marketing and more.") });
 
   return (
     <CatalogPageShell source="portfolio">
@@ -24,7 +24,7 @@ export default function Portfolio() {
               subtitle={t(hero?.subtitle || "Explore the tools and services we've built to help businesses grow.")}
               buttonText={buttonText}
               onCta={() => openForm("hero")}
-              secondary={{ href: "#apps", label: t("See the apps") }}
+              secondary={{ href: "#apps", label: t("See the platforms") }}
             />
             <PortfolioApps apps={apps} onOpen={openItem("apps")} source="portfolio" seeAllHref="/apps" />
             <PortfolioServices services={services} onOpen={openItem("services")} seeAllHref="/services" />

@@ -24,7 +24,7 @@ function AppRow({ item, flip, analyticsSource, onOpen }: { item: CatalogItem; fl
           <Figure
             tone="dark"
             src={getImageUrl(item.cover, { width: 1200, quality: 80 })}
-            alt="App home screen"
+            alt="Platform home screen"
             caption={item.headline ? item.subtitle : undefined}
             imgClassName="aspect-[16/10] object-top"
           />
@@ -63,7 +63,7 @@ function AppRow({ item, flip, analyticsSource, onOpen }: { item: CatalogItem; fl
           </ul>
         )}
         <div className="mt-8 flex flex-wrap items-center gap-3">
-          {/* Self-serve apps (those with a tool URL) lead with Start; the lead
+          {/* Self-serve platforms (those with a tool URL) lead with Start; the lead
               form stays one click away inside the details popup. */}
           {siteHref && (
             <PillLink
@@ -120,9 +120,9 @@ export function PortfolioApps({
           <SectionHeadingRow seeAllHref={seeAllHref}>
             <SectionHeading
               variant="editorial"
-              eyebrow="01 · Apps"
+              eyebrow="01 · Platforms"
               title="Tools to sell more and work less"
-              subtitle="Booking, content, website, CRM and sales solutions that simplify your day-to-day and help your business grow."
+              subtitle="Subscription-based online platforms for booking, content, websites, CRM and sales, designed to simplify daily work and help your business grow."
             />
           </SectionHeadingRow>
         </Band>

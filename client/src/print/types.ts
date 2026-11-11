@@ -21,7 +21,7 @@ export interface FolderData {
   services: FolderItem[];
   /**
    * The physical NFC products (/products). They print on panel 4, the back,
-   * as "03 · Products" after the inside spread's "01 · Apps" and "02 · Services".
+   * as "03 · Products" after the inside spread's "01 · Platforms" and "02 · Services".
    */
   products: FolderProduct[];
   /** Millimetres of bleed on each side (0 disables crop marks). */

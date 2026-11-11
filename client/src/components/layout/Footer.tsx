@@ -50,7 +50,8 @@ function FooterComponent() {
   // in the admin keeps the footer in step with the navbar.
   const navLinks = [
     { href: pagePaths.portfolio, label: "Portfolio" },
-    { href: languageHref("/downloads"), label: "Downloads" },
+    { href: pagePaths.apps, label: "Platforms" },
+    { href: languageHref("/downloads"), label: "Apps" },
   ];
 
   const socialLinks = Array.isArray(companySettings?.socialLinks)

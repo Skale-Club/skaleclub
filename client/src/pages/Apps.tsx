@@ -4,19 +4,19 @@ import { CatalogPageShell } from "@/components/portfolio/CatalogPageShell";
 import { PortfolioHero } from "@/components/portfolio/PortfolioHero";
 import { PortfolioApps } from "@/components/portfolio/PortfolioApps";
 
-/** Every ready-made app, in full. /portfolio shows the same list with a "See all" link. */
+/** Every SaaS platform, in full. /portfolio shows the same list with a "See all" link. */
 export default function Apps() {
   const { t } = useTranslation();
-  usePageSeo({ title: t("Apps"), description: t("Ready-made apps we build and run, each with a fixed price. Subscribe and start.") });
+  usePageSeo({ title: t("Platforms"), description: t("Subscription-based online software for booking, content, websites, CRM and sales. Choose a platform and get started.") });
 
   return (
     <CatalogPageShell source="apps">
       {({ apps, buttonText, openItem, openForm, cta }) => (
         <>
           <PortfolioHero
-            badge={t("Apps")}
+            badge={t("Platforms")}
             title={t("Tools to sell more and work less")}
-            subtitle={t("Booking, content, website, CRM and sales solutions that simplify your day-to-day and help your business grow.")}
+            subtitle={t("Subscription-based online platforms for booking, content, websites, CRM and sales, designed to simplify daily work and help your business grow.")}
             buttonText={buttonText}
             onCta={() => openForm("hero")}
           />

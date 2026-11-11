@@ -11,12 +11,12 @@ import { LanguageContext } from "@/context/LanguageContext";
 import { languageHref } from "@/lib/languageRouting";
 
 const copy = {
-  title: "Free app downloads",
+  title: "Apps",
   subtitle: "Explore free apps for desktop and mobile.",
   empty: "No apps are available to download yet.",
   loading: "Loading apps…",
   error: "Apps could not be loaded. Please try again.",
-  back: "All downloads",
+  back: "All apps",
   free: "Free",
   features: "What it does",
   releases: "Downloads",
@@ -30,9 +30,9 @@ const copy = {
   version: "Version",
 };
 const copyPt: Record<keyof typeof copy, string> = {
-  title: "Aplicativos grátis para baixar", subtitle: "Conheça aplicativos gratuitos para computador e celular.",
+  title: "Aplicativos", subtitle: "Conheça aplicativos gratuitos para computador e celular.",
   empty: "Ainda não há aplicativos disponíveis para baixar.", loading: "Carregando aplicativos…",
-  error: "Não foi possível carregar os aplicativos. Tente novamente.", back: "Todos os downloads", free: "Grátis",
+  error: "Não foi possível carregar os aplicativos. Tente novamente.", back: "Todos os aplicativos", free: "Grátis",
   features: "O que ele faz", releases: "Downloads", requirements: "Requisitos", notes: "Notas da versão",
   checksum: "SHA-256", download: "Baixar", notFound: "Não foi possível encontrar este aplicativo.",
   noReleases: "Ainda não há downloads publicados para este aplicativo.",
@@ -96,7 +96,7 @@ export default function Downloads() {
   const apps = indexQuery.data;
   const isLoading = slug ? detailQuery.isLoading : indexQuery.isLoading;
   const isError = slug ? detailQuery.isError : indexQuery.isError;
-  usePageSeo({ title: slug ? (detailQuery.data?.name ?? "Downloads") : label("title"), description: slug ? detailQuery.data?.tagline : label("subtitle"), noindex: Boolean(slug && isError) });
+  usePageSeo({ title: slug ? (detailQuery.data?.name ?? label("title")) : label("title"), description: slug ? detailQuery.data?.tagline : label("subtitle"), noindex: Boolean(slug && isError) });
 
   if (isLoading) return <main className="container-custom mx-auto max-w-5xl px-4 py-16 text-center text-muted-foreground" aria-live="polite">{label("loading")}</main>;
   if (slug && detailQuery.error instanceof HttpError && detailQuery.error.status === 404) return <main className="container-custom mx-auto max-w-5xl px-4 py-16 text-center"><p>{label("notFound")}</p><Link href={languageHref("/downloads")} className="mt-4 inline-block text-primary underline">{label("back")}</Link></main>;

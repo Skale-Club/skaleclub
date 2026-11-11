@@ -201,7 +201,7 @@ export function ImageFrame({
 
 /**
  * The editorial eyebrow: small, bold, widely tracked, accent blue. Numbered
- * ("01 · Apps") on the panels, as on /portfolio.
+ * ("01 · Platforms") on the panels, as on /portfolio.
  */
 export function Eyebrow({
   children,

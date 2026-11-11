@@ -8,7 +8,7 @@ import { Editable, Eyebrow, INK, printImage } from "./primitives";
 /**
  * Panel 4, the back cover, shared by every template.
  *
- * It finishes the numbered sequence the inside spread starts: "01 · Apps" and
+ * It finishes the numbered sequence the inside spread starts: "01 · Platforms" and
  * "02 · Services" inside, "03 · Products" here, the NFC pieces from /products.
  * Under them sits the close, set as the site's CTA band (navy-850 with a blue
  * hairline on top): what to do next, how to reach us, and a QR code to the site.

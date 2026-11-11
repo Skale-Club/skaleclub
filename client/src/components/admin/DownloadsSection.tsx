@@ -46,7 +46,7 @@ export function DownloadsSection() {
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   return <div className="space-y-6">
-    <SectionHeader title="Downloads" description="Manage free desktop and mobile app listings and releases." icon={<Download className="h-5 w-5" />} />
+    <SectionHeader title="Apps" description="Manage free desktop and mobile app listings and releases." icon={<Download className="h-5 w-5" />} />
     {isError && <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">Could not load downloadable apps. Refresh the page to try again.</p>}
     <div className="grid gap-6 xl:grid-cols-[minmax(220px,0.65fr)_minmax(0,1.6fr)]" data-testid="downloads-admin">
       <aside className="space-y-3">

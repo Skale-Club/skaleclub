@@ -13,14 +13,14 @@ interface MenuItem {
   href: string;
   icon: LucideIcon;
   title: string;
-  /** How many items the category holds, and the word for them ("3 apps"). */
+  /** How many items the category holds, and the word for them ("3 platforms"). */
   count: number;
-  unit: "apps" | "services" | "products";
+  unit: "platforms" | "services" | "products";
   /** Thumbnail for the desktop panel: a photo/screenshot (cover) or a cut-out (contain). */
   image?: { src: string; fit: "cover" | "contain" };
 }
 
-/** Apps, Services and Products: the three categories /portfolio is made of. */
+/** Platforms, Services and Products: the three categories /portfolio is made of. */
 function usePortfolioMenuItems(): MenuItem[] {
   // The same lists /portfolio reads; cached, so the navbar adds no extra request on those pages.
   const { data: portfolioServices } = useQuery<PortfolioService[]>({
@@ -37,9 +37,9 @@ function usePortfolioMenuItems(): MenuItem[] {
       {
         href: "/apps",
         icon: AppWindow,
-        title: "Apps",
+        title: "Platforms",
         count: apps.length,
-        unit: "apps",
+        unit: "platforms",
         image: appCover ? { src: getImageUrl(appCover, { width: 480, quality: 75 }), fit: "cover" } : undefined,
       },
       {
@@ -261,7 +261,7 @@ export function PortfolioMobileMenu({ portfolioHref, onNavigate }: { portfolioHr
               >
                 <Icon className="h-5 w-5 text-cta-soft" aria-hidden="true" />
                 <span>
-                  <span className="block truncate text-sm font-semibold text-fog-50">{t(title)}</span>
+                  <span className="block break-words text-sm font-semibold text-fog-50">{t(title)}</span>
                   {count > 0 && <span className="mt-0.5 block text-xs text-fog-400">{count}</span>}
                 </span>
               </Link>

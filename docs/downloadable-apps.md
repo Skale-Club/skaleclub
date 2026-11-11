@@ -3,6 +3,13 @@
 Foundation added on 2026-11-11. This is an independent, free distribution catalog;
 `portfolio_services` and `/apps` continue serving the existing SaaS offerings.
 
+Public naming: **Apps** (EN) / **Aplicativos** (PT) identifies installable
+applications; **Platforms** / **Plataformas** identifies subscription SaaS.
+"Download" / "Baixar" describes the action within an application landing,
+not the category name. Navigation, catalog headings, admin labels and SEO use
+this distinction. Existing URLs and API/database identifiers are preserved:
+`/downloads` is the application catalog and `/apps` remains the SaaS catalog.
+
 ## Structure
 
 - `/downloads`: published applications, linked from the public footer.
