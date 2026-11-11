@@ -1,4 +1,5 @@
 import type { OurServicesCard, PortfolioService } from "./schema.js";
+import { platformSlug } from "./platforms.js";
 
 /**
  * One catalog entry, whatever table it came from.
@@ -149,7 +150,7 @@ export function fromOurServicesCard(card: OurServicesCard): CatalogItem {
 
 export function catalogProducts(services: PortfolioService[] | undefined): CatalogItem[] {
   return (services ?? [])
-    .filter((s) => s.isActive !== false)
+    .filter((s) => s.isActive !== false && platformSlug(s.slug) !== undefined)
     .slice()
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     .map(fromPortfolioService);

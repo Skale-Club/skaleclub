@@ -4,7 +4,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { PlatformLanding } from "../client/src/components/platforms/PlatformLanding.js";
-import { fromPortfolioService, type CatalogItem } from "./catalog.js";
+import { catalogProducts, type CatalogItem } from "./catalog.js";
 import type { PortfolioService } from "./schema.js";
 import { XPEED_PLATFORM } from "./platformDefaults.js";
 import { getPlatformLanding, PLATFORM_LANDING_SLUGS } from "./platformLandings.js";
@@ -12,7 +12,7 @@ import { platformSlug, platformDbSlug, platformPath, safePlatformUrl } from "./p
 
 Object.assign(globalThis, { React });
 const rows = JSON.parse(readFileSync(new URL("./fixtures/platform-catalog.json", import.meta.url), "utf8")) as PortfolioService[];
-const items = [...rows.map(fromPortfolioService), fromPortfolioService({ ...XPEED_PLATFORM, id: 100 } as PortfolioService)];
+const items = catalogProducts([...rows, { ...XPEED_PLATFORM, id: 100 } as PortfolioService]);
 const render = (item: CatalogItem, language: "en" | "pt" = "en") => renderToStaticMarkup(React.createElement(PlatformLanding, { item, language }));
 
 test("platform aliases keep canonical branded paths and allow future CMS entries", () => {
@@ -29,8 +29,8 @@ test("platform access links accept web destinations and reject executable or cre
   for (const invalid of ["javascript:alert(1)", "data:text/html,test", "mailto:a@test.com", "https://user:secret@test.com", "https://", ""]) assert.equal(safePlatformUrl(invalid), undefined);
 });
 
-test("all nine platform pages share one compact bilingual template and one CTA", () => {
-  assert.equal(items.length, 9);
+test("all eight platform pages share one compact bilingual template and one CTA", () => {
+  assert.equal(items.length, 8);
   for (const item of items) for (const language of ["en", "pt"] as const) {
     const html = render(item, language);
     const editorial = getPlatformLanding(platformSlug(item.slug!)!, language)!;
@@ -42,8 +42,18 @@ test("all nine platform pages share one compact bilingual template and one CTA",
     assert.ok(html.includes(`href="${language === "pt" ? "/br/apps" : "/apps"}"`));
     assert.ok(html.includes(editorial.ctaKind === "contact" ? `href="${language === "pt" ? "/br/contact" : "/contact"}"` : `href="${safePlatformUrl(item.site)}"`));
     assert.ok(!html.includes("/api/downloads/"));
-    if (item.slug === "websites") assert.ok(!html.includes("mvpbuildergroup.com"));
   }
+});
+
+test("Xsites is excluded from platform listings, aliases and editorial pages", () => {
+  for (const slug of ["xsites", "websites"]) {
+    assert.equal(platformSlug(slug), undefined);
+    assert.equal(platformDbSlug(slug), undefined);
+    assert.equal(platformPath(slug), undefined);
+    assert.equal(getPlatformLanding(slug, "en"), undefined);
+  }
+  assert.ok(rows.some((row) => row.slug === "websites"), "legacy snapshot exercises the exclusion");
+  assert.ok(!items.some((item) => item.slug === "websites" || item.slug === "xsites"));
 });
 
 test("future platforms bound CMS copy and omit unsafe access links", () => {

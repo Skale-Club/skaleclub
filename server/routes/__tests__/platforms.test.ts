@@ -26,7 +26,7 @@ await new Promise<void>((resolve) => server.once("listening", resolve));
 const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 after(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-test("public platform API resolves all nine branded URLs and legacy aliases", async () => {
+test("public platform API resolves all eight branded URLs and legacy aliases", async () => {
   for (const slug of PLATFORM_LANDING_SLUGS) {
     const response = await fetch(`${base}/api/platforms/${slug}`);
     assert.equal(response.status, 200);
@@ -42,7 +42,7 @@ test("platform publication is checked on each request; missing and malformed pag
   try { assert.equal((await fetch(`${base}/api/platforms/xkedule`)).status, 404); }
   finally { row.isActive = true; }
   assert.equal((await fetch(`${base}/api/platforms/xkedule`)).status, 200);
-  for (const slug of ["missing-tool", "bad_slug", "a%2Fb"]) assert.equal((await fetch(`${base}/api/platforms/${slug}`)).status, 404);
+  for (const slug of ["missing-tool", "bad_slug", "a%2Fb", "xsites", "websites"]) assert.equal((await fetch(`${base}/api/platforms/${slug}`)).status, 404);
 });
 
 test("server SEO resolves active platforms and emits localized canonical metadata", async () => {
@@ -50,7 +50,11 @@ test("server SEO resolves active platforms and emits localized canonical metadat
   storage.getPortfolioServiceBySlug = store.getPortfolioServiceBySlug;
   try {
     for (const row of rows) for (const language of ["en", "pt"] as const) {
-      const slug = platformSlug(row.slug)!;
+      const slug = platformSlug(row.slug);
+      if (!slug) {
+        for (const alias of ["websites", "xsites"]) assert.equal((await resolveRoute(`${language === "pt" ? "/br" : ""}/platforms/${alias}`)).status, 404);
+        continue;
+      }
       const path = `${language === "pt" ? "/br" : ""}/platforms/${slug}`;
       const route = await resolveRoute(path);
       assert.equal(route.status, 200);
@@ -74,6 +78,7 @@ test("sitemap lists active platforms in both languages using canonical slugs", (
   }
   assert.ok(!paths.includes("/platforms/hidden"));
   assert.ok(!paths.includes("/platforms/scheduling-system"));
+  for (const prefix of ["", "/br"]) for (const slug of ["xsites", "websites"]) assert.ok(!paths.includes(`${prefix}/platforms/${slug}`));
   assert.ok(isReservedSlug("platforms"));
   assert.ok(getPageSlugsValidationError({ contact: "platforms" }));
 });

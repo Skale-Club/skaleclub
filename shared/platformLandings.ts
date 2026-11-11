@@ -1,5 +1,5 @@
 export type PlatformLandingLanguage = "en" | "pt";
-export type PlatformLandingSlug = "xkedule" | "xtimator" | "xphere" | "xareable" | "xsites" | "xcraper" | "xpot" | "xmartmenu" | "xpeed";
+export type PlatformLandingSlug = "xkedule" | "xtimator" | "xphere" | "xareable" | "xcraper" | "xpot" | "xmartmenu" | "xpeed";
 export type PlatformCtaKind = "access" | "contact";
 
 export interface PlatformLandingContent {
@@ -14,7 +14,7 @@ export interface PlatformLandingContent {
 }
 
 export const PLATFORM_LANDING_SLUGS: readonly PlatformLandingSlug[] = [
-  "xkedule", "xtimator", "xphere", "xareable", "xsites", "xcraper", "xpot", "xmartmenu", "xpeed",
+  "xkedule", "xtimator", "xphere", "xareable", "xcraper", "xpot", "xmartmenu", "xpeed",
 ];
 
 type LocalizedLanding = Record<PlatformLandingLanguage, PlatformLandingContent>;
@@ -90,24 +90,6 @@ const LANDINGS: Record<PlatformLandingSlug, LocalizedLanding> = {
       benefits: ["Mantenha a marca como referência", "Escreva conteúdo social mais rápido", "Organize publicações para revisão"],
       seo: { title: "Xareable | Conteúdo social com IA e marca", description: "Planeje e crie conteúdo para redes sociais alinhado à sua marca com o Xareable." },
       ctaKind: "access",
-    },
-  },
-  xsites: {
-    en: {
-      slug: "xsites", name: "Xsites", eyebrow: "Websites for your business",
-      headline: "Put your business online.",
-      intro: "Get a website tailored to your business, with the right pages and a clear path for customers to reach you.",
-      benefits: ["A site shaped around your business", "Clear information for customers", "A direct path to get in touch"],
-      seo: { title: "Xsites | Business Website Services", description: "Get a business website designed around your services, customers and goals with Xsites." },
-      ctaKind: "contact",
-    },
-    pt: {
-      slug: "xsites", name: "Xsites", eyebrow: "Sites para sua empresa",
-      headline: "Leve sua empresa para a web.",
-      intro: "Tenha um site pensado para sua empresa, com as páginas certas e um caminho claro para clientes falarem com você.",
-      benefits: ["Um site alinhado à sua empresa", "Informações claras para clientes", "Um caminho direto para contato"],
-      seo: { title: "Xsites | Criação de sites para empresas", description: "Tenha um site para sua empresa, seus clientes e seus objetivos com o Xsites." },
-      ctaKind: "contact",
     },
   },
   xcraper: {

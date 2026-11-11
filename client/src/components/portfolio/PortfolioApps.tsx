@@ -8,7 +8,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
 import { trackCTAClick } from "@/lib/analytics";
 import { priceParts } from "@/lib/format";
-import { platformPath, platformSlug, safePlatformUrl } from "@shared/platforms";
+import { platformPath, safePlatformUrl } from "@shared/platforms";
 
 function AppRow({ item, flip, analyticsSource, onOpen }: { item: CatalogItem; flip: boolean; analyticsSource: string; onOpen: (item: CatalogItem) => void }) {
   const { t, language } = useTranslation();
@@ -17,7 +17,7 @@ function AppRow({ item, flip, analyticsSource, onOpen }: { item: CatalogItem; fl
   const source = item.headline ?? item.subtitle;
   const siteUrl = item.site;
   const detailHref = item.slug ? platformPath(item.slug) : undefined;
-  const siteHref = platformSlug(item.slug ?? "") === "xsites" ? undefined : safePlatformUrl(siteUrl);
+  const siteHref = safePlatformUrl(siteUrl);
 
   return (
     <article className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">

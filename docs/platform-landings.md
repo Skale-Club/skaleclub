@@ -8,7 +8,6 @@ One React template, `client/src/components/platforms/PlatformLanding.tsx`, rende
 | Xtimator | `/platforms/xtimator` | `xtimator` | Open platform |
 | Xphere | `/platforms/xphere` | `crm-setup` | Open platform |
 | Xareable | `/platforms/xareable` | `xareable` | Open platform |
-| Xsites | `/platforms/xsites` | `websites` | Contact |
 | Xcraper | `/platforms/xcraper` | `xcraper` | Open platform |
 | Xpot | `/platforms/xpot` | `xpot` | Open platform |
 | XmartMenu | `/platforms/xmartmenu` | `smart-menu` | Open platform |
@@ -18,7 +17,7 @@ Portuguese paths add `/br`. The platform index remains `/apps`; downloadable app
 
 `shared/platforms.ts` owns legacy aliases, branded paths and safe access URLs. API and server SEO check the existing catalog's `isActive` flag on each request. Sitemap includes only active records and advertises both languages. Future valid CMS slugs use the same bounded template until editorial copy is added. Catalog details buttons link to these pages; direct platform access remains available.
 
-The Xsites catalog URL is a customer example, not a platform portal, so its primary CTA uses the contact page. Other access URLs remain editable through the existing platform catalog. Known product copy is deliberately curated instead of reusing stale setup-service descriptions.
+Xsites was removed from Platforms at the owner's request on 2026-11-11. The shared catalog excludes its legacy `websites` row; both platform URL aliases return 404 and stay out of the sitemap. Its existing database record is preserved. Platform access URLs remain editable through the existing catalog. Known product copy is deliberately curated instead of reusing stale setup-service descriptions.
 
 ## Data and release
 
@@ -36,7 +35,7 @@ $env:POSTGRES_URL=$env:DATABASE_URL
 node --max-old-space-size=192 --import tsx --test --test-concurrency=1 shared/platformLandings.test.ts server/routes/__tests__/platforms.test.ts
 ```
 
-Eight tests passed in 7.6 seconds on the Surface. They cover all nine platforms in both languages, aliases, publication changes, unsafe URLs, Xsites contact behavior, bounded future content, server SEO and active-only sitemap entries.
+Nine tests passed in 55.5 seconds on the memory-constrained Surface after removing Xsites. They cover all eight platforms in both languages, aliases, publication changes, unsafe URLs, Xsites exclusion, bounded future content, server SEO and active-only sitemap entries.
 
 Twelve existing application API/SEO/rendering regression tests also passed in 7.6 seconds. Twenty-two changed TypeScript files passed a lightweight syntax check. This is not a full type check.
 
@@ -46,4 +45,4 @@ Offline previews use the actual shared React component, real local catalog marks
 node --max-old-space-size=192 --import tsx scripts/preview-platform-landings.ts C:/absolute/dedicated/platform-preview
 ```
 
-Generation took 2.5 seconds for 18 pages plus an index. The snapshot is review data, not evidence of production rendering. With only 0.3 GB RAM free, full type checking, application build and desktop/mobile browser verification were deferred. Run these before the approved release. No server, full build, deployment or paid external action was started.
+Generation took 2.5 seconds for 16 pages plus an index. The snapshot is review data, not evidence of production rendering. With only 0.3 GB RAM free, full type checking, application build and desktop/mobile browser verification were deferred. Run these before the approved release. No server, full build, deployment or paid external action was started.
