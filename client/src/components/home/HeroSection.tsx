@@ -70,14 +70,14 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 />
               </div>
             ) : null}
-            {/* Type ramp: fluid 9vw on phones (clamped so it never dips under
-                34px or blows past 54px), fixed 48px from sm, 56px on wide
+            {/* Type ramp: fluid 10.35vw in the stacked layout (clamped to
+                36.8-62px), 43.2px from 740px, 48px on tablets, 56px on wide
                 desktops — where the column also widens so the title keeps
                 breaking into two lines, not three. Below desktop (<963px) the
                 title is capped at 8.4em (between "Repetitive Work." ≈7.3em and
                 "Stop Doing Repetitive" ≈9.6em), so phones and tablets break it
                 into three lines; em keeps it right as the font scales. */}
-            <h1 className="max-w-[8.4em] mx-auto min-[740px]:mx-0 min-[963px]:max-w-none text-[clamp(2.125rem,9vw,3.375rem)] min-[740px]:text-[2.7rem] tablet:text-5xl min-[963px]:text-[3.5rem] font-display font-semibold tracking-[-0.04em] leading-[0.98] text-fog-50 mb-3 tablet:mb-[1.275rem]">
+            <h1 className="max-w-[8.4em] mx-auto min-[740px]:mx-0 min-[963px]:max-w-none text-[clamp(2.3rem,10.35vw,3.88rem)] min-[740px]:text-[2.7rem] tablet:text-5xl min-[963px]:text-[3.5rem] font-display font-semibold tracking-[-0.04em] leading-[0.98] text-fog-50 mb-3 tablet:mb-[1.275rem]">
               {companySettings?.heroTitle ? (
                 t(companySettings.heroTitle)
               ) : null}
@@ -85,10 +85,11 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
             {/* text-balance distributes the copy evenly across however many
                 lines it ends up on, instead of greedily filling each line and
                 leaving a short orphan on the last one. Below desktop (<963px)
-                it is capped at 17em so phones and tablets get three lines (and
+                it is capped at 17em so phones and tablets get three lines (wider
+                stacked screens, 560-739px, widen it to 23em for two lines; and
                 tablets keep it clear of the overlapping photo); desktop keeps
                 max-w-xl and two lines. */}
-            <p className="text-base min-[740px]:text-lg tablet:text-xl text-fog-400 mb-[0.85rem] tablet:mb-[1.7rem] leading-relaxed max-w-[17em] mx-auto min-[740px]:mx-0 min-[963px]:max-w-xl text-balance">
+            <p className="text-[1.15rem] min-[740px]:text-lg tablet:text-xl text-fog-400 mb-[0.85rem] tablet:mb-[1.7rem] leading-relaxed max-w-[17em] min-[560px]:max-w-[23em] min-[740px]:max-w-[17em] mx-auto min-[740px]:mx-0 min-[963px]:max-w-xl text-balance">
               {companySettings?.heroSubtitle ? t(companySettings.heroSubtitle) : ""}
             </p>
             <div className="flex flex-col min-[740px]:flex-row gap-3 tablet:gap-[1.0625rem] flex-wrap">
