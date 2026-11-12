@@ -73,8 +73,11 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
             </h1>
             {/* text-balance distributes the copy evenly across however many
                 lines it ends up on, instead of greedily filling each line and
-                leaving a short orphan on the last one. */}
-            <p className="text-base sm:text-lg tablet:text-xl text-fog-400 mb-[0.85rem] tablet:mb-[1.7rem] leading-relaxed max-w-xl text-balance">
+                leaving a short orphan on the last one. On tablets (640-962px)
+                the column narrows so the subtitle breaks into three lines and
+                stays clear of the photo that overlaps the text column there;
+                phones and desktops keep the full max-w-xl. */}
+            <p className="text-base sm:text-lg tablet:text-xl text-fog-400 mb-[0.85rem] tablet:mb-[1.7rem] leading-relaxed max-w-xl sm:max-w-[330px] min-[963px]:max-w-xl text-balance">
               {companySettings?.heroSubtitle ? t(companySettings.heroSubtitle) : ""}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 tablet:gap-[1.0625rem] flex-wrap">
