@@ -26,13 +26,13 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
   // navy + grid so it runs unbroken behind the top half of the trust card,
   // which straddles the hero/next-section boundary.
   const bottomPadding = showTrustBadges ? 'pb-[1.275rem] sm:pb-[1.7rem] lg:pb-[1.275rem]' : 'bg-transparent';
-  // Homepage photo panel hangs below the hero (hidden behind the trust card)
-  // and starts a little under the header. Tablets (shorter band): 2rem hidden,
-  // 1rem of air. Desktop (>=963px): 4rem hidden, 1.5rem of air. Height stays a
-  // percentage so the img's max-h-full resolves.
+  // Homepage photo panel: the photo file is already cropped at the waist, so it
+  // sits on the trust card's top edge and starts a little under the header
+  // (1rem of air on tablets, 1.5rem on desktop). Height stays a percentage so
+  // the img's max-h-full resolves.
   const photoInset = showTrustBadges
     ? 'sm:inset-y-0'
-    : 'sm:top-auto sm:-bottom-8 sm:h-[calc(100%+1rem)] min-[963px]:-bottom-16 min-[963px]:h-[calc(100%+2.5rem)]';
+    : 'sm:top-auto sm:bottom-0 sm:h-[calc(100%-1rem)] min-[963px]:h-[calc(100%-1.5rem)]';
 
   // From tablet up the text column is vertically centered in the hero's
   // *visible* band: the section pt matches the overlaying header's height
@@ -108,11 +108,8 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
             </div>
           </div>
           {/* On the homepage (trust bar outside the hero) the photo panel
-              starts a little below the header and runs past the hero's bottom
-              edge: the overflow is clipped right where the trust card begins,
-              so the photo reads as continuing behind it. That makes it larger
-              and keeps the hair off the header. Inline-badge heroes keep the
-              panel inside the band. */}
+              starts a little below the header so the hair stays off it (see
+              photoInset). Inline-badge heroes keep the full band height. */}
           <div className={`order-2 lg:order-2 -mx-5 sm:mx-0 relative flex h-full items-end justify-center self-end w-full z-10 sm:absolute ${photoInset} sm:right-[-2.5rem] tablet:right-[max(0px,calc((100%-900px)/2))] min-[963px]:right-0 sm:w-[460px] tablet:w-[480px] min-[963px]:w-[560px]`}>
             {heroImageUrl ? (
               <img
