@@ -26,6 +26,10 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
   // navy + grid so it runs unbroken behind the top half of the trust card,
   // which straddles the hero/next-section boundary.
   const bottomPadding = showTrustBadges ? 'pb-[1.275rem] sm:pb-[1.7rem] lg:pb-[1.275rem]' : 'bg-transparent';
+  // Homepage photo panel: 4rem taller than the band, with that 4rem hanging
+  // below the hero (hidden behind the trust card) and 1.5rem of air left under
+  // the header. Height stays a percentage so the img's max-h-full resolves.
+  const photoInset = showTrustBadges ? 'sm:inset-y-0' : 'sm:top-auto sm:-bottom-16 sm:h-[calc(100%+2.5rem)]';
 
   // From tablet up the text column is vertically centered in the hero's
   // *visible* band: the section pt matches the overlaying header's height
@@ -100,7 +104,13 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
               ) : null}
             </div>
           </div>
-          <div className="order-2 lg:order-2 -mx-5 sm:mx-0 relative flex h-full items-end justify-center self-end w-full z-10 sm:absolute sm:inset-y-0 sm:right-[-2.5rem] tablet:right-[max(0px,calc((100%-900px)/2))] min-[963px]:right-0 sm:w-[460px] tablet:w-[480px] min-[963px]:w-[560px]">
+          {/* On the homepage (trust bar outside the hero) the photo panel
+              starts a little below the header and runs past the hero's bottom
+              edge: the overflow is clipped right where the trust card begins,
+              so the photo reads as continuing behind it. That makes it larger
+              and keeps the hair off the header. Inline-badge heroes keep the
+              panel inside the band. */}
+          <div className={`order-2 lg:order-2 -mx-5 sm:mx-0 relative flex h-full items-end justify-center self-end w-full z-10 sm:absolute ${photoInset} sm:right-[-2.5rem] tablet:right-[max(0px,calc((100%-900px)/2))] min-[963px]:right-0 sm:w-[460px] tablet:w-[480px] min-[963px]:w-[560px]`}>
             {heroImageUrl ? (
               <img
                 src={heroImageUrl}
