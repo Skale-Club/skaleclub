@@ -65,19 +65,22 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
             {/* Type ramp: fluid 9vw on phones (clamped so it never dips under
                 34px or blows past 54px), fixed 48px from sm, 56px on wide
                 desktops — where the column also widens so the title keeps
-                breaking into two lines, not three. */}
-            <h1 className="text-[clamp(2.125rem,9vw,3.375rem)] sm:text-[2.7rem] tablet:text-5xl min-[963px]:text-[3.5rem] font-display font-semibold tracking-[-0.04em] leading-[0.98] text-fog-50 mb-3 tablet:mb-[1.275rem]">
+                breaking into two lines, not three. Below desktop (<963px) the
+                title is capped at 8.4em (between "Repetitive Work." ≈7.3em and
+                "Stop Doing Repetitive" ≈9.6em), so phones and tablets break it
+                into three lines; em keeps it right as the font scales. */}
+            <h1 className="max-w-[8.4em] min-[963px]:max-w-none text-[clamp(2.125rem,9vw,3.375rem)] sm:text-[2.7rem] tablet:text-5xl min-[963px]:text-[3.5rem] font-display font-semibold tracking-[-0.04em] leading-[0.98] text-fog-50 mb-3 tablet:mb-[1.275rem]">
               {companySettings?.heroTitle ? (
                 t(companySettings.heroTitle)
               ) : null}
             </h1>
             {/* text-balance distributes the copy evenly across however many
                 lines it ends up on, instead of greedily filling each line and
-                leaving a short orphan on the last one. On tablets (640-962px)
-                the column narrows so the subtitle breaks into three lines and
-                stays clear of the photo that overlaps the text column there;
-                phones and desktops keep the full max-w-xl. */}
-            <p className="text-base sm:text-lg tablet:text-xl text-fog-400 mb-[0.85rem] tablet:mb-[1.7rem] leading-relaxed max-w-xl sm:max-w-[330px] min-[963px]:max-w-xl text-balance">
+                leaving a short orphan on the last one. Below desktop (<963px)
+                it is capped at 17em so phones and tablets get three lines (and
+                tablets keep it clear of the overlapping photo); desktop keeps
+                max-w-xl and two lines. */}
+            <p className="text-base sm:text-lg tablet:text-xl text-fog-400 mb-[0.85rem] tablet:mb-[1.7rem] leading-relaxed max-w-[17em] min-[963px]:max-w-xl text-balance">
               {companySettings?.heroSubtitle ? t(companySettings.heroSubtitle) : ""}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 tablet:gap-[1.0625rem] flex-wrap">
