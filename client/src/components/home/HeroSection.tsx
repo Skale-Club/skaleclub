@@ -26,13 +26,16 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
   // navy + grid so it runs unbroken behind the top half of the trust card,
   // which straddles the hero/next-section boundary.
   const bottomPadding = showTrustBadges ? 'pb-[1.275rem] sm:pb-[1.7rem] lg:pb-[1.275rem]' : 'bg-transparent';
-  // Homepage photo panel: the photo file is already cropped at the waist, so it
-  // sits on the trust card's top edge and starts a little under the header
-  // (1rem of air on tablets, 1.5rem on desktop). Height stays a percentage so
-  // the img's max-h-full resolves.
+  // Homepage photo panel (the file is cropped at the hips, 1024x1180).
+  // Phones show the whole photo. Tablets hang the panel 2rem below the hero,
+  // clipped at the trust card, with 1rem of air under the header. Desktop
+  // (>=963px) makes the panel 14.56% taller than the space under the header
+  // (1rem of air) and hangs that extra below the hero: the bottom 150/1180 of
+  // the photo is hidden, so it reads as cropped at the waistband and the
+  // people render larger. Percent heights keep the img's max-h-full resolvable.
   const photoInset = showTrustBadges
     ? 'sm:inset-y-0'
-    : 'sm:top-auto sm:bottom-0 sm:h-[calc(100%-1rem)] min-[963px]:h-[calc(100%-1.5rem)]';
+    : 'sm:top-auto sm:-bottom-8 sm:h-[calc(100%+1rem)] min-[963px]:h-[calc((100%-1rem)*1.1456)] min-[963px]:bottom-[calc((100%-1rem)*-0.1456)]';
 
   // From tablet up the text column is vertically centered in the hero's
   // *visible* band: the section pt matches the overlaying header's height
