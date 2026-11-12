@@ -25,7 +25,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
   // edge and paints no background of its own: the wrapper in Home.tsx owns the
   // navy + grid so it runs unbroken behind the top half of the trust card,
   // which straddles the hero/next-section boundary.
-  const bottomPadding = showTrustBadges ? 'pb-[1.275rem] sm:pb-[1.7rem] lg:pb-[1.275rem]' : 'bg-transparent';
+  const bottomPadding = showTrustBadges ? 'pb-[1.275rem] min-[740px]:pb-[1.7rem] lg:pb-[1.275rem]' : 'bg-transparent';
   // Homepage photo panel (the file is cropped at the hips, 1024x1180).
   // Phones show the whole photo. Tablets hang the panel 2rem below the hero,
   // clipped at the trust card, with 1rem of air under the header. Desktop
@@ -34,8 +34,8 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
   // the photo is hidden, so it reads as cropped at the waistband and the
   // people render larger. Percent heights keep the img's max-h-full resolvable.
   const photoInset = showTrustBadges
-    ? 'sm:inset-y-0'
-    : 'sm:top-auto sm:-bottom-8 sm:h-[calc(100%+1rem)] min-[963px]:h-[calc((100%-1rem)*1.1456)] min-[963px]:bottom-[calc((100%-1rem)*-0.1456)]';
+    ? 'min-[740px]:inset-y-0'
+    : 'min-[740px]:top-auto min-[740px]:-bottom-8 min-[740px]:h-[calc(100%+1rem)] min-[963px]:h-[calc((100%-1rem)*1.1456)] min-[963px]:bottom-[calc((100%-1rem)*-0.1456)]';
 
   // From tablet up the text column is vertically centered in the hero's
   // *visible* band: the section pt matches the overlaying header's height
@@ -46,29 +46,27 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
       tone="hero"
       heroVariant="homepage"
       pattern={showTrustBadges}
-      className={`relative flex flex-col justify-end overflow-hidden border-b-0 ${bottomPadding} min-h-[min(100dvh,620px)] sm:min-h-[min(100dvh,500px)] tablet:min-h-[min(100dvh,540px)]`}
-      containerClassName="relative z-10 pt-[calc(var(--nav-offset)+0.825rem)] sm:pt-[var(--nav-offset)] sm:flex-1 sm:flex sm:flex-col"
+      className={`relative flex flex-col justify-end overflow-hidden border-b-0 ${bottomPadding} min-h-[min(100dvh,620px)] min-[740px]:min-h-[min(100dvh,500px)] tablet:min-h-[min(100dvh,540px)]`}
+      containerClassName="relative z-10 pt-[calc(var(--nav-offset)+0.825rem)] min-[740px]:pt-[var(--nav-offset)] min-[740px]:flex-1 min-[740px]:flex min-[740px]:flex-col"
     >
-        {/* Below tablet (770px): stacked, image full-width beneath the text
-            (grid-cols-1). From tablet up: the photo is pinned at its full,
-            frozen 560px — never shrunk — as an absolutely-positioned panel
-            on the right (see the image wrapper below); the text keeps its
-            own full 560px and simply overlaps it (z-20 over z-10) whenever
-            the viewport isn't wide enough to fit both side by side. Nothing
-            about either element's size changes across this range — only
-            whether they happen to overlap. */}
-        <div className="grid grid-cols-1 sm:flex sm:items-center sm:flex-1 relative gap-1 sm:gap-[1.275rem] lg:gap-[1.7rem] items-end">
+        {/* Below 740px: stacked like a phone (grid-cols-1), text centred and
+            the photo beneath it (full-bleed on phones, capped at 480px from
+            560px). From 740px (iPad mini) up: side by side, the text on the
+            left and the photo as an absolutely-positioned panel on the right
+            (see the image wrapper below). Narrower than that, the two could
+            not fit side by side without the text covering the photo. */}
+        <div className="grid grid-cols-1 min-[740px]:flex min-[740px]:items-center min-[740px]:flex-1 relative gap-1 min-[740px]:gap-[1.275rem] lg:gap-[1.7rem] items-end">
           {/* container-editorial pads 20px on phones, so the photo column below
               pulls out with -mx-5 to stay full-bleed there. */}
-          <div className="order-1 lg:order-1 text-white pt-[1.275rem] sm:pt-0 pb-[1.7rem] sm:pb-0 tablet:translate-y-0 sm:self-center sm:max-w-[420px] min-[963px]:max-w-[540px] xl:max-w-[600px] relative z-20">
+          <div className="order-1 lg:order-1 text-white text-center min-[740px]:text-left pt-[1.275rem] min-[740px]:pt-0 pb-[1.7rem] min-[740px]:pb-0 tablet:translate-y-0 min-[740px]:self-center min-[740px]:max-w-[420px] min-[963px]:max-w-[540px] xl:max-w-[600px] relative z-20">
             {homepageContent.heroBadgeImageUrl ? (
-              <div className="mt-[0.85rem] sm:mt-0 mb-3 tablet:mb-[1.275rem]">
+              <div className="mt-[0.85rem] min-[740px]:mt-0 mb-3 tablet:mb-[1.275rem]">
                 <img
                   src={homepageContent.heroBadgeImageUrl}
                   alt={homepageContent.heroBadgeAlt || ''}
                   width={96}
                   height={24}
-                  className="h-5 sm:h-6 w-auto object-contain"
+                  className="h-5 min-[740px]:h-6 w-auto object-contain"
                 />
               </div>
             ) : null}
@@ -79,7 +77,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 title is capped at 8.4em (between "Repetitive Work." ≈7.3em and
                 "Stop Doing Repetitive" ≈9.6em), so phones and tablets break it
                 into three lines; em keeps it right as the font scales. */}
-            <h1 className="max-w-[8.4em] min-[963px]:max-w-none text-[clamp(2.125rem,9vw,3.375rem)] sm:text-[2.7rem] tablet:text-5xl min-[963px]:text-[3.5rem] font-display font-semibold tracking-[-0.04em] leading-[0.98] text-fog-50 mb-3 tablet:mb-[1.275rem]">
+            <h1 className="max-w-[8.4em] mx-auto min-[740px]:mx-0 min-[963px]:max-w-none text-[clamp(2.125rem,9vw,3.375rem)] min-[740px]:text-[2.7rem] tablet:text-5xl min-[963px]:text-[3.5rem] font-display font-semibold tracking-[-0.04em] leading-[0.98] text-fog-50 mb-3 tablet:mb-[1.275rem]">
               {companySettings?.heroTitle ? (
                 t(companySettings.heroTitle)
               ) : null}
@@ -90,15 +88,15 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 it is capped at 17em so phones and tablets get three lines (and
                 tablets keep it clear of the overlapping photo); desktop keeps
                 max-w-xl and two lines. */}
-            <p className="text-base sm:text-lg tablet:text-xl text-fog-400 mb-[0.85rem] tablet:mb-[1.7rem] leading-relaxed max-w-[17em] min-[963px]:max-w-xl text-balance">
+            <p className="text-base min-[740px]:text-lg tablet:text-xl text-fog-400 mb-[0.85rem] tablet:mb-[1.7rem] leading-relaxed max-w-[17em] mx-auto min-[740px]:mx-0 min-[963px]:max-w-xl text-balance">
               {companySettings?.heroSubtitle ? t(companySettings.heroSubtitle) : ""}
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 tablet:gap-[1.0625rem] flex-wrap">
+            <div className="flex flex-col min-[740px]:flex-row gap-3 tablet:gap-[1.0625rem] flex-wrap">
               {companySettings?.ctaText ? (
                 <PillButton
                   data-form-trigger="lead-form"
                   data-floating-lead-source
-                  className="w-full sm:w-auto shrink-0 whitespace-nowrap px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
+                  className="w-full min-[740px]:w-auto shrink-0 whitespace-nowrap px-6 min-[740px]:px-8 py-3 min-[740px]:py-4 text-base min-[740px]:text-lg"
                   onClick={() => {
                     onCtaClick();
                     trackCTAClick('hero', companySettings?.ctaText || '');
@@ -113,7 +111,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
           {/* On the homepage (trust bar outside the hero) the photo panel
               starts a little below the header so the hair stays off it (see
               photoInset). Inline-badge heroes keep the full band height. */}
-          <div className={`order-2 lg:order-2 -mx-5 sm:mx-0 relative flex h-full items-end justify-center self-end w-full z-10 sm:absolute ${photoInset} sm:right-[-2.5rem] tablet:right-[max(0px,calc((100%-900px)/2))] min-[963px]:right-0 sm:w-[460px] tablet:w-[480px] min-[963px]:w-[560px]`}>
+          <div className={`order-2 lg:order-2 -mx-5 min-[740px]:mx-0 relative flex h-full items-end justify-center self-end w-full z-10 min-[740px]:absolute ${photoInset} min-[740px]:right-0 tablet:right-[max(0px,calc((100%-900px)/2))] min-[963px]:right-0 min-[740px]:w-[min(460px,calc(100vw-300px))] tablet:w-[480px] min-[963px]:w-[560px]`}>
             {heroImageUrl ? (
               <img
                 src={heroImageUrl}
@@ -129,10 +127,10 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 // viewports scale it down instead of clipping the hair at the
                 // section's top edge; object-bottom keeps it glued to the
                 // trust bar while it shrinks.
-                className="w-full max-w-none sm:max-w-[460px] tablet:max-w-[480px] min-[963px]:max-w-[560px] sm:max-h-full object-contain object-bottom drop-shadow-2xl origin-bottom"
+                className="w-full max-w-none min-[560px]:max-w-[480px] min-[740px]:max-w-[460px] tablet:max-w-[480px] min-[963px]:max-w-[560px] min-[740px]:max-h-full object-contain object-bottom drop-shadow-2xl origin-bottom"
               />
             ) : (
-              <div className="w-full max-w-none sm:max-w-[460px] tablet:max-w-[480px] min-[963px]:max-w-[560px]" />
+              <div className="w-full max-w-none min-[560px]:max-w-[480px] min-[740px]:max-w-[460px] tablet:max-w-[480px] min-[963px]:max-w-[560px]" />
             )}
           </div>
         </div>
