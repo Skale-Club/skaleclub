@@ -97,7 +97,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 <PillButton
                   data-form-trigger="lead-form"
                   data-floating-lead-source
-                  className="w-full min-[740px]:w-auto shrink-0 whitespace-nowrap px-6 min-[740px]:px-8 py-3 min-[740px]:py-4 text-base min-[740px]:text-lg"
+                  className="w-full min-[740px]:w-auto shrink-0 whitespace-nowrap px-[1.725rem] min-[740px]:px-8 py-[0.8625rem] min-[740px]:py-4 text-[1.15rem] min-[740px]:text-lg"
                   onClick={() => {
                     onCtaClick();
                     trackCTAClick('hero', companySettings?.ctaText || '');
