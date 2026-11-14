@@ -15,7 +15,11 @@ export interface BlogRow {
   slug: string;
   title: string;
   metaDescription: string | null;
+  excerpt: string | null;
   featureImageUrl: string | null;
+  authorName: string | null;
+  publishedAt: Date | null;
+  updatedAt: Date | null;
 }
 
 import { blogCache, landingCache, settingsCache } from "./caches.js";
@@ -50,7 +54,11 @@ export function getPublishedBlogRow(slug: string): Promise<BlogRow | null> {
       slug: post.slug,
       title: post.title,
       metaDescription: post.metaDescription,
+      excerpt: post.excerpt,
       featureImageUrl: post.featureImageUrl,
+      authorName: post.authorName,
+      publishedAt: post.publishedAt,
+      updatedAt: post.updatedAt,
     };
   });
 }

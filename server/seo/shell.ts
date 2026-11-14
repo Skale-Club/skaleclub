@@ -3,6 +3,10 @@ import { injectSeo, type InjectContext } from "./inject.js";
 import { resolveRoute } from "./routes.js";
 import { getSeoSettings } from "./data.js";
 import { applyPageContent, buildPageContentHtml } from "./content/index.js";
+import { contentData, makeTranslator, type ContentData } from "./content/data.js";
+import { legacyLanguagePath, splitLanguagePath } from "#shared/languagePath.js";
+import { coreKeyForPath } from "#shared/coreSeo.js";
+import type { CompanySettings } from "#shared/schema.js";
 import { injectHydrationState, renderReactPage } from "../ssr-react.js";
 
 // Builds the HTML document for a page request: the per-page <head>, then the body.
@@ -41,6 +45,30 @@ function stripLoader(html: string): string {
   return html.replace(LOADER_BLOCK, "");
 }
 
+/**
+ * The FAQ rows for /faq and /br/faq, in the page's language: the same rows and the same
+ * translation lookup the page renders with, so its FAQPage markup repeats what a visitor
+ * reads. Undefined on any other page or when the read fails (the page then has no markup).
+ */
+export async function faqsForPage(
+  pathname: string,
+  settings: CompanySettings | null,
+  data: Pick<ContentData, "faqs" | "ptTranslations"> = contentData,
+): Promise<Array<{ question: string; answer: string }> | undefined> {
+  const clean = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  const { path, language } = splitLanguagePath(legacyLanguagePath(clean) ?? clean);
+  if (coreKeyForPath(path, settings?.pageSlugs) !== "faq") return undefined;
+  try {
+    const rows = await data.faqs();
+    const cached = language === "pt" ? await data.ptTranslations().catch(() => null) : null;
+    const t = makeTranslator(language, cached);
+    return rows.map((row) => ({ question: t(row.question), answer: t(row.answer) }));
+  } catch (err) {
+    console.error("[seo] faq read failed:", (err as Error).message);
+    return undefined;
+  }
+}
+
 export async function buildShell(opts: {
   /** client/index.html (production: the built one). */
   template: string;
@@ -59,7 +87,11 @@ export async function buildShell(opts: {
     console.error("[seo] company settings unavailable:", (err as Error).message);
   }
   const route = await resolveRoute(pathname, settings?.pageSlugs);
-  const ctx: InjectContext = { settings, route };
+  const ctx: InjectContext = {
+    settings,
+    route,
+    faqs: route.status === 200 ? await faqsForPage(pathname, settings) : undefined,
+  };
   const head = injectSeo(template, pathname, ctx);
 
   const indexable = route.status === 200 && !route.noindex;
