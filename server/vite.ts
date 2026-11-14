@@ -53,6 +53,7 @@ export async function setupVite(server: Server, app: Express) {
       // dev-only shell cannot drift from the real one.
       const pathname = url.split("?", 1)[0];
       const shell = await buildShell({ template, pathname, vite, dev: true });
+      if (shell.redirect) return res.redirect(301, shell.redirect + url.slice(pathname.length));
       const page = await vite.transformIndexHtml(url, shell.html);
       if (shell.noindex || shell.status === 404) res.setHeader("X-Robots-Tag", "noindex, nofollow");
       res.status(shell.status).set({ "Content-Type": "text/html", "Cache-Control": shell.cacheControl }).end(page);

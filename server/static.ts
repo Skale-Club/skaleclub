@@ -85,6 +85,10 @@ export function serveStatic(app: Express) {
 
     // Head, body (React render or text fallback) and cache policy: see server/seo/shell.ts.
     const shell = await buildShell({ template: indexHtml, pathname });
+    if (shell.redirect) {
+      res.setHeader("Cache-Control", shell.cacheControl);
+      return res.redirect(301, shell.redirect + req.originalUrl.slice(pathname.length));
+    }
     if (shell.noindex || shell.status === 404) {
       const existing = String(res.getHeader("X-Robots-Tag") ?? "");
       if (!/noindex/i.test(existing)) res.setHeader("X-Robots-Tag", "noindex, nofollow");

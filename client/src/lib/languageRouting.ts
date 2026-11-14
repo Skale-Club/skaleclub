@@ -9,18 +9,22 @@ import { splitLanguagePath, withLanguage, type SiteLanguage } from "@shared/lang
 const currentLanguage = (router?: { ssrPath?: string }): SiteLanguage =>
   splitLanguagePath(typeof window === "undefined" ? (router?.ssrPath ?? "/") : window.location.pathname).language;
 
+// Blog posts exist in English only: /br/blog/<slug> redirects to /blog/<slug>, so links to a
+// post skip the redirect and point at the English URL directly.
+const UNTRANSLATED_PATH = /^\/blog\/[^/?#]+\/?(?:[?#].*)?$/;
+
 // Routes see the path without its `/br` prefix; navigation re-appends it while in pt.
 export const useLanguageLocation: BaseLocationHook = (router) => {
   const [rawPath, navigate] = useBrowserLocation(router);
   return [
     splitLanguagePath(rawPath).path,
     (to: string, options?: { replace?: boolean; state?: unknown }) =>
-      navigate(withLanguage(to, currentLanguage()), options),
+      navigate(UNTRANSLATED_PATH.test(to) ? to : withLanguage(to, currentLanguage()), options),
   ];
 };
 
 export const languageHref = (href: string, router?: { ssrPath?: string }) =>
-  withLanguage(href, currentLanguage(router));
+  UNTRANSLATED_PATH.test(href) ? href : withLanguage(href, currentLanguage(router));
 
 /**
  * The raw pathname, `/br` prefix included. Same as wouter's usePathname(), but it

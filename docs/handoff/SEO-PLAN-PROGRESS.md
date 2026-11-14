@@ -9,10 +9,10 @@ Machine notes: the type check (`npx tsc --noEmit -p .`), the unit suite and `npm
 | Phase | Status |
 |---|---|
 | 0 Restore deploy (`COOLIFY_TOKEN` 401) | Pending, owner action. Out of scope. |
-| 1 Real SSR + hydration | Implemented, unit-tested, builds. Browser hydration check: see "Verification". |
-| 2 Metadata quick wins | Not started yet (see Next step). |
-| 3 Structured data | Not started yet. |
-| 4 `/br/blog/<slug>` 301 | Not started yet. |
+| 1 Real SSR + hydration | Done and verified (unit tests, build, browser console check on a local harness). |
+| 2 Metadata quick wins | Done and unit-tested. Home positioning text NOT changed (owner decision pending). |
+| 3 Structured data | Done and unit-tested (not run through Google's Rich Results Test: that needs the deployed URL). |
+| 4 `/br/blog/<slug>` 301 | Done and unit-tested (server 301 + client redirect). |
 | 5 Edge / Cloudflare / DNS / favicon | Pending, out of scope. |
 | 6 Search Console / blog cadence | Pending, out of scope. |
 
@@ -46,13 +46,31 @@ Machine notes: the type check (`npx tsc --noEmit -p .`), the unit suite and `npm
 - Vite dev: `server/vite.ts` custom logger exits the process on any logged error; an SSR module load error in dev would therefore kill the dev server. Not changed.
 - Owner decision pending (Phase 2 / problem 5): the home positioning differs per language (EN "AI Automation & Smart Websites for Growing Businesses", PT "Marketing Orientado a Dados e Crescimento Escalável"). Deliberately NOT changed.
 
+## Phase 2 (metadata)
+- `shared/seoTitle.ts`: `brandPageTitle` is now keyword-first (`Services | Skale Club`); `brandFirstTitle` keeps the home brand-first (EN home title still comes from settings via `homepageTitle`; PT home from `CORE_SEO.home.pt`). `server/seo/inject.ts` and `client/src/hooks/use-seo.ts` use `brandFirstTitle` for the home only.
+- `shared/coreSeo.ts` / `shared/landingSeo.ts`: titles flipped, every description is now 110-165 characters, `/br/apps` is `Aplicativos | Skale Club` (crumb too), Blog is `Marketing Blog` / `Blog de Marketing`, Skale Hub is `Skale Hub Live Sessions` / `Lives do Skale Hub`.
+- `usePageSeo` takes `core` / `landing` keys and reads the same copy the server injects (pages no longer repeat English strings that drift). The PT nav label for Apps is unchanged (`'Apps': 'Apps'` in `shared/i18n/pt.ts`); only the page title/crumb say Aplicativos. If the owner wants the label renamed too, change that dictionary entry.
+- Tests: `shared/seoCopy.test.ts` (no duplicate titles incl. EN/PT pairs, descriptions 110-165, keyword-first), `shared/seoTitle.test.ts`.
+- NOT done, owner decision: one home positioning for both languages (EN "AI Automation & Smart Websites for Growing Businesses" vs PT "Marketing Orientado a Dados e Crescimento Escalável").
+
+## Phase 3 (structured data)
+`server/seo/structuredData.ts` + `server/seo/inject.ts`: FAQPage on `/faq` and `/br/faq` (rows and PT translations from `faqsForPage` in `server/seo/shell.ts`, same lookup the page uses); Product + AggregateOffer ($49 to $89, from `shared/nfc-plaque-pricing.ts`) on `/products/nfc-review-plaque` and `/br/...`; ItemList on `/products`; BlogPosting (headline, dates, author, image, publisher) on posts (`BlogRow` carries the new fields); Service with the Organization as provider on `/services`, `/websites`, `/barbershops` (and their `/br` twins). Tests: `server/seo/structuredData.test.ts`.
+
+## Phase 4 (language consistency)
+Option (b): `blogRedirectTarget` (`server/seo/shell.ts`) makes `/br/blog/<slug>` answer 301 to `/blog/<slug>` (short cache: `s-maxage=300`) in both render paths. Client: `BlogPost` redirects a `/br` URL with a full navigation, and `languageHref` / `useLanguageLocation` stop adding `/br` to `/blog/<slug>` links. `/grupo` stays PT-only. The PT blog index (`/br/blog`) is unchanged.
+
 ## Verification (only commands that were run)
-- `npx tsc --noEmit -p .` -> no errors.
-- `DATABASE_URL=postgresql://test:test@127.0.0.1:1/test npx tsx --test "server/**/*.test.ts" "shared/**/*.test.ts"` -> 378 pass, 0 fail.
+- `npx tsc --noEmit -p .` -> no errors (after every phase).
+- `DATABASE_URL=postgresql://test:test@127.0.0.1:1/test npx tsx --test "server/**/*.test.ts" "shared/**/*.test.ts"` -> 390 pass, 0 fail.
 - `npm run build` -> client, `dist/server/entry-server.js`, `dist/index.cjs` build. A standalone `node` import of the built SSR bundle with a mocked `fetch` rendered `/faq` with the FAQ question in the HTML.
+- Hydration check: a throwaway Node harness (kept out of the repo) served the BUILT client from `dist/public` and server-rendered pages from `dist/server/entry-server.js` with mocked API data. Opened `/faq`, `/`, `/br/faq`, `/blog/hello`, `/products` in the browser pane and read the console: no React hydration errors (#418/#423/#425); the only console errors were the harness's missing mock endpoints (sw.js, attribution, chat config, translate). `/br/faq` showed the Portuguese FAQ text after hydration. This ran BEFORE Phases 2-4; the Phase 4 `BlogPost` change (share links set after mount) was not re-run in the browser.
+- Not verified: real production behaviour (no deploy), Rich Results Test, the dev server (`npm run dev` was not started: it boots cron jobs against the real database), a real `/br/blog/<slug>` 301 over HTTP (covered by `blogRedirectTarget` unit test only).
 
 ## Commits
-(see git log on the branch)
+See `git log feat/seo-ssr-hydration` (one commit per phase plus docs).
 
-## Next step
-Phase 2, then 3, then 4 (see Notion plan).
+## Next step (for whoever continues)
+1. Owner: fix `COOLIFY_TOKEN` (Phase 0), merge the branch and deploy; then check a public page in the browser for flash/CLS and run Rich Results Test on `/faq`, `/blog/<slug>`, `/products/nfc-review-plaque`.
+2. After deploy, confirm `curl -s https://skale.club/faq` contains the FAQ text inside `<div id="root">` and `__REACT_QUERY_STATE__`, and `curl -sI https://skale.club/br/blog/<slug>` answers 301.
+3. If anything misbehaves in production, `ENABLE_REACT_SSR=false` restores the text fallback without a rebuild.
+4. Phase 5 and 6 are owner/Cloudflare/Search Console work (see the Notion plan). When Cloudflare is added, keep the origin `s-maxage=60` HTML headers from `server/seo/shell.ts`.

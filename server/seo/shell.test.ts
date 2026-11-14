@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { buildShell, NOT_FOUND_CACHE_CONTROL, PRIVATE_HTML_CACHE_CONTROL, PUBLIC_HTML_CACHE_CONTROL } from "./shell.js";
+import { blogRedirectTarget, buildShell, NOT_FOUND_CACHE_CONTROL, PRIVATE_HTML_CACHE_CONTROL, PUBLIC_HTML_CACHE_CONTROL } from "./shell.js";
 
 // No database and no built SSR bundle here: settings are unavailable (the query is refused
 // and the shell carries on) and the React render is switched off, so these exercise the
@@ -46,4 +46,14 @@ test("admin keeps the loader, gets no text and is not cached", async () => {
 test("development never lets anything cache the HTML", async () => {
   const shell = await buildShell({ template, pathname: "/", dev: true });
   assert.equal(shell.cacheControl, PRIVATE_HTML_CACHE_CONTROL);
+});
+
+test("a Portuguese blog post redirects to the English post; an English one does not", () => {
+  const route = { blog: { slug: "hello" } } as never;
+  assert.equal(blogRedirectTarget("/br/blog/hello", route), "/blog/hello");
+  assert.equal(blogRedirectTarget("/br/blog/hello/", route), "/blog/hello");
+  assert.equal(blogRedirectTarget("/blog/hello", route), null);
+  // Not a post (the PT blog index, other pages) is never redirected.
+  assert.equal(blogRedirectTarget("/br/blog", { blog: null }), null);
+  assert.equal(blogRedirectTarget("/br/faq", { blog: null }), null);
 });

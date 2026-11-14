@@ -1,6 +1,6 @@
 import type { ViteDevServer } from "vite";
 import { injectSeo, type InjectContext } from "./inject.js";
-import { resolveRoute } from "./routes.js";
+import { resolveRoute, type RouteResolution } from "./routes.js";
 import { getSeoSettings } from "./data.js";
 import { applyPageContent, buildPageContentHtml } from "./content/index.js";
 import { contentData, makeTranslator, type ContentData } from "./content/data.js";
@@ -29,10 +29,14 @@ const EMPTY_ROOT = '<div id="root"></div>';
 export const PUBLIC_HTML_CACHE_CONTROL = "public, max-age=0, s-maxage=60, stale-while-revalidate=60";
 /** Not cached anywhere: publishing a page at a URL has to make it live on the next request. */
 export const NOT_FOUND_CACHE_CONTROL = "public, max-age=0, s-maxage=0, stale-while-revalidate=0";
+/** A redirect is short-lived: it ends the day a translation of the post exists. */
+export const REDIRECT_CACHE_CONTROL = "public, max-age=0, s-maxage=300";
 /** Private and tooling URLs (admin, forms, viewers). */
 export const PRIVATE_HTML_CACHE_CONTROL = "no-cache";
 
 export interface ShellResult {
+  /** Set when the URL must answer a 301 to this path instead of a page. */
+  redirect?: string;
   html: string;
   status: 200 | 404;
   noindex: boolean;
@@ -43,6 +47,18 @@ export interface ShellResult {
 
 function stripLoader(html: string): string {
   return html.replace(LOADER_BLOCK, "");
+}
+
+/**
+ * Blog posts exist in English only. `/br/blog/<slug>` used to serve that English text under
+ * a Portuguese page; until a translation exists it redirects to the English post. Returns
+ * the target path, or null when the URL is not a Portuguese post.
+ */
+export function blogRedirectTarget(pathname: string, route: Pick<RouteResolution, "blog">): string | null {
+  if (!route.blog) return null;
+  const clean = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  const { path, language } = splitLanguagePath(legacyLanguagePath(clean) ?? clean);
+  return language === "pt" ? path : null;
 }
 
 /**
@@ -87,6 +103,10 @@ export async function buildShell(opts: {
     console.error("[seo] company settings unavailable:", (err as Error).message);
   }
   const route = await resolveRoute(pathname, settings?.pageSlugs);
+  const redirect = blogRedirectTarget(pathname, route);
+  if (redirect) {
+    return { html: "", status: 200, noindex: false, cacheControl: REDIRECT_CACHE_CONTROL, reactRendered: false, redirect };
+  }
   const ctx: InjectContext = {
     settings,
     route,
