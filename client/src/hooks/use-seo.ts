@@ -1,6 +1,6 @@
 import { getLandingSeo, landingPathForSlug, slugForLandingPath } from '@shared/landingSeo';
-import { brandPageTitle, homepageTitle } from '@shared/seoTitle';
-import { CORE_SEO, coreKeyForPath, isNoindexPath } from '@shared/coreSeo';
+import { brandFirstTitle, brandPageTitle, homepageTitle } from '@shared/seoTitle';
+import { CORE_SEO, coreKeyForPath, isNoindexPath, type CoreSeoKey } from '@shared/coreSeo';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRawPathname } from '@/lib/languageRouting';
@@ -104,9 +104,28 @@ let pageNoindex = false;
  * Page-level title and description. useSEO only writes the site-wide title
  * on the homepage, so every inner page carried the homepage title verbatim.
  */
-export function usePageSeo(opts: { title: string; description?: string; noindex?: boolean }) {
+export function usePageSeo(opts: {
+  title?: string;
+  description?: string;
+  noindex?: boolean;
+  /**
+   * Take the title and description from shared/coreSeo.ts (or, for `landing`, from
+   * shared/landingSeo.ts) in the URL's language, the same copy the server injects. Pages
+   * used to repeat the English strings here and drift from it.
+   */
+  core?: CoreSeoKey;
+  landing?: string;
+}) {
   const { data: settings } = useQuery<SeoSettings>({ queryKey: ['/api/company-settings'] });
-  const { title, description, noindex } = opts;
+  const language = splitLanguagePath(useRawPathname()).language;
+  const shared = opts.core
+    ? CORE_SEO[opts.core][language] ?? CORE_SEO[opts.core].pt
+    : opts.landing
+      ? getLandingSeo(language === 'pt' ? `${opts.landing}-br` : opts.landing)
+      : undefined;
+  const title = shared?.title ?? opts.title ?? '';
+  const description = shared?.description ?? opts.description;
+  const { noindex } = opts;
   useEffect(() => {
     const brand = settings?.companyName || settings?.ogSiteName || 'Skale Club';
     // An empty title leaves the document title to the page (or the server-side
@@ -165,7 +184,7 @@ export function useSEO() {
     // settings row is English.
     const homeCopy = isPortugueseHome() ? CORE_SEO.home.pt : null;
     const homeTitle = homeCopy
-      ? brandPageTitle(homeCopy.title, settings.companyName)
+      ? brandFirstTitle(homeCopy.title, settings.companyName)
       : homepageTitle(settings);
     const homeDescription = homeCopy?.description ?? settings.seoDescription;
     if (onHomepage) {

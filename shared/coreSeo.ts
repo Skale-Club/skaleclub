@@ -52,12 +52,12 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   portfolio: {
     en: {
-      title: "Skale Club | Our Solutions",
-      description: "Ready-made apps and the services we perform: AI, automation, websites, marketing and more.",
+      title: "Our Solutions | Skale Club",
+      description: "Ready-made apps and the services we perform for your business: AI, automation, websites, marketing and more. See what we build.",
     },
     pt: {
-      title: "Skale Club | Nossas Soluções",
-      description: "Apps prontos e os serviços que prestamos: IA, automação, sites, marketing e mais.",
+      title: "Nossas Soluções | Skale Club",
+      description: "Apps prontos e os serviços que prestamos para o seu negócio: IA, automação, sites, marketing e mais. Veja o que construímos.",
     },
     crumb: { en: "Our Solutions", pt: "Nossas Soluções" },
     sitemap: true,
@@ -65,25 +65,25 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   apps: {
     en: {
-      title: "Skale Club | Apps",
-      description: "Ready-made apps we build and run, each with a fixed price. Subscribe and start.",
+      title: "Apps | Skale Club",
+      description: "Ready-made apps we build and run for service businesses, each with a fixed price. Subscribe, set it up with us and start using it.",
     },
     pt: {
-      title: "Skale Club | Apps",
-      description: "Apps prontos que criamos e operamos, cada um com preço fechado. Você assina e começa.",
+      title: "Aplicativos | Skale Club",
+      description: "Aplicativos prontos que criamos e operamos para empresas de serviços, cada um com preço fechado. Você assina e começa a usar.",
     },
-    crumb: { en: "Apps", pt: "Apps" },
+    crumb: { en: "Apps", pt: "Aplicativos" },
     sitemap: true,
     ogImage: CORE_OG_IMAGE,
   },
   services: {
     en: {
-      title: "Skale Club | Services",
-      description: "Marketing and technology services tailored to your business: AI, automation, websites and more.",
+      title: "Services | Skale Club",
+      description: "Marketing and technology services tailored to your business: AI, automation, websites and more, quoted for your case.",
     },
     pt: {
-      title: "Skale Club | Serviços",
-      description: "Serviços de marketing e tecnologia sob medida para o seu negócio: IA, automação, sites e mais.",
+      title: "Serviços | Skale Club",
+      description: "Serviços de marketing e tecnologia sob medida para o seu negócio: IA, automação, sites e mais, com orçamento para o seu caso.",
     },
     crumb: { en: "Services", pt: "Serviços" },
     sitemap: true,
@@ -91,12 +91,12 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   contact: {
     en: {
-      title: "Skale Club | Contact",
-      description: "Get in touch with Skale Club. Call, email or send us a message and we will get back to you.",
+      title: "Contact | Skale Club",
+      description: "Get in touch with Skale Club. Call, email or send us a message and we will get back to you as soon as possible.",
     },
     pt: {
-      title: "Skale Club | Contato",
-      description: "Fale com a Skale Club. Ligue, envie um e-mail ou mande uma mensagem e retornaremos em breve.",
+      title: "Contato | Skale Club",
+      description: "Fale com a Skale Club. Ligue, envie um e-mail ou mande uma mensagem pelo site e retornaremos o mais rápido possível.",
     },
     crumb: { en: "Contact", pt: "Contato" },
     sitemap: true,
@@ -104,12 +104,12 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   faq: {
     en: {
-      title: "Skale Club | FAQ",
-      description: "Find answers to common questions about our services.",
+      title: "FAQ | Skale Club",
+      description: "Answers to common questions about Skale Club services: how we work, pricing, timelines, websites, apps and marketing support.",
     },
     pt: {
-      title: "Skale Club | Perguntas Frequentes",
-      description: "Encontre respostas para perguntas comuns sobre nossos serviços.",
+      title: "Perguntas Frequentes | Skale Club",
+      description: "Respostas para as perguntas mais comuns sobre os serviços da Skale Club: como trabalhamos, preços, prazos, sites e marketing.",
     },
     crumb: { en: "FAQ", pt: "Perguntas Frequentes" },
     sitemap: true,
@@ -117,12 +117,12 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   blog: {
     en: {
-      title: "Skale Club | Blog",
-      description: "Tips, guides, and insights about marketing services",
+      title: "Marketing Blog | Skale Club",
+      description: "Tips, guides and insights on marketing, automation and websites for service businesses, from the Skale Club team.",
     },
     pt: {
-      title: "Skale Club | Blog",
-      description: "Dicas, guias e insights sobre serviços de marketing.",
+      title: "Blog de Marketing | Skale Club",
+      description: "Dicas, guias e insights sobre marketing, automação e sites para empresas de serviços, direto da equipe da Skale Club.",
     },
     crumb: { en: "Blog", pt: "Blog" },
     sitemap: true,
@@ -130,12 +130,12 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   links: {
     en: {
-      title: "Skale Club | Links",
-      description: "All the Skale Club links in one place: website, proposals, portfolio and blog.",
+      title: "Links | Skale Club",
+      description: "All the Skale Club links in one place: website, proposals, portfolio and blog. Find what you need and get in touch quickly.",
     },
     pt: {
-      title: "Skale Club | Links",
-      description: "Todos os links da Skale Club em um só lugar: site, propostas, portfólio e blog.",
+      title: "Links | Skale Club",
+      description: "Todos os links da Skale Club em um só lugar: site, propostas, portfólio e blog. Encontre o que precisa e fale com a gente.",
     },
     crumb: { en: "Links", pt: "Links" },
     sitemap: false,
@@ -143,27 +143,27 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   hub: {
     en: {
-      title: "Skale Club | Skale Hub",
+      title: "Skale Hub Live Sessions | Skale Club",
       description:
         "Weekly live sessions on winning clients in the US: Google Ads, Meta Ads, CRM, automation and AI. Register to join the next Skale Hub.",
     },
     pt: {
-      title: "Skale Club | Skale Hub",
+      title: "Lives do Skale Hub | Skale Club",
       description:
         "Lives semanais sobre aquisição de clientes nos EUA: Google Ads, Meta Ads, CRM, automação e IA. Cadastre-se para entrar no próximo Skale Hub.",
     },
-    crumb: { en: "Skale Hub", pt: "Skale Hub" },
+    crumb: { en: "Skale Hub", pt: "Lives do Skale Hub" },
     sitemap: true,
     ogImage: CORE_OG_IMAGE,
   },
   privacyPolicy: {
     en: {
-      title: "Skale Club | Privacy Policy",
-      description: "Read how Skale Club collects, uses and protects your personal information.",
+      title: "Privacy Policy | Skale Club",
+      description: "Read how Skale Club collects, uses and protects your personal information when you visit the site, send a form or contact us.",
     },
     pt: {
-      title: "Skale Club | Política de Privacidade",
-      description: "Saiba como a Skale Club coleta, usa e protege as suas informações pessoais.",
+      title: "Política de Privacidade | Skale Club",
+      description: "Saiba como a Skale Club coleta, usa e protege as suas informações pessoais quando você visita o site, envia um formulário ou fala conosco.",
     },
     crumb: { en: "Privacy Policy", pt: "Política de Privacidade" },
     sitemap: true,
@@ -171,12 +171,12 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   termsOfService: {
     en: {
-      title: "Skale Club | Terms of Service",
-      description: "Read the terms that govern your use of the Skale Club website and services.",
+      title: "Terms of Service | Skale Club",
+      description: "Read the terms that govern your use of the Skale Club website and services, and what you can expect from us in return.",
     },
     pt: {
-      title: "Skale Club | Termos de Serviço",
-      description: "Leia os termos que regem o uso do site e dos serviços da Skale Club.",
+      title: "Termos de Serviço | Skale Club",
+      description: "Leia os termos que regem o uso do site e dos serviços da Skale Club, e o que você pode esperar de nós em troca.",
     },
     crumb: { en: "Terms of Service", pt: "Termos de Serviço" },
     sitemap: true,

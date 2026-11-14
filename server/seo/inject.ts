@@ -1,7 +1,7 @@
 import { legacyLanguagePath, splitLanguagePath, withLanguage } from "#shared/languagePath.js";
 import { buildPagePaths } from "#shared/pageSlugs.js";
 import { CORE_SEO, coreKeyForPath, corePathForKey, type CoreSeoKey } from "#shared/coreSeo.js";
-import { brandPageTitle } from "#shared/seoTitle.js";
+import { brandFirstTitle, brandPageTitle } from "#shared/seoTitle.js";
 import {
   CORE_OG_IMAGE,
   LANDING_SEO,
@@ -147,7 +147,8 @@ export function injectSeo(html: string, pathname: string, ctx: InjectContext): s
   }
 
   if (title) {
-    title = brandPageTitle(title, settings?.companyName);
+    // Inner pages lead with their keyword; the homepage leads with the brand.
+    title = (coreKey === "home" ? brandFirstTitle : brandPageTitle)(title, settings?.companyName);
     const socialTitle = blog ? blog.title : title;
     head.title(title).meta("property", "og:title", socialTitle).meta("name", "twitter:title", socialTitle);
   }

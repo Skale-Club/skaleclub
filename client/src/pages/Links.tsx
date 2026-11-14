@@ -103,7 +103,7 @@ export default function Links() {
   }, []);
 
   const { t } = useTranslation();
-  usePageSeo({ title: t("Links") });
+  usePageSeo({ core: "links" });
   const reduceMotion = useReducedMotion();
   // Url of an avatar that failed to load, so the initials block replaces a broken image.
   const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);

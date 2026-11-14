@@ -8,10 +8,7 @@ import { PortfolioServices } from "@/components/portfolio/PortfolioServices";
 /** Every service we perform, in full. /portfolio shows the same list with a "See all" link. */
 export default function Services() {
   const { t } = useTranslation();
-  usePageSeo({
-    title: t("Services"),
-    description: t("Marketing and technology services tailored to your business: AI, automation, websites and more."),
-  });
+  usePageSeo({ core: "services" });
 
   return (
     <CatalogPageShell source="services">

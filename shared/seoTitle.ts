@@ -12,28 +12,48 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** `page` without a leading or trailing brand, in whichever separator style it came. */
+function stripBrand(page: string, brand: string): string {
+  const escapedBrand = escapeRegExp(brand);
+  const separator = "\\s*(?:\\||-|–|—|:)\\s*";
+  return page
+    .replace(new RegExp(`^${escapedBrand}${separator}`, "i"), "")
+    .replace(new RegExp(`${separator}${escapedBrand}$`, "i"), "")
+    .trim();
+}
+
 /**
- * Browser-tab titles always lead with the site identity. The input may be a
- * bare page label, an old `Page | Brand` title, or an already-correct
- * `Brand | Page` title. Numeric whitespace entities are cleaned here too so a
- * double-escaped `&#x20;` can never leak into the tab.
+ * Inner-page titles lead with the page's own words and end with the brand
+ * (`Services | Skale Club`): the keyword comes first, so it survives when a
+ * search result cuts the title. The input may be a bare page label, an old
+ * `Brand | Page` title or an already-correct `Page | Brand` one. Numeric
+ * whitespace entities are cleaned here too so a double-escaped `&#x20;` can
+ * never leak into the tab.
  */
 export function brandPageTitle(
   pageTitle: string | null | undefined,
   brandName: string | null | undefined = DEFAULT_BRAND,
 ): string {
   const brand = cleanTitleText(brandName) || DEFAULT_BRAND;
-  let page = cleanTitleText(pageTitle);
+  const page = cleanTitleText(pageTitle);
   if (!page || page.localeCompare(brand, undefined, { sensitivity: "accent" }) === 0) return brand;
+  const bare = stripBrand(page, brand);
+  return bare ? `${bare} | ${brand}` : brand;
+}
 
-  const escapedBrand = escapeRegExp(brand);
-  const separator = "\\s*(?:\\||-|–|—|:)\\s*";
-  page = page
-    .replace(new RegExp(`^${escapedBrand}${separator}`, "i"), "")
-    .replace(new RegExp(`${separator}${escapedBrand}$`, "i"), "")
-    .trim();
-
-  return page ? `${brand} | ${page}` : brand;
+/**
+ * The homepage form, `Brand | Tagline`: the brand IS the keyword there, so it
+ * stays first. Only the homepage uses it.
+ */
+export function brandFirstTitle(
+  pageTitle: string | null | undefined,
+  brandName: string | null | undefined = DEFAULT_BRAND,
+): string {
+  const brand = cleanTitleText(brandName) || DEFAULT_BRAND;
+  const page = cleanTitleText(pageTitle);
+  if (!page || page.localeCompare(brand, undefined, { sensitivity: "accent" }) === 0) return brand;
+  const bare = stripBrand(page, brand);
+  return bare ? `${brand} | ${bare}` : brand;
 }
 
 /**
@@ -41,7 +61,7 @@ export function brandPageTitle(
  *
  * The admin's `seoTitle` is often just the brand ("Skale Club"), which is a
  * weak title for search results. When it looks bare — short, no separator —
- * the hero headline is appended. Every outcome is normalized brand-first.
+ * the hero headline is appended. Every outcome is normalized brand-first (see brandFirstTitle).
  */
 export function homepageTitle(s: {
   seoTitle?: string | null;
@@ -52,5 +72,5 @@ export function homepageTitle(s: {
   const configured = cleanTitleText(s.seoTitle) || brand;
   const looksBare = configured.length <= 24 && !/[|\-–—:]/.test(configured);
   const tagline = cleanTitleText(s.heroTitle);
-  return brandPageTitle(looksBare && tagline ? tagline : configured, brand);
+  return brandFirstTitle(looksBare && tagline ? tagline : configured, brand);
 }

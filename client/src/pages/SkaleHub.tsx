@@ -169,7 +169,7 @@ function formatStartsIn(startsAt: string | Date, now: number, lang: string) {
 }
 
 export default function SkaleHub() {
-  usePageSeo({ title: "Skale Hub" });
+  usePageSeo({ core: "hub" });
   const { t, language } = useTranslation();
   const { toast } = useToast();
   const [form, setForm] = useState({ name: "", phone: "", email: "" });

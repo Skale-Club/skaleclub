@@ -7,7 +7,7 @@ import { PortfolioApps } from "@/components/portfolio/PortfolioApps";
 /** Every ready-made app, in full. /portfolio shows the same list with a "See all" link. */
 export default function Apps() {
   const { t } = useTranslation();
-  usePageSeo({ title: t("Apps"), description: t("Ready-made apps we build and run, each with a fixed price. Subscribe and start.") });
+  usePageSeo({ core: "apps" });
 
   return (
     <CatalogPageShell source="apps">

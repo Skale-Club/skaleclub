@@ -51,7 +51,7 @@ test("getLandingSeo: every product slug (EN and PT) has curated SEO copy", () =>
   }
 });
 
-test("getLandingSeo: managed landing titles are brand-first", () => {
-  assert.equal(getLandingSeo("barbershops")?.title, "Skale Club | More Clients for Your Barbershop");
-  assert.equal(getLandingSeo("barbershops-br")?.title, "Skale Club | Mais Clientes para a Sua Barbearia");
+test("getLandingSeo: managed landing titles lead with the keyword", () => {
+  assert.equal(getLandingSeo("barbershops")?.title, "More Clients for Your Barbershop | Skale Club");
+  assert.equal(getLandingSeo("barbershops-br")?.title, "Mais Clientes para a Sua Barbearia | Skale Club");
 });

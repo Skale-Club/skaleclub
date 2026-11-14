@@ -10,7 +10,7 @@ import { PortfolioProducts } from "@/components/portfolio/PortfolioProducts";
 /** The umbrella: a taste of each category, with "See all" into its own page. */
 export default function Portfolio() {
   const { t } = useTranslation();
-  usePageSeo({ title: t("Our Solutions"), description: t("Ready-made apps and the services we perform: AI, automation, websites, marketing and more.") });
+  usePageSeo({ core: "portfolio" });
 
   return (
     <CatalogPageShell source="portfolio">
