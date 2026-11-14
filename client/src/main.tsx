@@ -1,6 +1,10 @@
 import * as Sentry from "@sentry/react";
-import { createRoot } from "react-dom/client";
-import App from "./App";
+import { createRoot, hydrateRoot } from "react-dom/client";
+import { hydrate } from "@tanstack/react-query";
+import App, { preloadRouteForPath } from "./App";
+import { queryClient } from "./lib/queryClient";
+import type { PageLanguageInfo } from "./context/LanguageContext";
+import { translationCache } from "./hooks/useTranslation";
 import "./index.css";
 import { registerServiceWorker, unregisterStaleServiceWorker } from "./lib/pwa";
 import { installChunkReloadHandlers } from "./lib/chunkReload";
@@ -108,4 +112,57 @@ setTimeout(() => {
 registerServiceWorker();
 unregisterStaleServiceWorker();
 
-createRoot(document.getElementById("root")!).render(<App />);
+const rootEl = document.getElementById("root")!;
+
+// The server (server/seo/shell.ts) renders the page into #root when it can. Whether it did
+// must be known before App is built: `serverRendered` has to be passed to <App>
+// identically on both sides of hydration, because it decides whether the shell starts
+// hidden, and a difference makes React throw the server markup away.
+const serverRendered = rootEl.firstElementChild !== null;
+
+function readJsonScript<T>(id: string): T | null {
+  const text = document.getElementById(id)?.textContent;
+  if (!text) return null;
+  try {
+    return JSON.parse(text) as T;
+  } catch (err) {
+    // A malformed payload must never block boot: the affected components fetch for
+    // themselves, as if the server had not prefetched.
+    console.error(`[hydrate] failed to parse #${id}:`, err);
+    return null;
+  }
+}
+
+if (serverRendered) {
+  // Both go in BEFORE hydrateRoot(): the first client render has to read the same data the
+  // server render read, or React reports a mismatch and re-renders the whole tree.
+  const state = readJsonScript<Parameters<typeof hydrate>[1]>("__REACT_QUERY_STATE__");
+  if (state) hydrate(queryClient, state);
+  // Portuguese strings from the AI translation cache that the server used. Without them
+  // the first client render shows English where the server rendered Portuguese.
+  const translations = readJsonScript<Record<string, string>>("__SSR_TRANSLATIONS__");
+  if (translations) {
+    for (const [source, translated] of Object.entries(translations)) translationCache.set(`pt:${source}`, translated);
+  }
+}
+
+// Language a managed landing registers for itself, known to the server up front.
+const initialPageInfo = serverRendered
+  ? readJsonScript<PageLanguageInfo>("__SSR_PAGE_INFO__")
+  : null;
+
+const appElement = <App serverRendered={serverRendered} initialPageInfo={initialPageInfo} />;
+
+if (serverRendered) {
+  const settings = queryClient.getQueryData<{ pageSlugs?: Record<string, string> | null }>(["/api/company-settings"]);
+  // The route's lazy chunk is still loading when this script runs, which would leave its
+  // Suspense boundary unresolved while hydrating. Any state change in that window makes
+  // React discard the server markup and client-render instead. Loading the chunk first lets
+  // the boundary hydrate in one pass.
+  const preload = preloadRouteForPath(window.location.pathname, settings?.pageSlugs);
+  const start = () => hydrateRoot(rootEl, appElement);
+  if (preload) preload.catch(() => {}).finally(start);
+  else start();
+} else {
+  createRoot(rootEl).render(appElement);
+}

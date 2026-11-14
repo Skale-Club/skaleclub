@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
-import { navigate, usePathname } from 'wouter/use-browser-location';
+import { navigate } from 'wouter/use-browser-location';
+import { useRawPathname } from '@/lib/languageRouting';
 import { isLanguageExemptPath, legacyLanguagePath, splitLanguagePath, stripLanguage, withLanguage } from '@shared/languagePath';
 import { translationCache, markLanguageSwitch } from '@/hooks/useTranslation';
 
@@ -14,7 +15,7 @@ export const LanguageContext = createContext<LanguageContextType | undefined>(un
 
 // A managed landing reports its own language (PT-only pages such as /grupo) and the
 // URL of its bilingual counterpart. Scoped to the path that registered it.
-interface PageLanguageInfo {
+export interface PageLanguageInfo {
   language?: Language;
   alternatePath?: string | null;
 }
@@ -29,14 +30,23 @@ export function usePageLanguage(): SetPageLanguage {
 
 interface LanguageProviderProps {
   children: ReactNode;
+  /**
+   * What a managed landing would report after mounting (see DynamicLanding), known up
+   * front when the server rendered the page. Without it a PT-only page such as /grupo
+   * could not render on the server or on the first client render, because the effect
+   * that registers its language has not run yet.
+   */
+  initialPageInfo?: PageLanguageInfo | null;
 }
 
-export function LanguageProvider({ children }: LanguageProviderProps) {
+export function LanguageProvider({ children, initialPageInfo }: LanguageProviderProps) {
   // The URL is the only source of truth: no `/br` prefix = English, always.
-  const rawPath = usePathname();
+  const rawPath = useRawPathname();
   const urlLanguage = splitLanguagePath(rawPath).language;
 
-  const [pageInfo, setPageInfo] = useState<(PageLanguageInfo & { path: string }) | null>(null);
+  const [pageInfo, setPageInfo] = useState<(PageLanguageInfo & { path: string }) | null>(() =>
+    initialPageInfo ? { ...initialPageInfo, path: rawPath } : null,
+  );
   const activePage = pageInfo && pageInfo.path === rawPath ? pageInfo : null;
   const language: Language = activePage?.language ?? urlLanguage;
 

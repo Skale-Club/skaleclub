@@ -3,7 +3,7 @@ import { brandPageTitle, homepageTitle } from '@shared/seoTitle';
 import { CORE_SEO, coreKeyForPath, isNoindexPath } from '@shared/coreSeo';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { usePathname } from 'wouter/use-browser-location';
+import { useRawPathname } from '@/lib/languageRouting';
 import { splitLanguagePath, withLanguage } from '@shared/languagePath';
 import type { PageSlugs } from '@shared/pageSlugs';
 
@@ -142,7 +142,7 @@ export function useSEO() {
   // instead of freezing on whatever page was loaded first.
   // Raw pathname: wouter's location has the `/br` prefix stripped, so `/` -> `/br`
   // would not re-run the effect and the canonical would go stale.
-  const rawPath = usePathname();
+  const rawPath = useRawPathname();
   const { data: settings } = useQuery<SeoSettings>({
     queryKey: ['/api/company-settings'],
     staleTime: 1000 * 60 * 5,

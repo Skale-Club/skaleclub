@@ -5,6 +5,7 @@ import viteConfig from "../vite.config";
 import fs from "fs";
 import path from "path";
 import { nanoid } from "nanoid";
+import { buildShell } from "./seo/shell.js";
 
 const viteLogger = createLogger();
 
@@ -48,8 +49,13 @@ export async function setupVite(server: Server, app: Express) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
-      const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      // The same head, body and status production serves (server/seo/shell.ts), so a
+      // dev-only shell cannot drift from the real one.
+      const pathname = url.split("?", 1)[0];
+      const shell = await buildShell({ template, pathname, vite, dev: true });
+      const page = await vite.transformIndexHtml(url, shell.html);
+      if (shell.noindex || shell.status === 404) res.setHeader("X-Robots-Tag", "noindex, nofollow");
+      res.status(shell.status).set({ "Content-Type": "text/html", "Cache-Control": shell.cacheControl }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);

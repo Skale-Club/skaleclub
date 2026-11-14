@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, X } from "lucide-react";
 import { NfcProductGuideSection } from "@/components/pages/sections/NfcProductGuideSection";
 import { useLeadConversion } from "@/hooks/useLeadConversion";
@@ -17,9 +17,16 @@ export default function NfcGuide() {
 
   // The keychain order form lands here (its `completionRedirect`) with ?form=<slug>:
   // this visit is the lead conversion, and the person gets a receipt on top.
-  const [formSlug] = useState(() => new URLSearchParams(window.location.search).get("form"));
+  // Read after mount: the server renders the page without a query string, so reading it
+  // during render would make the first client render differ from the server HTML.
+  const [formSlug, setFormSlug] = useState<string | null>(null);
+  const [showReceipt, setShowReceipt] = useState(false);
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get("form");
+    setFormSlug(slug);
+    setShowReceipt(Boolean(slug));
+  }, []);
   useLeadConversion(formSlug, Boolean(formSlug));
-  const [showReceipt, setShowReceipt] = useState(Boolean(formSlug));
 
   return (
     <>

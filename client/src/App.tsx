@@ -1,11 +1,10 @@
 import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
-import { usePathname } from "wouter/use-browser-location";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { queryClient as browserQueryClient } from "./lib/queryClient";
+import { QueryClientProvider, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/context/ThemeContext";
-import { LanguageProvider } from "@/context/LanguageContext";
+import { LanguageProvider, type PageLanguageInfo } from "@/context/LanguageContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useSEO } from "@/hooks/use-seo";
@@ -13,7 +12,7 @@ import { initAnalytics, trackPageView } from "@/lib/analytics";
 import { useAttribution } from "@/hooks/use-attribution";
 import { PageLoader, DotsLoader } from "@/components/ui/spinner";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useLanguageLocation, languageHref } from "@/lib/languageRouting";
+import { useLanguageLocation, languageHref, useRawPathname } from "@/lib/languageRouting";
 import { splitLanguagePath } from "@shared/languagePath";
 import { useEffect, Suspense, lazy, useMemo, useRef, useState, useContext } from "react";
 import type { CompanySettings } from "@shared/schema";
@@ -22,41 +21,77 @@ import { RESERVED_SLUGS } from "@shared/reservedSlugs";
 import * as Sentry from "@sentry/react";
 import { MotionConfig } from "framer-motion";
 import { AppErrorFallback } from "@/components/AppErrorFallback";
-import { InitialLoadContext, PageWrapper } from "@/lib/initialLoad";
+import { InitialLoadContext, lazyPage, clearInitialShell } from "@/lib/initialLoad";
+import { INITIAL_SHELL_TIMEOUT_MS } from "@/lib/initial-shell";
+import type { PageSlugs } from "@shared/pageSlugs";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 
 // DEFAULT_PAGE_SLUGS never changes at runtime — compute once instead of on every Router render.
 const LEGACY_PATHS = buildPagePaths(DEFAULT_PAGE_SLUGS);
 
+// One importer per page. Each is called both by the lazy() wrapper below and by
+// preloadRouteForPath(), so the dynamic import() is written once per page. A second
+// copy would be a second chunk request on the wire.
+const pageImporters = {
+  notFound: () => import("@/pages/not-found"),
+  home: () => import("@/pages/Home"),
+  publicForm: () => import("@/pages/PublicForm"),
+  nfcOrderForm: () => import("@/pages/NfcOrderForm"),
+  plaqueOrderForm: () => import("@/pages/PlaqueOrderForm"),
+  svgVectorizer: () => import("@/pages/SvgVectorizer"),
+  nfcGuide: () => import("@/pages/NfcGuide"),
+  leadThankYou: () => import("@/pages/LeadThankYou"),
+  privacyPolicy: () => import("@/pages/PrivacyPolicy"),
+  termsOfService: () => import("@/pages/TermsOfService"),
+  contact: () => import("@/pages/Contact"),
+  faq: () => import("@/pages/Faq"),
+  blog: () => import("@/pages/Blog"),
+  blogPost: () => import("@/pages/BlogPost"),
+  portfolio: () => import("@/pages/Portfolio"),
+  apps: () => import("@/pages/Apps"),
+  services: () => import("@/pages/Services"),
+  products: () => import("@/pages/Products"),
+  skaleHub: () => import("@/pages/SkaleHub"),
+  links: () => import("@/pages/Links"),
+  vcard: () => import("@/pages/VCard"),
+  estimateViewer: () => import("@/pages/EstimateViewer"),
+  contractSigning: () => import("@/pages/ContractSigning"),
+  presentationViewer: () => import("@/pages/PresentationViewer"),
+  whiteboardViewer: () => import("@/pages/WhiteboardViewer"),
+  boardViewer: () => import("@/pages/BoardViewer"),
+  printFolder: () => import("@/pages/PrintFolder"),
+  dynamicPage: () => import("@/pages/DynamicLanding"),
+} as const;
+
 // Lazy load page components for route transitions
-const NotFound = lazy(() => import("@/pages/not-found").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const Home = lazy(() => import("@/pages/Home").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const PublicForm = lazy(() => import("@/pages/PublicForm").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const NfcOrderForm = lazy(() => import("@/pages/NfcOrderForm").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const PlaqueOrderForm = lazy(() => import("@/pages/PlaqueOrderForm").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const SvgVectorizer = lazy(() => import("@/pages/SvgVectorizer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const NfcGuide = lazy(() => import("@/pages/NfcGuide").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const LeadThankYou = lazy(() => import("@/pages/LeadThankYou").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const TermsOfService = lazy(() => import("@/pages/TermsOfService").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const Contact = lazy(() => import("@/pages/Contact").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const Faq = lazy(() => import("@/pages/Faq").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const Blog = lazy(() => import("@/pages/Blog").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const BlogPost = lazy(() => import("@/pages/BlogPost").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const Portfolio = lazy(() => import("@/pages/Portfolio").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const Apps = lazy(() => import("@/pages/Apps").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const Services = lazy(() => import("@/pages/Services").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const Products = lazy(() => import("@/pages/Products").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const SkaleHub = lazy(() => import("@/pages/SkaleHub").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const ContractSigning = lazy(() => import("@/pages/ContractSigning").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const PresentationViewer = lazy(() => import("@/pages/PresentationViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const WhiteboardViewer = lazy(() => import("@/pages/WhiteboardViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const BoardViewer = lazy(() => import("@/pages/BoardViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const PrintFolder = lazy(() => import("@/pages/PrintFolder").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const DynamicPage = lazy(() => import("@/pages/DynamicLanding").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const NotFound = lazyPage(pageImporters.notFound);
+const Home = lazyPage(pageImporters.home);
+const PublicForm = lazyPage(pageImporters.publicForm);
+const NfcOrderForm = lazyPage(pageImporters.nfcOrderForm);
+const PlaqueOrderForm = lazyPage(pageImporters.plaqueOrderForm);
+const SvgVectorizer = lazyPage(pageImporters.svgVectorizer);
+const NfcGuide = lazyPage(pageImporters.nfcGuide);
+const LeadThankYou = lazyPage(pageImporters.leadThankYou);
+const PrivacyPolicy = lazyPage(pageImporters.privacyPolicy);
+const TermsOfService = lazyPage(pageImporters.termsOfService);
+const Contact = lazyPage(pageImporters.contact);
+const Faq = lazyPage(pageImporters.faq);
+const Blog = lazyPage(pageImporters.blog);
+const BlogPost = lazyPage(pageImporters.blogPost);
+const Portfolio = lazyPage(pageImporters.portfolio);
+const Apps = lazyPage(pageImporters.apps);
+const Services = lazyPage(pageImporters.services);
+const Products = lazyPage(pageImporters.products);
+const SkaleHub = lazyPage(pageImporters.skaleHub);
+const Links = lazyPage(pageImporters.links);
+const VCard = lazyPage(pageImporters.vcard);
+const EstimateViewer = lazyPage(pageImporters.estimateViewer);
+const ContractSigning = lazyPage(pageImporters.contractSigning);
+const PresentationViewer = lazyPage(pageImporters.presentationViewer);
+const WhiteboardViewer = lazyPage(pageImporters.whiteboardViewer);
+const BoardViewer = lazyPage(pageImporters.boardViewer);
+const PrintFolder = lazyPage(pageImporters.printFolder);
+const DynamicPage = lazyPage(pageImporters.dynamicPage);
 // Admin + OAuth live in one lazy shell so AuthProvider and @supabase/* leave the entry chunk.
 const AdminShell = lazy(() => import("@/pages/AdminShell"));
 
@@ -93,7 +128,7 @@ function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     queryKey: ['/api/company-settings'],
   });
   // Raw pathname so `/br` page views are reported under their real URL
-  const pathname = usePathname();
+  const pathname = useRawPathname();
 
   useEffect(() => {
     if (settings && !pathname.startsWith('/contracts/')) {
@@ -149,6 +184,7 @@ const RESERVED_LANDING_SEGMENTS = new Set<string>([
 
 function Router() {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [location] = useLocation();
   const { isInitialLoad } = useContext(InitialLoadContext);
   const { data: settings, isLoading, errorUpdateCount } = useQuery<CompanySettings>({
@@ -404,18 +440,99 @@ function TranslationLoadingOverlay() {
   );
 }
 
-function App() {
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+/**
+ * Starts loading the lazy route chunk for `pathname` and returns its promise (null when
+ * the path is not server-rendered).
+ *
+ * client/src/main.tsx awaits this before hydrateRoot() on a server-rendered page. Without
+ * it the route's Suspense boundary is still unresolved when hydration starts, and any
+ * state change in that window makes React throw the server markup away and client-render
+ * it, which is the flash this whole change exists to remove.
+ *
+ * Mirrors the public <Switch> in Router() below: a route added to one needs adding to the
+ * other. Admin, OAuth and the viewer routes are never server-rendered, so they return null.
+ */
+export function preloadRouteForPath(rawPathname: string, pageSlugs?: Partial<PageSlugs> | null): Promise<unknown> | null {
+  try {
+    const path = splitLanguagePath(rawPathname).path;
+    if (path === "/") return pageImporters.home();
+    const paths = buildPagePaths(pageSlugs);
+    const exact: Array<[string, () => Promise<unknown>]> = [
+      [paths.privacyPolicy, pageImporters.privacyPolicy],
+      [paths.termsOfService, pageImporters.termsOfService],
+      [paths.contact, pageImporters.contact],
+      [paths.faq, pageImporters.faq],
+      [paths.blog, pageImporters.blog],
+      [paths.portfolio, pageImporters.portfolio],
+      [paths.hub, pageImporters.skaleHub],
+      ["/apps", pageImporters.apps],
+      ["/services", pageImporters.services],
+      ["/products", pageImporters.products],
+      ["/nfc-guide", pageImporters.nfcGuide],
+    ];
+    for (const [route, importer] of exact) {
+      if (path === route) return importer();
+    }
+    if (isRoutePrefixMatch(path, paths.blog) && path.split("/").length === paths.blog.split("/").length + 1) {
+      return pageImporters.blogPost();
+    }
+    // Everything else public (managed landings, /products/<slug>) is the /:slug catch-all.
+    if (/^\/[^/]+$/.test(path) || /^\/products\/[^/]+$/.test(path)) return pageImporters.dynamicPage();
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function App({
+  ssrPath,
+  serverRendered = false,
+  queryClient: injectedQueryClient,
+  initialPageInfo,
+}: {
+  /** Server render only: the request path, which wouter has no `window.location` to read. */
+  ssrPath?: string;
+  /**
+   * True when the server already put the page in #root. It must be passed identically on
+   * both sides of hydration (client/src/entry-server.tsx and client/src/main.tsx): it
+   * decides whether the shell starts `invisible`, and a difference makes React discard the
+   * server markup.
+   */
+  serverRendered?: boolean;
+  /**
+   * Server render only. The browser uses the module-level singleton, which is right for
+   * one tab. On the server one process renders every request, so a shared cache would
+   * leak one visitor's data into another's render: entry-server.tsx builds a fresh
+   * QueryClient per request and passes it in.
+   */
+  queryClient?: QueryClient;
+  /** Server-rendered managed landing whose language differs from its URL: see LanguageProvider. */
+  initialPageInfo?: PageLanguageInfo | null;
+} = {}) {
+  // The pre-React loader (and the text fallback) cover the page until the first route
+  // mounts. When the server rendered the real page there is nothing to hide: starting
+  // `invisible` would ship the HTML hidden and read as empty to a crawler.
+  const [isInitialLoad, setIsInitialLoad] = useState(!serverRendered);
   const markLoaded = useRef(() => setIsInitialLoad(false)).current;
 
-  return (
+  // Never let the shell stay hidden: if no route ever mounts (a chunk that stalls, a query
+  // that hangs) reveal whatever has rendered after a fixed ceiling.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      clearInitialShell();
+      markLoaded();
+    }, INITIAL_SHELL_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [markLoaded]);
+
+  const tree = (
     <InitialLoadContext.Provider value={{ isInitialLoad, markLoaded }}>
       <MotionConfig reducedMotion="user">
       <ThemeProvider>
-        <QueryClientProvider client={queryClient}>
+        <QueryClientProvider client={injectedQueryClient ?? browserQueryClient}>
           <TooltipProvider>
-            <WouterRouter hook={useLanguageLocation} hrefs={languageHref}>
-              <LanguageProvider>
+            <WouterRouter hook={useLanguageLocation} hrefs={languageHref} ssrPath={ssrPath}>
+              <LanguageProvider initialPageInfo={initialPageInfo}>
                 <SEOProvider>
                   <AnalyticsProvider>
                     <Sentry.ErrorBoundary fallback={<AppErrorFallback />}>
@@ -435,6 +552,11 @@ function App() {
       <Toaster />
     </InitialLoadContext.Provider>
   );
+
+  // ThemeProvider sits above the language-aware router below and reads the location from
+  // wouter's default one. In the browser that reads `window.location`; on the server it
+  // needs the request path, which only a router carrying `ssrPath` can supply.
+  return ssrPath !== undefined ? <WouterRouter ssrPath={ssrPath}>{tree}</WouterRouter> : tree;
 }
 
 export default App;

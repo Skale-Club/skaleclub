@@ -4,9 +4,7 @@ import fs from "fs";
 import path from "path";
 import { isNoindexPath } from "#shared/coreSeo.js";
 import { injectSeo } from "./seo/inject.js";
-import { resolveRoute } from "./seo/routes.js";
-import { getSeoSettings } from "./seo/data.js";
-import { applyPageContent, buildPageContentHtml } from "./seo/content/index.js";
+import { buildShell } from "./seo/shell.js";
 
 // Database-free variant: no 404s and no settings-driven JSON-LD, but the same
 // per-page head for known routes.
@@ -85,24 +83,13 @@ export function serveStatic(app: Express) {
     // originalUrl keeps the actual path requested by the crawler.
     const pathname = req.originalUrl.split("?", 1)[0];
 
-    let settings = null;
-    try {
-      settings = await getSeoSettings();
-    } catch (err) {
-      console.error("[seo] company settings unavailable:", (err as Error).message);
-    }
-    const route = await resolveRoute(pathname, settings?.pageSlugs);
-
-    if (route.noindex || route.status === 404) {
+    // Head, body (React render or text fallback) and cache policy: see server/seo/shell.ts.
+    const shell = await buildShell({ template: indexHtml, pathname });
+    if (shell.noindex || shell.status === 404) {
       const existing = String(res.getHeader("X-Robots-Tag") ?? "");
       if (!/noindex/i.test(existing)) res.setHeader("X-Robots-Tag", "noindex, nofollow");
     }
-    // The shell embeds per-page tags: let browsers and CDNs revalidate it.
-    res.setHeader("Cache-Control", "no-cache");
-    // Indexable pages also get their text in the body (and lose the loader), so
-    // the raw HTML is never an empty shell: see server/seo/content/html.ts.
-    const ctx = { settings, route };
-    const content = await buildPageContentHtml(pathname, ctx);
-    res.status(route.status).type("html").send(applyPageContent(injectSeo(indexHtml, pathname, ctx), content));
+    res.setHeader("Cache-Control", shell.cacheControl);
+    res.status(shell.status).type("html").send(shell.html);
   });
 }

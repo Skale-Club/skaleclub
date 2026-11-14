@@ -1,11 +1,11 @@
 import { useParams } from "wouter";
-import { usePathname } from "wouter/use-browser-location";
+import { useRawPathname } from "@/lib/languageRouting";
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useContext, useEffect, useState } from "react";
 import * as Sentry from "@sentry/react";
 import { AppLoader } from "@/components/ui/spinner";
 import { sectionRegistry } from "@/components/pages/sectionRegistry";
-import { usePageLanguage } from "@/context/LanguageContext";
+import { LanguageContext, usePageLanguage } from "@/context/LanguageContext";
 import { splitLanguagePath, withLanguage } from "@shared/languagePath";
 import { getLandingSeo, landingPathForSlug, productDbSlugForUrlSlug } from "@shared/landingSeo";
 
@@ -190,7 +190,7 @@ function sectionsWithLocalBarbershopPreview(data: PageResponse) {
 
 export default function DynamicPage() {
   const { slug: routeSlug } = useParams<{ slug: string }>();
-  const { path: langlessPath, language: urlLanguage } = splitLanguagePath(usePathname());
+  const { path: langlessPath, language: urlLanguage } = splitLanguagePath(useRawPathname());
   // /products/<urlSlug> resolves through shared/landingSeo.ts's PRODUCT_ROUTES —
   // the same map server/seo/routes.ts uses — instead of querying the URL
   // segment as a DB slug directly. Two DIFFERENT pages can share a bare-slug
@@ -201,6 +201,7 @@ export default function DynamicPage() {
   const dbSlug = isProductRoute ? (routeSlug ? productDbSlugForUrlSlug(routeSlug) : undefined) : routeSlug;
   const productRouteUnknown = isProductRoute && !dbSlug;
   const setPageLanguage = usePageLanguage();
+  const language = useContext(LanguageContext)?.language;
   const [overrideReadyFor, setOverrideReadyFor] = useState<string | null>(null);
   // `/br/x` resolves the `x-br` row. The DB never stores a slash: shared/schema/pages.ts
   // slugPattern forbids it, so the prefix form lives only in the URL.
@@ -362,7 +363,11 @@ export default function DynamicPage() {
 
   // Hold the first paint until the language override is registered; otherwise a PT-only
   // page renders one frame as English and queues its copy for pt -> en translation.
-  if (isLoading || (data && overrideReadyFor !== data.slug)) return <AppLoader />;
+  // A PT-only page opened at an English URL needs its language registered (the effect above)
+  // before it renders, or the chrome would flash in English first. When the server already
+  // seeded that language (LanguageProvider's initialPageInfo) there is nothing to wait for.
+  const waitingForLanguage = !!data && urlLanguage === "en" && data.language === "pt" && language !== "pt" && overrideReadyFor !== data.slug;
+  if (isLoading || waitingForLanguage) return <AppLoader />;
 
   // Inactive pages come back as 404 from the public endpoint (43-02 contract).
   if (error || !data) {

@@ -1,9 +1,20 @@
-import { useContext, useCallback, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useCallback, useEffect, useRef, useState } from 'react';
 import { LanguageContext } from '@/context/LanguageContext';
 import { translations as staticTranslations, type TranslationKey } from '@/lib/translations';
 
 // In-memory translation cache (exported for preload in LanguageContext)
 export const translationCache = new Map<string, string>();
+
+/**
+ * Server render only. When provided, t() records every source string it answered from
+ * the runtime cache, so the server can inline exactly those translations next to the
+ * HTML and the browser can seed its own cache before hydrating. Without that, the
+ * browser's first render would show English where the server rendered Portuguese.
+ * A context (not a module global) because concurrent requests share the process.
+ */
+export const TranslationCollectorContext = createContext<Set<string> | null>(null);
+
+const isServer = typeof window === 'undefined';
 const pendingTranslations = new Set<string>();
 let batchTimeout: ReturnType<typeof setTimeout> | null = null;
 // Pending texts grouped by direction ("en>pt", "pt>en"). A single shared batch sent
@@ -136,6 +147,7 @@ function scheduleBatchTranslation(text: string, targetLanguage: string, sourceLa
 
 export function useTranslation() {
   const context = useContext(LanguageContext);
+  const collector = useContext(TranslationCollectorContext);
   const [updateCounter, setUpdateCounter] = useState(0);
   const [isTranslating, setIsTranslating] = useState(false);
   const overlayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -197,7 +209,7 @@ export function useTranslation() {
 
       // 2. DB content stored in PT: schedule PT→EN translation via API.
       //    English copy (the common case) renders as-is without an AI round-trip.
-      if (!looksPortuguese(text)) return text;
+      if (!looksPortuguese(text) || isServer) return text;
       scheduleBatchTranslation(text, 'en', 'pt');
       return text;
     }
@@ -213,15 +225,16 @@ export function useTranslation() {
 
     // 2. Return from runtime cache if available
     if (translationCache.has(cacheKey)) {
+      collector?.add(text);
       return translationCache.get(cacheKey)!;
     }
 
-    // 3. Schedule batch translation via API
-    scheduleBatchTranslation(text, language);
+    // 3. Schedule batch translation via API (never on the server: it needs `window`)
+    if (!isServer) scheduleBatchTranslation(text, language);
 
     // Return original text as fallback while loading
     return text;
-  }, [language, updateCounter]) as {
+  }, [language, updateCounter, collector]) as {
     // Overload 1: Static keys — TypeScript enforces at compile time that string literals
     // are present in TranslationKey (i.e., defined in translations.ts).
     (text: TranslationKey): string;

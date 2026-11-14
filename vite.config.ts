@@ -21,6 +21,10 @@ function excalidrawFonts(): Plugin {
   };
 }
 
+// script/build.ts runs a second, server-side build of client/src/entry-server.tsx. It must
+// not upload source maps to Sentry or copy the whiteboard fonts a second time.
+const isSsrBuild = process.env.SKALE_SSR_BUILD === "1";
+
 // Sentry release: the commit CI/Coolify builds, or an explicit VITE_RELEASE.
 const release = process.env.VITE_RELEASE || process.env.GITHUB_SHA || process.env.SOURCE_COMMIT || "";
 
@@ -30,9 +34,9 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    excalidrawFonts(),
+    ...(isSsrBuild ? [] : [excalidrawFonts()]),
     // Upload source maps to Sentry on production builds (only when auth token is set)
-    ...(process.env.SENTRY_AUTH_TOKEN
+    ...(process.env.SENTRY_AUTH_TOKEN && !isSsrBuild
       ? [
           sentryVitePlugin({
             org: "skale-club",

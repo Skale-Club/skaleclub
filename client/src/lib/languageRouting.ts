@@ -1,10 +1,13 @@
-import { useBrowserLocation } from "wouter/use-browser-location";
-import type { BaseLocationHook } from "wouter";
-import { splitLanguagePath, withLanguage } from "@shared/languagePath";
+import { useBrowserLocation, usePathname } from "wouter/use-browser-location";
+import { useRouter, type BaseLocationHook } from "wouter";
+import { splitLanguagePath, withLanguage, type SiteLanguage } from "@shared/languagePath";
 
-// Read from the URL at call time (never the context) so a PT-only page such as
-// /grupo can't leak a `/br` prefix into its outgoing links.
-const currentLanguage = () => splitLanguagePath(window.location.pathname).language;
+// In the browser the language is read from the URL at call time (never the
+// context) so a PT-only page such as /grupo can't leak a `/br` prefix into its
+// outgoing links. On the server there is no URL to read: the request path
+// reaches wouter as the router's `ssrPath`.
+const currentLanguage = (router?: { ssrPath?: string }): SiteLanguage =>
+  splitLanguagePath(typeof window === "undefined" ? (router?.ssrPath ?? "/") : window.location.pathname).language;
 
 // Routes see the path without its `/br` prefix; navigation re-appends it while in pt.
 export const useLanguageLocation: BaseLocationHook = (router) => {
@@ -16,4 +19,14 @@ export const useLanguageLocation: BaseLocationHook = (router) => {
   ];
 };
 
-export const languageHref = (href: string) => withLanguage(href, currentLanguage());
+export const languageHref = (href: string, router?: { ssrPath?: string }) =>
+  withLanguage(href, currentLanguage(router));
+
+/**
+ * The raw pathname, `/br` prefix included. Same as wouter's usePathname(), but it
+ * resolves against the router's `ssrPath` when rendering on the server, where there
+ * is no `window.location`.
+ */
+export function useRawPathname(): string {
+  return usePathname({ ssrPath: useRouter().ssrPath });
+}

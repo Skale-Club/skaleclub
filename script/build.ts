@@ -75,6 +75,35 @@ async function buildAll() {
 
   await stampServiceWorker();
 
+  console.log("building SSR bundle...");
+  // A second Vite build of the server render entry (client/src/entry-server.tsx), the
+  // production counterpart of `vite.ssrLoadModule` in server/vite.ts. It emits an ES
+  // module at dist/server/entry-server.js that server/ssr-react.ts imports at request time.
+  //
+  // vite.config.ts is still loaded (root `client/`, React plugin, aliases) and these
+  // overrides merged on top, like the client build above.
+  process.env.SKALE_SSR_BUILD = "1";
+  await viteBuild({
+    // Bundle every npm dependency in: the production image ships the esbuild'd server and
+    // `dist/`, and a bare `import "react"` in the SSR output would not resolve there.
+    ssr: { noExternal: true },
+    build: {
+      ssr: "src/entry-server.tsx",
+      // Relative to the `client/` root: lands next to dist/public, as dist/server.
+      outDir: "../dist/server",
+      // Never empty dist/public (just built) or dist/ itself.
+      emptyOutDir: false,
+      ssrEmitAssets: false,
+      // The client build already copied public/ into dist/public.
+      copyPublicDir: false,
+      // Only our own process reads this bundle: minifying buys nothing and unreadable
+      // stack traces cost. No source map either: it would hold every bundled module.
+      minify: false,
+      sourcemap: false,
+    },
+  });
+  delete process.env.SKALE_SSR_BUILD;
+
   // Inject SEO data after client build
   await injectSEO();
 
