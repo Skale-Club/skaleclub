@@ -26,16 +26,27 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
   // navy + grid so it runs unbroken behind the top half of the trust card,
   // which straddles the hero/next-section boundary.
   const bottomPadding = showTrustBadges ? 'pb-[1.275rem] min-[740px]:pb-[1.7rem] lg:pb-[1.275rem]' : 'bg-transparent';
-  // Homepage photo panel (the file is cropped at the hips, 1024x1180).
-  // Phones show the whole photo. Tablets hang the panel 2rem below the hero,
-  // clipped at the trust card, with 1rem of air under the header. Desktop
-  // (>=963px) makes the panel 14.56% taller than the space under the header
-  // (1rem of air) and hangs that extra below the hero: the bottom 150/1180 of
-  // the photo is hidden, so it reads as cropped at the waistband and the
-  // people render larger. Percent heights keep the img's max-h-full resolvable.
+  // Homepage photo panel (the file is cropped at the hips, 1024x1180). Every
+  // layout hides the bottom 150/1180 of the photo so it reads as cropped at the
+  // waistline:
+  // - Stacked (<740px): the img box itself is 1024x1030 and object-cover,
+  //   object-top cuts the rest (see the img below).
+  // - Tablets (740-962px): the panel fills the space under the header (1rem of
+  //   air), the img may grow to 114.56% of it and is pushed down 12.71% of its
+  //   own height, past the hero's clipped bottom edge. Translating by its own
+  //   height keeps the crop exact even when the panel width caps the photo.
+  // - Desktop (>=963px): the panel is 14.56% taller than the space under the
+  //   header and hangs that extra below the hero.
+  // Percent heights keep the img's max-h resolvable.
   const photoInset = showTrustBadges
     ? 'min-[740px]:inset-y-0'
-    : 'min-[740px]:top-auto min-[740px]:-bottom-8 min-[740px]:h-[calc(100%+1rem)] min-[963px]:h-[calc((100%-1rem)*1.1456)] min-[963px]:bottom-[calc((100%-1rem)*-0.1456)]';
+    : 'min-[740px]:top-auto min-[740px]:bottom-0 min-[740px]:h-[calc(100%-1rem)] min-[963px]:h-[calc((100%-1rem)*1.1456)] min-[963px]:bottom-[calc((100%-1rem)*-0.1456)]';
+  // Waistline crop on the img itself, homepage only: the stacked 1024x1030
+  // object-cover box, then the tablet push-down (reset on desktop, where the
+  // panel does the hanging). Inline-badge heroes show the whole photo.
+  const photoCrop = showTrustBadges
+    ? 'object-contain object-bottom min-[740px]:max-h-full'
+    : 'aspect-[1024/1030] object-cover object-top min-[740px]:aspect-auto min-[740px]:object-contain min-[740px]:object-bottom min-[740px]:max-h-[114.56%] min-[740px]:translate-y-[12.71%] min-[963px]:max-h-full min-[963px]:translate-y-0';
 
   // From tablet up the text column is vertically centered in the hero's
   // *visible* band: the section pt matches the overlaying header's height
@@ -128,7 +139,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 // viewports scale it down instead of clipping the hair at the
                 // section's top edge; object-bottom keeps it glued to the
                 // trust bar while it shrinks.
-                className="w-full max-w-none min-[560px]:max-w-[480px] min-[740px]:max-w-[460px] tablet:max-w-[480px] min-[963px]:max-w-[560px] min-[740px]:max-h-full object-contain object-bottom drop-shadow-2xl origin-bottom"
+                className={`w-full max-w-none min-[560px]:max-w-[480px] min-[740px]:max-w-[460px] tablet:max-w-[480px] min-[963px]:max-w-[560px] ${photoCrop} drop-shadow-2xl origin-bottom`}
               />
             ) : (
               <div className="w-full max-w-none min-[560px]:max-w-[480px] min-[740px]:max-w-[460px] tablet:max-w-[480px] min-[963px]:max-w-[560px]" />
