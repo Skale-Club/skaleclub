@@ -6,6 +6,7 @@ import { isNoindexPath } from "#shared/coreSeo.js";
 import { injectSeo } from "./seo/inject.js";
 import { resolveRoute } from "./seo/routes.js";
 import { getSeoSettings } from "./seo/data.js";
+import { applyPageContent, buildPageContentHtml } from "./seo/content/index.js";
 
 // Database-free variant: no 404s and no settings-driven JSON-LD, but the same
 // per-page head for known routes.
@@ -98,6 +99,10 @@ export function serveStatic(app: Express) {
     }
     // The shell embeds per-page tags: let browsers and CDNs revalidate it.
     res.setHeader("Cache-Control", "no-cache");
-    res.status(route.status).type("html").send(injectSeo(indexHtml, pathname, { settings, route }));
+    // Indexable pages also get their text in the body (and lose the loader), so
+    // the raw HTML is never an empty shell: see server/seo/content/html.ts.
+    const ctx = { settings, route };
+    const content = await buildPageContentHtml(pathname, ctx);
+    res.status(route.status).type("html").send(applyPageContent(injectSeo(indexHtml, pathname, ctx), content));
   });
 }

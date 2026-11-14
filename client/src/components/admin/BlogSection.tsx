@@ -30,6 +30,7 @@ import { Loader2 } from '@/components/ui/loader';
 import type { BlogPost } from '@shared/schema';
 import { SIDEBAR_MENU_ITEMS } from './shared/constants';
 import { uploadFileToServer } from './shared/utils';
+import { foldAccents } from '@shared/slug';
 
 const BLOG_TABS: { id: 'posts' | 'automation' | 'rss'; label: string; icon: typeof FileText }[] = [
   { id: 'posts', label: 'Posts', icon: FileText },
@@ -337,8 +338,7 @@ function BlogSectionInner({ resetSignal }: { resetSignal: number }) {
   }, [editingTag, editingTagValue, isRenamingTag, availableTags, renameTagMutation, toast, handleCancelEditTag]);
 
   const generateSlug = (title: string) => {
-    return title
-      .toLowerCase()
+    return foldAccents(title.toLowerCase())
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')

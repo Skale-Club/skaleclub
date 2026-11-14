@@ -20,6 +20,8 @@ export const translations = {
     "We don't abandon you after classes. We follow your results.": 'Não te abandonamos após as aulas. Acompanhamos seus resultados.',
     // Common
     'Services': 'Serviços', 'About': 'Sobre', 'Contact': 'Contato', 'FAQ': 'Perguntas Frequentes',
+    // Crawlable page summaries (server/seo/content)
+    'Hours': 'Horário', 'Get in touch': 'Fale conosco', 'Latest articles': 'Artigos recentes', 'More articles': 'Mais artigos', 'Our Blog': 'Nosso Blog', 'Tips, guides, and insights about marketing services': 'Dicas, guias e ideias sobre serviços de marketing',
     // NFC keychain guide + dedicated order page
     'NFC keychain guide': 'Guia de chaveiros NFC',
     'AI-generated visual examples of flat, raised-relief and custom-shaped NFC keychains': 'Exemplos visuais gerados por IA de chaveiros NFC flat, com alto-relevo e em formato personalizado',

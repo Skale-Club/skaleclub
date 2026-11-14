@@ -6,6 +6,16 @@ export const InitialLoadContext = createContext<{ isInitialLoad: boolean; markLo
   markLoaded: () => { },
 });
 
+// Server-rendered page text (server/seo/content) that stands in for the loader
+// on indexable pages so the raw HTML is never empty for crawlers.
+const SEO_CONTENT_ID = "seo-content";
+
+/** Removes everything index.html shows before React: the loader and the page text. */
+export function clearInitialShell() {
+  document.getElementById("initial-loader")?.remove();
+  document.getElementById(SEO_CONTENT_ID)?.remove();
+}
+
 // Hook to hide initial loader after first page renders
 function useHideInitialLoader() {
   const { isInitialLoad, markLoaded } = useContext(InitialLoadContext);
@@ -14,6 +24,8 @@ function useHideInitialLoader() {
   useEffect(() => {
     if (isInitialLoad && !hasRun.current) {
       hasRun.current = true;
+      // The route is mounted: its real content replaces the server summary.
+      document.getElementById(SEO_CONTENT_ID)?.remove();
       const loader = document.getElementById("initial-loader");
       if (loader) {
         loader.classList.add("loader-fade-out");

@@ -1,3 +1,4 @@
+import { LEAD_FORM_CTA_DEFAULTS } from "@shared/sectionCopyDefaults";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
 import { ArrowRight } from "lucide-react";
@@ -11,11 +12,7 @@ import { leadFormCtaPropsSchema } from "@shared/section-definitions";
 type LeadFormCtaProps = z.infer<typeof leadFormCtaPropsSchema>;
 
 // English defaults (the t() source language); PT served via translations.ts.
-const DEFAULTS = {
-  heading: "Let's talk about your website",
-  subheading: "Tell us about your project in 1 minute. We'll reply within 24 hours with a proposal.",
-  ctaLabel: "I want my website",
-} as const;
+const DEFAULTS = LEAD_FORM_CTA_DEFAULTS;
 
 export function LeadFormCtaAdapter({ props }: { props: LeadFormCtaProps }) {
   const [isOpen, setIsOpen] = useState(false);

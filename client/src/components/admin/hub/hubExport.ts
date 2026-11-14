@@ -1,3 +1,4 @@
+import { slugify } from '@shared/slug';
 export type CsvCell = string | number | null | undefined;
 
 const PHONE_LIKE_RE = /^\+?[\d\s().-]+$/;
@@ -40,5 +41,5 @@ export function toIsoCell(value: unknown): string {
 }
 
 export function csvFilenameSlug(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'export';
+  return slugify(text, { fallback: 'export' });
 }

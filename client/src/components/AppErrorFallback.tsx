@@ -2,14 +2,15 @@ import { useEffect } from "react";
 import { PillButton, PillLink } from "@/components/editorial";
 import { useTranslation } from "@/hooks/useTranslation";
 import { nfcWhatsappHref } from "@shared/nfc-whatsapp";
+import { clearInitialShell } from "@/lib/initialLoad";
 
 /** Branded last-resort page for an uncaught render error anywhere in the router. */
 export function AppErrorFallback() {
   const { t, language } = useTranslation();
 
   useEffect(() => {
-    // index.html's pre-React loader sits above everything at z-index 9999.
-    document.getElementById("initial-loader")?.remove();
+    // index.html's pre-React loader (or page text) sits above everything at z-index 9999.
+    clearInitialShell();
   }, []);
 
   return (

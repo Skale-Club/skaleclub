@@ -3,6 +3,7 @@
 // English defaults (the t() source language) so the /websites seed can pass
 // `props: {}`; PT is served via translations.ts when language is 'pt'.
 
+import { PROCESS_STEPPER_DEFAULTS } from "@shared/sectionCopyDefaults";
 import type { z } from "zod";
 import {
   Search, Palette, Code2, Rocket,
@@ -32,29 +33,7 @@ const ICON_MAP: Record<ProcessStepperIconName, LucideIcon> = {
 
 export type ProcessStepperProps = z.infer<typeof processStepperPropsSchema>;
 
-const DEFAULTS = {
-  eyebrow:    "How we work",
-  heading:    "From briefing to launch in 4 steps",
-  subheading: "A clear process, with deadlines and deliverables agreed from the first contact.",
-  steps: [
-    {
-      title:       "Discovery",
-      description: "We understand your business, target audience, and website goals. You get a briefing with scope and timeline.",
-    },
-    {
-      title:       "Design",
-      description: "We create visual prototypes aligned with your brand. You approve before any code is written.",
-    },
-    {
-      title:       "Build",
-      description: "We develop the website focused on speed, SEO, and conversion. You follow the progress in a staging environment.",
-    },
-    {
-      title:       "Launch",
-      description: "We publish with your own domain, analytics integration, and forms connected to your CRM. Post-launch support included.",
-    },
-  ],
-} as const;
+const DEFAULTS = PROCESS_STEPPER_DEFAULTS;
 
 const ICONS = [Search, Palette, Code2, Rocket] as const;
 

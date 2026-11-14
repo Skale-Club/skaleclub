@@ -1,3 +1,4 @@
+import { HERO_WEBSITES_DEFAULTS } from "@shared/sectionCopyDefaults";
 import type { z } from "zod";
 import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowRight, ChevronLeft, ChevronRight, Phone } from "lucide-react";
@@ -11,13 +12,7 @@ import { heroWebsitesPropsSchema } from "@shared/section-definitions";
 // language); PT is served via translations.ts when language is 'pt'.
 export type HeroWebsitesProps = z.infer<typeof heroWebsitesPropsSchema>;
 
-const DEFAULTS = {
-  headline: "Is your website still stuck in the Stone Age?",
-  subheadline: "We build fast, Google-optimized websites for service businesses, deployed in days, not months.",
-  ctaLabel: "I want my website",
-  // Served from client/public: language-neutral brand illustration.
-  backgroundImageUrl: "/SkaleClub.webp",
-} as const;
+const DEFAULTS = HERO_WEBSITES_DEFAULTS;
 
 // Intrinsic dimensions for the two known hero images, so the browser can reserve
 // the right aspect ratio before the image loads (avoids CLS). The className below

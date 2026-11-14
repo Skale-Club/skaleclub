@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link2, Plus, Trash2, Pencil, Copy, Check, X } from "lucide-react";
+import { foldAccents } from "@shared/slug";
 
 interface Redirect {
   id: number;
@@ -101,7 +102,7 @@ export function RedirectsSection() {
                   id="redir-slug"
                   placeholder="meet"
                   value={form.slug}
-                  onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }))}
+                  onChange={e => setForm(f => ({ ...f, slug: foldAccents(e.target.value.toLowerCase()).replace(/[^a-z0-9-]/g, "") }))}
                   required
                   disabled={editingId !== null}
                 />

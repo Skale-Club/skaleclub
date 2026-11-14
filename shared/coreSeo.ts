@@ -190,12 +190,16 @@ export const CORE_PAGES_LASTMOD = "2026-10-02";
 // Never indexed: private viewers, admin/OAuth/print tooling, the order form and
 // thank-you pages. The `/br/...` twin of each is covered too.
 // /svg is a free internal tool (logo vectorizer), kept out of search on purpose.
-const NOINDEX_PREFIXES = ["/contracts", "/e", "/p", "/w", "/admin", "/print", "/oauth", "/nfc-order", "/plaque-order", "/thankyou", "/thank-you", "/svg"];
+// Private, tooling and thin utility URLs. Public forms (/f/x) and vCards are
+// single-purpose utility pages (a form, a contact card) that answer 200 for
+// any slug, so they stay out of the index like the thank-you page.
+const NOINDEX_PREFIXES = ["/contracts", "/e", "/p", "/w", "/b", "/admin", "/print", "/oauth", "/nfc-order", "/plaque-order", "/thankyou", "/thank-you", "/svg", "/f", "/vcard"];
 
 export function isNoindexPath(pathname: string, pageSlugs?: Partial<PageSlugs> | null): boolean {
   const clean = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   const path = clean === "/br" ? "/" : clean.startsWith("/br/") ? clean.slice(3) : clean;
-  const prefixes = [...NOINDEX_PREFIXES, buildPagePaths(pageSlugs).thankYou];
+  const custom = buildPagePaths(pageSlugs);
+  const prefixes = [...NOINDEX_PREFIXES, custom.thankYou, custom.vcard];
   return prefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 

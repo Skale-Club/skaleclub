@@ -3,6 +3,7 @@
 // is prop-driven with English defaults (the t() source language) so a bare
 // `props: {}` still renders; PT is served via t() when the page language is 'pt'.
 
+import { FAQ_ACCORDION_DEFAULTS } from "@shared/sectionCopyDefaults";
 import type { z } from "zod";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { ChevronDown } from "lucide-react";
@@ -13,25 +14,7 @@ import { faqAccordionPropsSchema } from "@shared/section-definitions";
 
 export type FaqAccordionProps = z.infer<typeof faqAccordionPropsSchema>;
 
-const DEFAULTS = {
-  eyebrow:    "FAQ",
-  heading:    "Common questions",
-  subheading: "Quick answers to what people usually ask before ordering.",
-  items: [
-    {
-      question: "How do I get started?",
-      answer:   "Fill out the short form on this page and we will reach out on WhatsApp to confirm the details of your order.",
-    },
-    {
-      question: "Can I see the design before it goes to production?",
-      answer:   "Yes. We send you the artwork for approval, and nothing is produced until you say it is good to go.",
-    },
-    {
-      question: "What if I have more questions?",
-      answer:   "Just message us on WhatsApp. We answer every question before you commit to anything.",
-    },
-  ],
-} as const;
+const DEFAULTS = FAQ_ACCORDION_DEFAULTS;
 
 const LIGHT = {
   list:     "divide-ink-700/10 border-ink-700/10",

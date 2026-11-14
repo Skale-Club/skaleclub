@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { DotsLoader, PageLoader } from "@/components/ui/spinner";
 import { useTranslation } from "@/hooks/useTranslation";
 import { isChunkLoadError, requestChunkReload, type ChunkReloadStatus } from "@/lib/chunkReload";
+import { clearInitialShell } from "@/lib/initialLoad";
 
 type State = { hasError: boolean; error: unknown; reload: ChunkReloadStatus | null };
 
@@ -43,8 +44,8 @@ function ChunkErrorFallback({ reload }: { reload: ChunkReloadStatus | null }) {
   const imminent = reload === null || (reload.kind === "scheduled" && reload.delayMs === 0);
 
   useEffect(() => {
-    // index.html's pre-React loader sits above everything at z-index 9999.
-    if (!imminent) document.getElementById("initial-loader")?.remove();
+    // index.html's pre-React loader (or page text) sits above everything at z-index 9999.
+    if (!imminent) clearInitialShell();
   }, [imminent]);
 
   if (imminent) return <PageLoader />;

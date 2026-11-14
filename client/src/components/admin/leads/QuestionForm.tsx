@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from '@/components/ui/loader';
 import type { FormOption, FormQuestion } from '@shared/schema';
+import { foldAccents } from '@shared/slug';
 
 // `fileUpload` defaults, used when a question carries no limits yet. They match
 // what the public upload route accepts — SVG is excluded on purpose there.
@@ -142,8 +143,7 @@ export function QuestionForm({
 
     let finalId = id;
     if (!isEditing) {
-      finalId = title
-        .toLowerCase()
+      finalId = foldAccents(title.toLowerCase())
         .replace(/[^a-z0-9\s]/g, '')
         .trim()
         .split(/\s+/)
@@ -220,8 +220,7 @@ export function QuestionForm({
           {!isEditing && title && (
             <p className="text-xs text-muted-foreground">
               ID will be: <code className="bg-muted px-1.5 py-0.5 rounded font-mono">
-                {title
-                  .toLowerCase()
+                {foldAccents(title.toLowerCase())
                   .replace(/[^a-z0-9\s]/g, '')
                   .trim()
                   .split(/\s+/)

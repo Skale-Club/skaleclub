@@ -4,6 +4,7 @@
 // Only the plumbing changed: hardcoded strings became optional props with
 // defaults that preserve the current production look.
 
+import { WHATSAPP_GROUP_DEFAULTS } from "@shared/sectionCopyDefaults";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import type { z } from "zod";
@@ -29,36 +30,7 @@ import { whatsAppGroupPropsSchema } from "@shared/section-definitions";
 // All optional — defaults preserve the current SkaleHubGroup look verbatim.
 export type WhatsAppGroupProps = z.infer<typeof whatsAppGroupPropsSchema>;
 
-const DEFAULTS = {
-  badgeLabel: "Skale Hub",
-  groupName: "Skale Hub",
-  groupSubtitle: "Grupo aberto para novos membros",
-  groupLabel: "Lives",
-  groupOfficialLabel: "Grupo oficial",
-  socialProofLabel: "Avisos e conteúdos das lives",
-  headline: "Receba os avisos das lives semanais",
-  headlineAccent: "no seu WhatsApp",
-  subheadline:
-    "Aquisição de clientes nos EUA, Google Ads, Meta Ads, CRM, automação e IA toda semana, ao vivo.",
-  bullets: [
-    "Lives toda semana sobre crescimento de negócios",
-    "Avisos antecipados direto no WhatsApp",
-    "Conteúdo prático e aplicável imediatamente",
-  ],
-  formTitle: "Entrar no grupo gratuito",
-  formSubtitle: "Seu número do WhatsApp",
-  formHelper: "Use o número que você acessa o WhatsApp.",
-  phoneCountryAriaLabel: "País do telefone",
-  submitLabel: "Entrar no grupo do WhatsApp",
-  privacyLabel: "🔒 Sem spam. Só avisos de lives. Saia quando quiser.",
-  submitEndpoint: "/api/forms/skale-hub-group/leads",
-  successTitle: "Recebemos suas informações",
-  successBody: "Em breve alguém da nossa equipe entrará em contato com você.",
-  toastSuccessTitle: "Informações recebidas!",
-  toastSuccessBody: "Em breve alguém da nossa equipe entrará em contato com você.",
-  toastErrorTitle: "Não foi possível registrar",
-  phoneInvalidPrefix: "Digite um número válido para",
-} as const;
+const DEFAULTS = WHATSAPP_GROUP_DEFAULTS;
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
