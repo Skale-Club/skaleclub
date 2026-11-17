@@ -186,7 +186,7 @@ export function NotificationsSection() {
         <div className="flex gap-4 items-start">
           {/* Sub-sidebar */}
           <div className={cn(
-            'flex-shrink-0 border rounded-lg overflow-hidden transition-all duration-200',
+            'shrink-0 border rounded-lg overflow-hidden transition-all duration-200',
             sidebarOpen ? 'w-52' : 'w-10',
           )}>
             {sidebarOpen ? (

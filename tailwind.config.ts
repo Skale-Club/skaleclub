@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  darkMode: ["class"],
+  darkMode: "class",
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
@@ -140,10 +140,23 @@ export default {
         danger: "hsl(var(--danger) / <alpha-value>)",
         info: "hsl(var(--info) / <alpha-value>)",
       },
+      // Preserve v3's small-effect scales while existing components migrate.
+      // Brand radii above remain explicit, including the existing 3px rounded-sm.
+      boxShadow: {
+        sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        DEFAULT: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+      },
+      blur: { sm: "4px", DEFAULT: "8px" },
+      backdropBlur: { sm: "4px", DEFAULT: "8px" },
+      dropShadow: {
+        sm: "0 1px 1px rgb(0 0 0 / 0.05)",
+        DEFAULT: ["0 1px 2px rgb(0 0 0 / 0.1)", "0 1px 1px rgb(0 0 0 / 0.06)"],
+      },
+      // Literal families avoid v4 producing --font-sans: var(--font-sans).
       fontFamily: {
-        sans: ["var(--font-sans)"],
-        mono: ["var(--font-mono)"],
-        display: ["var(--font-display)"],
+        sans: ["Inter", "sans-serif"],
+        mono: ["ui-monospace", "SF Mono", "Menlo", "Consolas", "monospace"],
+        display: ["Inter", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {

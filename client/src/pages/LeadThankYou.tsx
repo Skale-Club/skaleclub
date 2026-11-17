@@ -96,7 +96,7 @@ export default function LeadThankYou() {
         <div className="grid md:grid-cols-[1.2fr_1fr] gap-6 items-start">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 shadow-2xl backdrop-blur">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 flex-shrink-0">
+              <div className="w-16 h-16 shrink-0">
                 <Suspense fallback={<div className="w-16 h-16" />}>
                   {successAnimation && (
                     <Lottie
@@ -168,15 +168,15 @@ export default function LeadThankYou() {
                 <p className="text-sm text-slate-200/90">{t('Next steps')}</p>
                 <div className="space-y-3 text-sm text-white/90">
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
-                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">1</span>
+                    <span className="shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">1</span>
                     <span>{t(isGroupLead ? 'We check the number you provided.' : isPlaqueOrder ? 'We review your order and the link you sent.' : isNfcOrder ? 'We review your order and check the artwork you sent.' : isNfcLead ? 'We review your quantity, logo, and the link you want the NFC tap to open.' : 'Our team reviews your answers and identifies the best plan.')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
-                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">2</span>
+                    <span className="shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">2</span>
                     <span>{t(isGroupLead ? 'We add you to the Skale Hub WhatsApp group.' : isPlaqueOrder ? 'We call you on WhatsApp to confirm the model, quantity and final total.' : isNfcOrder ? 'We call you on WhatsApp to confirm quantity, artwork and the final total.' : isNfcLead ? 'We contact you on WhatsApp to confirm the artwork, total, and production window.' : 'We will contact you to align objectives and next steps.')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
-                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">3</span>
+                    <span className="shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">3</span>
                     <span>{t(isGroupLead ? 'You get the live announcements straight on WhatsApp.' : isNfcOrder || isPlaqueOrder ? 'After your approval and payment, production starts.' : isNfcLead ? 'Production starts after payment and your artwork approval.' : 'You receive a summary of the initial plan and practical instructions.')}</span>
                   </div>
                 </div>

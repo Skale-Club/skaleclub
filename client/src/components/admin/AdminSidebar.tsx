@@ -213,7 +213,7 @@ export function AdminSidebar({
                 onClick={() => toggleGroup(group.id)}
                 className={cn(
                   'flex h-8 w-full items-center justify-between rounded-md px-2 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground transition-colors',
-                  'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                  'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring',
                   containsActiveItem && 'text-foreground',
                 )}
                 data-testid={`sidebar-group-${group.id}`}

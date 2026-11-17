@@ -385,7 +385,7 @@ function Router() {
         {t("Skip to content")}
       </a>
       <Navbar />
-      <main id="main" tabIndex={-1} className="flex flex-col flex-grow focus:outline-none">
+      <main id="main" tabIndex={-1} className="flex flex-col grow focus:outline-hidden">
         <Suspense fallback={fallback}>
           <Switch>
             <Route path="/" component={Home} />

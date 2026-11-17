@@ -556,7 +556,7 @@ export default function PresentationViewer() {
               onInput={(e) => setInlineHeading(e.currentTarget.textContent ?? '')}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleInlineSave(currentIndex); } }}
               onBlur={() => handleInlineSave(currentIndex)}
-              className="w-full max-w-2xl text-3xl font-semibold text-white outline-none border-b border-white/20 pb-2 empty:before:content-['Heading...'] empty:before:text-zinc-600"
+              className="w-full max-w-2xl text-3xl font-semibold text-white outline-hidden border-b border-white/20 pb-2 empty:before:content-['Heading...'] empty:before:text-zinc-600"
             >
               {inlineHeading}
             </div>
@@ -566,7 +566,7 @@ export default function PresentationViewer() {
               onInput={(e) => setInlineBody(e.currentTarget.textContent ?? '')}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleInlineSave(currentIndex); } }}
               onBlur={() => handleInlineSave(currentIndex)}
-              className="w-full max-w-2xl text-lg text-zinc-300 outline-none border-b border-white/10 pb-2 empty:before:content-['Body text...'] empty:before:text-zinc-600"
+              className="w-full max-w-2xl text-lg text-zinc-300 outline-hidden border-b border-white/10 pb-2 empty:before:content-['Body text...'] empty:before:text-zinc-600"
             >
               {inlineBody}
             </div>

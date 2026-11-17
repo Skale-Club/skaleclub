@@ -1346,7 +1346,7 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
                         {currentQuestion.type === "tel" && (
                           <div className="flex gap-2">
                             {/* Country selector */}
-                            <div className="relative flex-shrink-0" ref={countryDropdownRef}>
+                            <div className="relative shrink-0" ref={countryDropdownRef}>
                               <button
                                 ref={countryButtonRef}
                                 type="button"
@@ -1479,7 +1479,7 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
                               }}
                               onFocus={handleFieldFocus}
                               placeholder={phoneCountrySelected.format.replace(/#/g, "0")}
-                              className="flex-1 min-w-0 border-0 px-4 py-3 text-base sm:text-lg bg-transparent text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-0"
+                              className="flex-1 min-w-0 border-0 px-4 py-3 text-base sm:text-lg bg-transparent text-slate-900 placeholder:text-slate-400 focus-visible:outline-hidden focus-visible:ring-0"
                               aria-label={t(currentQuestion.title)}
                               data-testid={`input-form-${currentQuestion.id}`}
                             />
@@ -1625,7 +1625,7 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
                         )}
                       >
                         {isLastStep ? t("Finish") : t("Next")}
-                        <ArrowRight className="h-4 w-4 flex-shrink-0" />
+                        <ArrowRight className="h-4 w-4 shrink-0" />
                       </button>
                     </div>
                     {/* A quiet line, not a warning box: sending means agreeing to the

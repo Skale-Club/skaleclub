@@ -248,7 +248,7 @@ export function BlogPostEditorForm({
             onBlur={onSyncEditorContent}
             data-placeholder="Write your blog post content here..."
             className={clsx(
-              "admin-editor px-3 py-2 text-sm focus:outline-none prose prose-sm dark:prose-invert max-w-none overflow-y-auto",
+              "admin-editor px-3 py-2 text-sm focus:outline-hidden prose prose-sm dark:prose-invert max-w-none overflow-y-auto",
               isEditorExpanded
                 ? "min-h-[320px] max-h-[65vh] sm:min-h-[420px] sm:max-h-[70vh]"
                 : "min-h-[180px] max-h-[40vh] sm:min-h-[220px] sm:max-h-[45vh]"
@@ -366,7 +366,7 @@ export function BlogPostEditorForm({
                 }
               }}
               placeholder={formData.tags ? "Add more..." : "Type and press Enter..."}
-              className="flex-1 min-w-[120px] bg-transparent border-0 outline-none text-sm placeholder:text-muted-foreground"
+              className="flex-1 min-w-[120px] bg-transparent border-0 outline-hidden text-sm placeholder:text-muted-foreground"
             />
           </div>
           <p className="text-xs text-muted-foreground">Press Enter or comma to add a tag</p>
@@ -442,7 +442,7 @@ export function BlogPostEditorForm({
                     publishedAt: date ? format(date, "yyyy-MM-dd") : null
                   }))
                 }
-                initialFocus
+                autoFocus
               />
             </PopoverContent>
           </Popover>

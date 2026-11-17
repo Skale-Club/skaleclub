@@ -28,14 +28,14 @@ export const StepCard = memo(function StepCard({ step, index, stepLabel, whatWeD
   return (
     <EditorialCard
       tone={dark ? "dark" : "light"}
-      className={`group relative flex-shrink-0 w-full sm:w-[70%] md:w-[52%] tablet:w-[365px] transition-colors duration-300 ${dark ? "hover:border-cta-soft/30" : "hover:border-cta-ink/30"} p-0 sm:p-0`}
+      className={`group relative shrink-0 w-full sm:w-[70%] md:w-[52%] tablet:w-[365px] transition-colors duration-300 ${dark ? "hover:border-cta-soft/30" : "hover:border-cta-ink/30"} p-0 sm:p-0`}
     >
       <div className={`absolute right-4 top-3 font-display text-6xl font-semibold ${dark ? "text-white/[0.05]" : "text-ink/[0.06]"} pointer-events-none`}>
         {numberLabel}
       </div>
       <div className="relative z-10 p-6 space-y-5">
         <div className="flex items-center gap-4">
-          <div className={`h-12 w-12 min-w-12 flex-shrink-0 rounded-full ${dark ? "bg-cta-soft/10 text-cta-soft" : "bg-cta-ink/10 text-cta-ink"} flex items-center justify-center`}>
+          <div className={`h-12 w-12 min-w-12 shrink-0 rounded-full ${dark ? "bg-cta-soft/10 text-cta-soft" : "bg-cta-ink/10 text-cta-ink"} flex items-center justify-center`}>
             <Sparkles className="w-6 h-6" />
           </div>
           <div className="space-y-1">

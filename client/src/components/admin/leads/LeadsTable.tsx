@@ -103,7 +103,7 @@ export function LeadsTable({
                   value={lead.status || 'novo'}
                   onValueChange={(value) => onStatusChange(lead.id, value as LeadStatus)}
                 >
-                  <SelectTrigger className="w-40 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
+                  <SelectTrigger className="w-40 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-hidden focus:ring-0 focus:ring-offset-0">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>

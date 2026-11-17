@@ -194,7 +194,7 @@ export function NodeTextEditor({
         onPointerDown={(e) => e.stopPropagation()}
         wrap={wrap ? 'soft' : 'off'}
         className={cn(
-          'nodrag nopan nowheel col-start-1 row-start-1 h-full w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-[inherit] leading-[inherit] text-inherit outline-none placeholder:text-current placeholder:opacity-40',
+          'nodrag nopan nowheel col-start-1 row-start-1 h-full w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-[inherit] leading-[inherit] text-inherit outline-hidden placeholder:text-current placeholder:opacity-40',
           ws,
         )}
         style={{ textAlign: 'inherit' }}

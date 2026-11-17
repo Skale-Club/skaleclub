@@ -82,7 +82,7 @@ export function QuantitySliderInput({
         <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-slate-200">
           <SliderPrimitive.Range className="absolute h-full bg-cta" />
         </SliderPrimitive.Track>
-        <SliderPrimitive.Thumb className="block h-7 w-7 rounded-full border-[3px] border-cta bg-white shadow-md transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cta/40 focus-visible:ring-offset-2" />
+        <SliderPrimitive.Thumb className="block h-7 w-7 rounded-full border-[3px] border-cta bg-white shadow-md transition-transform hover:scale-105 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cta/40 focus-visible:ring-offset-2" />
       </SliderPrimitive.Root>
 
       <div className="flex justify-between text-xs font-medium text-slate-400">

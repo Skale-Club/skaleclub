@@ -47,9 +47,9 @@ async function startBoardsServer(opts: { ai?: BoardsAiProvider; beforeRoutes?: (
   });
   app.get("/api/supabase-config", (_req, res) => res.json({}));
   app.get("/api/company-settings", (_req, res) => res.json({ companyName: "Skale Club", sectionsOrder: [] }));
-  app.all("/api/*", (req, res) => (req.method === "GET" ? res.json([]) : res.json({})));
+  app.all(/^\/api\//, (req, res) => (req.method === "GET" ? res.json([]) : res.json({})));
   app.use(express.static(DIST, { index: false }));
-  app.get("*", (_req, res) => res.sendFile(path.join(DIST, "index.html")));
+  app.get(/.*/, (_req, res) => res.sendFile(path.join(DIST, "index.html")));
   return { rows, ...(await listen(app)) };
 }
 

@@ -43,7 +43,7 @@ export function LanguageSwitch({
         type="button"
         onClick={toggleLanguage}
         className={clsx(
-          'relative inline-flex items-center rounded-full bg-[#E5E7EB] shadow-[inset_-2px_2px_4px_rgba(0,0,0,0.25),inset_1px_-1px_2px_rgba(255,255,255,0.8)] transition-colors duration-200 focus:outline-none border-0',
+          'relative inline-flex items-center rounded-full bg-[#E5E7EB] shadow-[inset_-2px_2px_4px_rgba(0,0,0,0.25),inset_1px_-1px_2px_rgba(255,255,255,0.8)] transition-colors duration-200 focus:outline-hidden border-0',
           sizes.track,
         )}
         role="switch"

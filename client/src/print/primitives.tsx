@@ -71,7 +71,7 @@ export function Editable({
       contentEditable
       suppressContentEditableWarning
       spellCheck={false}
-      className={`outline-none focus:ring-1 focus:ring-blue-400/60 ${className ?? ""}`}
+      className={`outline-hidden focus:ring-1 focus:ring-blue-400/60 ${className ?? ""}`}
       style={style}
     >
       {children}

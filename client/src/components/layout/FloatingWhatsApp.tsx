@@ -34,7 +34,7 @@ export function FloatingWhatsApp() {
         if (openWhatsAppChat("floating_button")) e.preventDefault();
         else trackEvent("click_whatsapp", { location: "floating_button" });
       }}
-      className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-sm shadow-black/10 transition-[transform,background-color] duration-300 ease-out hover:scale-110 hover:bg-[#1EBE5A] motion-reduce:transition-colors motion-reduce:hover:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]/50 focus-visible:ring-offset-2 md:bottom-6 md:right-6"
+      className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-sm shadow-black/10 transition-[transform,background-color] duration-300 ease-out hover:scale-110 hover:bg-[#1EBE5A] motion-reduce:transition-colors motion-reduce:hover:scale-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#25D366]/50 focus-visible:ring-offset-2 md:bottom-6 md:right-6"
       data-testid="floating-whatsapp"
     >
       <SiWhatsapp className="h-6 w-6" aria-hidden="true" />

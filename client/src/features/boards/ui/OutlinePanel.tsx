@@ -80,7 +80,7 @@ function OutlineRow({
               if (e.key === 'Enter') commit();
               if (e.key === 'Escape') setRenaming(false);
             }}
-            className="h-7 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-[#5173D6]/40"
+            className="h-7 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm outline-hidden focus:ring-2 focus:ring-[#5173D6]/40"
             maxLength={BOARD_LIMITS.nodeText}
             data-testid="outline-rename-input"
           />

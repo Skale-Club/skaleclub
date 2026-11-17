@@ -175,7 +175,7 @@ function CommitInput({ value, onCommit, placeholder, testId, multiline }: { valu
     },
   };
   return multiline ? (
-    <textarea {...props} rows={2} className="w-full resize-none rounded-xl border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+    <textarea {...props} rows={2} className="w-full resize-none rounded-xl border bg-background px-3 py-2 text-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring" />
   ) : (
     <Input {...props} className="h-9 rounded-xl" />
   );

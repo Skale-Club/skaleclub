@@ -294,7 +294,7 @@ export function WhatsAppChat({ open, entry, onClose, phone, companyName, avatarU
               type="button"
               onClick={handleClose}
               aria-label={copy.close}
-              className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-white/15 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/60"
             >
               <X className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -337,7 +337,7 @@ export function WhatsAppChat({ open, entry, onClose, phone, companyName, avatarU
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={trackHandoff}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#1EBE5A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]/50 focus-visible:ring-offset-2"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#1EBE5A] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#25D366]/50 focus-visible:ring-offset-2"
                   data-testid="whatsapp-chat-continue"
                 >
                   <SiWhatsapp className="h-4 w-4" aria-hidden="true" />
@@ -400,7 +400,7 @@ export function WhatsAppChat({ open, entry, onClose, phone, companyName, avatarU
                   disabled={step === "saving"}
                   placeholder={isPhoneStep ? country.placeholder : copy.namePlaceholder}
                   aria-label={isPhoneStep ? country.placeholder : copy.namePlaceholder}
-                  className={`min-w-0 flex-1 bg-transparent py-2 text-base text-[#111B21] outline-none placeholder:text-[#8696A0] ${isPhoneStep ? "pl-1.5" : "pl-3.5"}`}
+                  className={`min-w-0 flex-1 bg-transparent py-2 text-base text-[#111B21] outline-hidden placeholder:text-[#8696A0] ${isPhoneStep ? "pl-1.5" : "pl-3.5"}`}
                   data-testid="whatsapp-chat-input"
                 />
               </div>
@@ -408,7 +408,7 @@ export function WhatsAppChat({ open, entry, onClose, phone, companyName, avatarU
                 type="submit"
                 aria-label={copy.send}
                 disabled={!draft.trim() || typing}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#00A884] text-white shadow-sm transition-colors hover:bg-[#008F72] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00A884]/50 focus-visible:ring-offset-2 disabled:opacity-60"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#00A884] text-white shadow-sm transition-colors hover:bg-[#008F72] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#00A884]/50 focus-visible:ring-offset-2 disabled:opacity-60"
                 data-testid="whatsapp-chat-send"
               >
                 <SendHorizontal className="h-5 w-5" aria-hidden="true" />

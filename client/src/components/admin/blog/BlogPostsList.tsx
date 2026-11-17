@@ -43,13 +43,13 @@ export function BlogPostsList({
                   <img
                     src={post.featureImageUrl}
                     alt={post.title}
-                    className="w-full h-[160px] object-cover rounded-sm cursor-pointer hover:opacity-80 transition-opacity sm:w-[100px] sm:h-[68px] sm:flex-shrink-0"
+                    className="w-full h-[160px] object-cover rounded-sm cursor-pointer hover:opacity-80 transition-opacity sm:w-[100px] sm:h-[68px] sm:shrink-0"
                     onClick={() => onEdit(post)}
                     data-testid={`img-blog-${post.id}`}
                   />
                 ) : (
                   <div
-                    className="w-full h-[160px] bg-muted rounded-sm flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors sm:w-[100px] sm:h-[68px] sm:flex-shrink-0"
+                    className="w-full h-[160px] bg-muted rounded-sm flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors sm:w-[100px] sm:h-[68px] sm:shrink-0"
                     onClick={() => onEdit(post)}
                   >
                     <FileText className="w-6 h-6 text-muted-foreground" />

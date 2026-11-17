@@ -57,7 +57,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick, band 
   const renderServiceItem = useCallback((item: CatalogItem, idx: number) => (
     <div
       key={`${item.key}-${idx}`}
-      className="flex-shrink-0 w-[85%] sm:w-[280px] md:w-[260px] tablet:w-[245px]"
+      className="shrink-0 w-[85%] sm:w-[280px] md:w-[260px] tablet:w-[245px]"
     >
       <CatalogCard item={item} variant="compact" className={dark ? undefined : 'cat--light'} onOpen={openServiceModal} />
     </div>

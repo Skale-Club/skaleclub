@@ -203,7 +203,7 @@ export function LeadsSection() {
                 value={filters.formId === 'all' ? 'all' : String(filters.formId)}
                 onValueChange={(value) => setFilters(prev => ({ ...prev, formId: value === 'all' ? 'all' : Number(value) }))}
               >
-                <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
+                <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-hidden focus:ring-0 focus:ring-offset-0">
                   <SelectValue placeholder="Form" />
                 </SelectTrigger>
                 <SelectContent>
@@ -218,7 +218,7 @@ export function LeadsSection() {
               value={filters.classification}
               onValueChange={(value) => setFilters(prev => ({ ...prev, classification: value as LeadClassification | 'all' }))}
             >
-            <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
+            <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-hidden focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Rating" />
               </SelectTrigger>
               <SelectContent>
@@ -231,7 +231,7 @@ export function LeadsSection() {
               value={filters.status}
               onValueChange={(value) => setFilters(prev => ({ ...prev, status: value as LeadStatus | 'all' }))}
             >
-            <SelectTrigger className="w-full sm:w-40 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
+            <SelectTrigger className="w-full sm:w-40 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-hidden focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -244,7 +244,7 @@ export function LeadsSection() {
               value={filters.completion}
               onValueChange={(value) => setFilters(prev => ({ ...prev, completion: value as 'all' | 'completo' | 'em_progresso' | 'abandonado' }))}
             >
-            <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
+            <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-hidden focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Completion" />
               </SelectTrigger>
               <SelectContent>

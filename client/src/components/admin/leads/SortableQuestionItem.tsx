@@ -84,7 +84,7 @@ export function SortableQuestionItem({
                 if (e.key === 'Enter') { e.preventDefault(); commitTitle(); }
                 if (e.key === 'Escape') { setTitleDraft(question.title); setEditingField(null); }
               }}
-              className="font-semibold text-foreground bg-transparent border-0 outline-none w-full px-1 -mx-1 rounded focus:ring-1 focus:ring-ring"
+              className="font-semibold text-foreground bg-transparent border-0 outline-hidden w-full px-1 -mx-1 rounded focus:ring-1 focus:ring-ring"
               maxLength={200}
             />
           ) : (
@@ -113,7 +113,7 @@ export function SortableQuestionItem({
                   if (e.key === 'Enter') { e.preventDefault(); commitPlaceholder(); }
                   if (e.key === 'Escape') { setPlaceholderDraft(question.placeholder ?? ''); setEditingField(null); }
                 }}
-                className="text-xs text-muted-foreground bg-transparent border-0 outline-none flex-1 px-1 -mx-1 rounded focus:ring-1 focus:ring-ring"
+                className="text-xs text-muted-foreground bg-transparent border-0 outline-hidden flex-1 px-1 -mx-1 rounded focus:ring-1 focus:ring-ring"
                 maxLength={200}
                 placeholder="(empty)"
               />

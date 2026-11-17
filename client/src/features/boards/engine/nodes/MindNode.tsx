@@ -82,7 +82,7 @@ function MindTextEditor({ id, initial, seed, isRoot }: { id: string; initial: st
         onKeyDown={onKeyDown}
         onBlur={commit}
         onPointerDown={(e) => e.stopPropagation()}
-        className="nodrag nopan nowheel col-start-1 row-start-1 h-full w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-center font-[inherit] leading-[inherit] text-inherit outline-none placeholder:text-current placeholder:opacity-40"
+        className="nodrag nopan nowheel col-start-1 row-start-1 h-full w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-center font-[inherit] leading-[inherit] text-inherit outline-hidden placeholder:text-current placeholder:opacity-40"
         aria-label="Topic text"
         data-testid="mind-node-editor"
       />

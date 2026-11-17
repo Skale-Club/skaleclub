@@ -88,7 +88,7 @@ export function PhoneCountrySelect({
           setOpen((current) => !current);
         }}
         className={cn(
-          "flex min-h-10 w-auto shrink-0 items-center gap-2 bg-slate-50 px-3 text-sm font-medium text-slate-700 outline-none transition-colors hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-cta/30",
+          "flex min-h-10 w-auto shrink-0 items-center gap-2 bg-slate-50 px-3 text-sm font-medium text-slate-700 outline-hidden transition-colors hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-cta/30",
           buttonClassName,
         )}
       >

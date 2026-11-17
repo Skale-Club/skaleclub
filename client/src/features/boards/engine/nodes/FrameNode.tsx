@@ -32,7 +32,7 @@ function FrameTitleEditor({ id, initial }: { id: string; initial: string }) {
       }}
       onBlur={commit}
       onPointerDown={(e) => e.stopPropagation()}
-      className="nodrag nopan w-56 border border-[#5173D6] bg-[var(--board-node-bg)] px-1.5 py-0.5 text-xs font-semibold text-[var(--board-node-fg)] outline-none"
+      className="nodrag nopan w-56 border border-[#5173D6] bg-[var(--board-node-bg)] px-1.5 py-0.5 text-xs font-semibold text-[var(--board-node-fg)] outline-hidden"
       style={{ borderRadius: 6 }}
       aria-label="Frame title"
       data-testid="frame-title-editor"

@@ -61,7 +61,7 @@ export function OpenRouterModelPicker({ value, onChange, models, isLoading, plac
           type="button"
           role="combobox"
           aria-expanded={open}
-          className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background transition-colors focus:outline-none focus:ring-0 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background transition-colors focus:outline-hidden focus:ring-0 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
           data-testid={testId}
         >
           <span className={`truncate text-left ${value ? '' : 'text-muted-foreground'}`}>

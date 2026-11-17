@@ -32,9 +32,9 @@ for (const engine of (process.env.E2E_BROWSERS || "chromium").split(",")) {
           sectionsOrder: [],
         }),
       );
-      h.app.all("/api/*", (_req, res) => res.json([]));
+      h.app.all(/^\/api\//, (_req, res) => res.json([]));
       h.app.use(express.static(dist, { index: false }));
-      h.app.get("*", (_req, res) =>
+      h.app.get(/.*/, (_req, res) =>
         res.sendFile(path.join(dist, "index.html")),
       );
       const server = h.app.listen(0, "127.0.0.1");

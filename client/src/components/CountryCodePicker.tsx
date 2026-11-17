@@ -199,7 +199,7 @@ export function CountryCodePicker({
           aria-label={label}
           data-country-code-picker-popup
           style={popupPosition}
-          className={`pointer-events-auto fixed z-[300] overflow-y-auto rounded-xl p-1 shadow-[0_12px_32px_rgba(0,0,0,0.6)] outline-none ${t.popup}`}
+          className={`pointer-events-auto fixed z-[300] overflow-y-auto rounded-xl p-1 shadow-[0_12px_32px_rgba(0,0,0,0.6)] outline-hidden ${t.popup}`}
         >
           {options.map((c, i) => (
             <li

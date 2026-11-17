@@ -54,7 +54,7 @@ export function EditableFormHeader({
                 if (e.key === 'Enter') { e.preventDefault(); commitName(); }
                 if (e.key === 'Escape') { setNameDraft(form.name); setEditingField(null); }
               }}
-              className="text-2xl font-bold tracking-tight bg-transparent border-0 outline-none w-full px-1 -mx-1 rounded focus:ring-1 focus:ring-ring"
+              className="text-2xl font-bold tracking-tight bg-transparent border-0 outline-hidden w-full px-1 -mx-1 rounded focus:ring-1 focus:ring-ring"
               maxLength={120}
             />
           ) : (
@@ -77,7 +77,7 @@ export function EditableFormHeader({
                 if (e.key === 'Escape') { setDescDraft(form.description ?? ''); setEditingField(null); }
               }}
               placeholder={`Editing /f/${form.slug}`}
-              className="text-sm text-muted-foreground bg-transparent border-0 outline-none w-full px-1 -mx-1 rounded focus:ring-1 focus:ring-ring"
+              className="text-sm text-muted-foreground bg-transparent border-0 outline-hidden w-full px-1 -mx-1 rounded focus:ring-1 focus:ring-ring"
               maxLength={500}
             />
           ) : (

@@ -116,7 +116,7 @@ export async function registerStorageRoutes(app: Express, requireAdmin: any) {
     }
   });
 
-  app.get("/storage/:objectPath(*)", async (req: Request, res: Response) => {
+  app.get(/^\/storage\/.+$/, async (req: Request, res: Response) => {
     try {
       await storageService.serveFile(req.path, res);
     } catch (error) {

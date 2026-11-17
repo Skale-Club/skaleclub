@@ -280,10 +280,10 @@ export default function Links() {
                   style={branded ? { backgroundColor: brand.background, borderColor: brand.accent, color: brand.text } : undefined}
                   className={
                     branded
-                      ? "group flex w-full items-center gap-[14px] rounded-2xl border-2 p-[18px] transition-[filter] hover:brightness-110 focus-visible:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                      ? "group flex w-full items-center gap-[14px] rounded-2xl border-2 p-[18px] transition-[filter] hover:brightness-110 focus-visible:brightness-110 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/70"
                       : featured
-                      ? "group flex w-full items-center gap-[14px] rounded-2xl bg-cta p-[18px] transition-colors hover:bg-cta-hover focus-visible:bg-cta-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-                      : "group flex w-full items-center gap-[14px] rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-[14px] transition-colors hover:border-[var(--link-color)] hover:bg-[color-mix(in_srgb,var(--link-color)_10%,transparent)] focus-visible:border-[var(--link-color)] focus-visible:bg-[color-mix(in_srgb,var(--link-color)_10%,transparent)] focus-visible:outline-none"
+                      ? "group flex w-full items-center gap-[14px] rounded-2xl bg-cta p-[18px] transition-colors hover:bg-cta-hover focus-visible:bg-cta-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/70"
+                      : "group flex w-full items-center gap-[14px] rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-[14px] transition-colors hover:border-[var(--link-color)] hover:bg-[color-mix(in_srgb,var(--link-color)_10%,transparent)] focus-visible:border-[var(--link-color)] focus-visible:bg-[color-mix(in_srgb,var(--link-color)_10%,transparent)] focus-visible:outline-hidden"
                   }
                   {...(reduceMotion
                     ? {}
@@ -362,7 +362,7 @@ export default function Links() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={social.platform}
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.08] bg-white/5 text-[#D4D4D8] transition-colors hover:bg-cta/15 hover:text-white focus-visible:bg-cta/15 focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--link-color)]"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.08] bg-white/5 text-[#D4D4D8] transition-colors hover:bg-cta/15 hover:text-white focus-visible:bg-cta/15 focus-visible:text-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--link-color)]"
               >
                 {getSocialIcon(social.platform)}
               </a>

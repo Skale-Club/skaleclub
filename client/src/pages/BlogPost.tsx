@@ -260,11 +260,11 @@ export default function BlogPostPage() {
                               <img
                                 src={relatedPost.featureImageUrl}
                                 alt={relatedPost.title}
-                                className="w-16 h-12 object-cover rounded flex-shrink-0"
+                                className="w-16 h-12 object-cover rounded shrink-0"
                                 data-testid={`img-related-${relatedPost.id}`}
                               />
                             ) : (
-                              <div className="w-16 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                              <div className="w-16 h-12 bg-muted rounded flex items-center justify-center shrink-0">
                                 <FileText className="w-4 h-4 text-muted-foreground" />
                               </div>
                             )}

@@ -97,7 +97,7 @@ function EdgeLabelEditor({ id, initial }: { id: string; initial: string }) {
       }}
       onBlur={() => finish(true)}
       onPointerDown={(e) => e.stopPropagation()}
-      className="nodrag nopan w-40 border border-[#5173D6] bg-[var(--board-node-bg)] px-2 py-0.5 text-center text-xs font-medium text-[var(--board-node-fg)] shadow-md outline-none"
+      className="nodrag nopan w-40 border border-[#5173D6] bg-[var(--board-node-bg)] px-2 py-0.5 text-center text-xs font-medium text-[var(--board-node-fg)] shadow-md outline-hidden"
       style={{ borderRadius: 6 }}
       aria-label="Connector label"
       data-testid="edge-label-editor"

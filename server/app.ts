@@ -1,4 +1,3 @@
-import 'express-async-errors';
 import * as Sentry from "@sentry/node";
 import { ZodError } from "zod";
 import express, { type Request, Response, NextFunction } from "express";

@@ -53,10 +53,10 @@ function createHarness() {
   };
   const streams = registerLiveSharingRoutes(app, { service, requireAdmin, enabled: () => true });
   app.get('/api/company-settings', (_req, res) => res.json({ ...branding, sectionsOrder: [] }));
-  app.all('/api/*', (_req, res) => res.json([]));
+  app.all(/^\/api\//, (_req, res) => res.json([]));
   const dist = path.resolve('dist/public');
   app.use(express.static(dist, { index: false }));
-  app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
+  app.get(/.*/, (_req, res) => res.sendFile(path.join(dist, 'index.html')));
   return { app, streams };
 }
 
