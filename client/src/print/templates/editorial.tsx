@@ -13,7 +13,7 @@ import { Editable, Eyebrow, GridPattern, INK, printImage } from "../primitives";
  *
  *   Panel 1 (outside right)  Cover, as the home hero: navy, hairline grid,
  *                            the founder cut-out and the proof strip.
- *   Panel 2 (inside left)    01 · Apps, cards like /portfolio's.
+ *   Panel 2 (inside left)    01 · Platforms, cards like /portfolio's.
  *   Panel 3 (inside right)   02 · Services, photo cards like /portfolio's.
  *   Panel 4 (outside left)   03 · Products (NFC) and the close.
  *
@@ -124,7 +124,7 @@ export function EditorialInside({ bleed, apps, services, showPrices }: FolderDat
         style={{ ...panelPadding(bleed, "left"), backgroundColor: INK.navyDeep }}
       >
         <PanelHeading
-          eyebrow="01 · Apps"
+          eyebrow="01 · Platforms"
           title="Tools to sell more and work less"
           subtitle="Booking, content, website, CRM and sales solutions that simplify your day-to-day and help your business grow."
         />

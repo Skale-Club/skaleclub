@@ -81,6 +81,7 @@ export function buildPagePaths(pageSlugs?: Partial<PageSlugs> | null) {
     portfolio: toPath(slugs.portfolio),
     // Fixed paths: the portfolio's category pages are not renameable in the admin.
     apps: "/apps",
+    downloads: "/downloads",
     services: "/services",
     hub: toPath(slugs.hub),
     links: toPath(slugs.links),
@@ -128,6 +129,13 @@ export function getPageSlugsValidationError(pageSlugs?: Partial<PageSlugs> | nul
 
     if (value === "api" || value.startsWith("api/")) {
       return `The slug "${value}" is reserved for API routes.`;
+    }
+
+    if (value === "downloads" || value.startsWith("downloads/")) {
+      return `The slug "${value}" is reserved for application downloads.`;
+    }
+    if (value === "platforms" || value.startsWith("platforms/")) {
+      return `The slug "${value}" is reserved for platform pages.`;
     }
 
     const existingKey = seen.get(value);

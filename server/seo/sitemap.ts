@@ -2,6 +2,7 @@ import { withLanguage } from "#shared/languagePath.js";
 import { buildPagePaths, type PageSlugs } from "#shared/pageSlugs.js";
 import { CORE_PAGES_LASTMOD, CORE_SEO, CORE_SEO_KEYS, corePathForKey, isNoindexPath } from "#shared/coreSeo.js";
 import { LANDING_SEO, landingPathForSlug } from "#shared/landingSeo.js";
+import { platformPath } from "#shared/platforms.js";
 
 // sitemap.xml builder: core pages (both languages), active managed landings and
 // published blog posts, each URL carrying its hreflang alternates. Pure so it can
@@ -41,7 +42,7 @@ function isIndexableLandingSlug(slug: string, pageSlugs?: Partial<PageSlugs> | n
 }
 
 export function collectSitemapUrls(
-  input: { pageSlugs?: Partial<PageSlugs> | null; pages: SitemapPage[]; posts: SitemapPost[] },
+  input: { pageSlugs?: Partial<PageSlugs> | null; pages: SitemapPage[]; posts: SitemapPost[]; applications?: { slug: string; isPublished: boolean; updatedAt: Date | null }[]; platforms?: { slug: string; isActive: boolean | null; updatedAt: Date | null }[] },
 ): SitemapUrl[] {
   const { pageSlugs } = input;
   const urls: SitemapUrl[] = [];
@@ -62,6 +63,13 @@ export function collectSitemapUrls(
     pair(corePathForKey(key, pageSlugs), CORE_PAGES_LASTMOD);
   }
   pair("/nfc-guide", CORE_PAGES_LASTMOD);
+  for (const application of input.applications ?? []) {
+    if (application.isPublished) pair(`/downloads/${application.slug}`, day(application.updatedAt, CORE_PAGES_LASTMOD));
+  }
+  for (const platform of input.platforms ?? []) {
+    const path = platformPath(platform.slug);
+    if (platform.isActive && path) pair(path, day(platform.updatedAt, CORE_PAGES_LASTMOD));
+  }
 
   // Only active, indexable rows count, both as entries and as pair partners: an
   // hreflang pair pointing at a noindex or inactive page would be invalid.

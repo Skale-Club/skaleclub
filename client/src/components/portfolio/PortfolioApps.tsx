@@ -8,6 +8,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
 import { trackCTAClick } from "@/lib/analytics";
 import { priceParts } from "@/lib/format";
+import { platformPath, safePlatformUrl } from "@shared/platforms";
 
 function AppRow({ item, flip, analyticsSource, onOpen }: { item: CatalogItem; flip: boolean; analyticsSource: string; onOpen: (item: CatalogItem) => void }) {
   const { t, language } = useTranslation();
@@ -15,7 +16,8 @@ function AppRow({ item, flip, analyticsSource, onOpen }: { item: CatalogItem; fl
   const eyebrow = item.category ? t(CATALOG_CATEGORY_LABEL[item.category]) : undefined;
   const source = item.headline ?? item.subtitle;
   const siteUrl = item.site;
-  const siteHref = siteUrl ? (/^https?:\/\//i.test(siteUrl) ? siteUrl : `https://${siteUrl}`) : undefined;
+  const detailHref = item.slug ? platformPath(item.slug) : undefined;
+  const siteHref = safePlatformUrl(siteUrl);
 
   return (
     <article className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
@@ -24,7 +26,7 @@ function AppRow({ item, flip, analyticsSource, onOpen }: { item: CatalogItem; fl
           <Figure
             tone="dark"
             src={getImageUrl(item.cover, { width: 1200, quality: 80 })}
-            alt="App home screen"
+            alt="Platform home screen"
             caption={item.headline ? item.subtitle : undefined}
             imgClassName="aspect-[16/10] object-top"
           />
@@ -63,8 +65,7 @@ function AppRow({ item, flip, analyticsSource, onOpen }: { item: CatalogItem; fl
           </ul>
         )}
         <div className="mt-8 flex flex-wrap items-center gap-3">
-          {/* Self-serve apps (those with a tool URL) lead with Start; the lead
-              form stays one click away inside the details popup. */}
+          {/* Platforms keep direct access alongside their shared landing page. */}
           {siteHref && (
             <PillLink
               href={siteHref}
@@ -76,9 +77,7 @@ function AppRow({ item, flip, analyticsSource, onOpen }: { item: CatalogItem; fl
               {t("Start")} <span aria-hidden="true">↗</span>
             </PillLink>
           )}
-          <PillButton variant="ghost" onClick={() => onOpen(item)}>
-            {t("See details")}
-          </PillButton>
+          {detailHref ? <PillLink href={detailHref} variant={siteHref ? "ghost" : "primary"}>{t("See details")}</PillLink> : <PillButton variant="ghost" onClick={() => onOpen(item)}>{t("See details")}</PillButton>}
           <span className="ml-auto font-display text-xl font-semibold text-fog-50">
             {price ? (
               <>
@@ -120,9 +119,9 @@ export function PortfolioApps({
           <SectionHeadingRow seeAllHref={seeAllHref}>
             <SectionHeading
               variant="editorial"
-              eyebrow="01 · Apps"
+              eyebrow="01 · Platforms"
               title="Tools to sell more and work less"
-              subtitle="Booking, content, website, CRM and sales solutions that simplify your day-to-day and help your business grow."
+              subtitle="Explore Skale Club platforms for your business and everyday work."
             />
           </SectionHeadingRow>
         </Band>

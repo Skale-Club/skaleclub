@@ -11,6 +11,9 @@ import {
   type SeoImage,
 } from "#shared/landingSeo.js";
 import type { CompanySettings } from "#shared/schema.js";
+import { getAppLanding } from "#shared/appLandings.js";
+import { getPlatformLanding } from "#shared/platformLandings.js";
+import { platformPath } from "#shared/platforms.js";
 import { HeadEditor } from "./head.js";
 import type { RouteResolution } from "./routes.js";
 import { absoluteUrl, breadcrumbs, landingFaq, nfcGuideFaq, nfcProduct, organizationGraph } from "./structuredData.js";
@@ -92,6 +95,14 @@ export function injectSeo(html: string, pathname: string, ctx: InjectContext): s
       const other = landingPathForSlug(alternateSlug);
       alternates = isPt ? { en: other, pt: self } : { en: self, pt: other };
     }
+  } else if (route.application) {
+    const enPath = `/downloads/${route.application.slug}`;
+    alternates = { en: enPath, pt: withLanguage(enPath, "pt") };
+    canonicalPath = language === "pt" ? alternates.pt : alternates.en;
+  } else if (route.platform) {
+    const enPath = platformPath(route.platform.slug ?? "")!;
+    alternates = { en: enPath, pt: withLanguage(enPath, "pt") };
+    canonicalPath = language === "pt" ? alternates.pt : alternates.en;
   } else if (coreKey) {
     const enPath = corePathForKey(coreKey, pageSlugs);
     canonicalPath = language === "pt" && !NO_LANGUAGE_PAIR.has(coreKey) ? withLanguage(enPath, "pt") : enPath;
@@ -144,6 +155,14 @@ export function injectSeo(html: string, pathname: string, ctx: InjectContext): s
     title = blog.title;
     description = blog.metaDescription || undefined;
     imageUrl = blog.featureImageUrl ? absoluteUrl(origin, blog.featureImageUrl) : undefined;
+  } else if (route.application) {
+    const copy = getAppLanding(route.application.slug, language);
+    title = copy?.seo.title ?? route.application.name;
+    description = copy?.seo.description ?? route.application.tagline;
+  } else if (route.platform) {
+    const copy = getPlatformLanding(route.platform.slug ?? "", language);
+    title = copy?.seo.title ?? route.platform.title;
+    description = copy?.seo.description ?? route.platform.description;
   }
 
   if (title) {
@@ -189,6 +208,21 @@ export function injectSeo(html: string, pathname: string, ctx: InjectContext): s
         { name: blog.title, path: canonicalPath },
       ]),
     );
+  }
+
+  if (route.application) {
+    blocks.push(breadcrumbs(origin, [
+      homeCrumb,
+      { name: CORE_SEO.downloads.crumb[lang], path: withLanguage("/downloads", language) },
+      { name: route.application.name, path: canonicalPath },
+    ]));
+  }
+  if (route.platform) {
+    blocks.push(breadcrumbs(origin, [
+      homeCrumb,
+      { name: CORE_SEO.apps.crumb[lang], path: withLanguage("/apps", language) },
+      { name: route.platform.title, path: canonicalPath },
+    ]));
   }
 
   if (!landing && baseSlugOf(urlSlug) === "nfc-guide") {

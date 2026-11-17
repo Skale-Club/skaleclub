@@ -13,6 +13,7 @@ export type CoreSeoKey =
   | "home"
   | "portfolio"
   | "apps"
+  | "downloads"
   | "services"
   | "contact"
   | "faq"
@@ -53,11 +54,11 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   portfolio: {
     en: {
       title: "Skale Club | Our Solutions",
-      description: "Ready-made apps and the services we perform: AI, automation, websites, marketing and more.",
+      description: "Online platforms and the services we perform: AI, automation, websites, marketing and more.",
     },
     pt: {
       title: "Skale Club | Nossas Soluções",
-      description: "Apps prontos e os serviços que prestamos: IA, automação, sites, marketing e mais.",
+      description: "Plataformas online e os serviços que prestamos: IA, automação, sites, marketing e mais.",
     },
     crumb: { en: "Our Solutions", pt: "Nossas Soluções" },
     sitemap: true,
@@ -65,14 +66,21 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   apps: {
     en: {
-      title: "Skale Club | Apps",
-      description: "Ready-made apps we build and run, each with a fixed price. Subscribe and start.",
+      title: "Skale Club | Platforms",
+      description: "Explore Skale Club platforms for your business and everyday work.",
     },
     pt: {
-      title: "Skale Club | Apps",
-      description: "Apps prontos que criamos e operamos, cada um com preço fechado. Você assina e começa.",
+      title: "Skale Club | Plataformas",
+      description: "Conheça as plataformas da Skale Club para sua empresa e seu dia a dia.",
     },
-    crumb: { en: "Apps", pt: "Apps" },
+    crumb: { en: "Platforms", pt: "Plataformas" },
+    sitemap: true,
+    ogImage: CORE_OG_IMAGE,
+  },
+  downloads: {
+    en: { title: "Skale Club | Apps", description: "Free desktop and mobile apps from Skale Club. Explore available apps and download a version for your device." },
+    pt: { title: "Skale Club | Aplicativos", description: "Aplicativos gratuitos para computador e celular da Skale Club. Conheça as opções e baixe a versão para seu dispositivo." },
+    crumb: { en: "Apps", pt: "Aplicativos" },
     sitemap: true,
     ogImage: CORE_OG_IMAGE,
   },

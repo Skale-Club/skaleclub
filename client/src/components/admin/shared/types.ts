@@ -14,6 +14,7 @@ export type AdminSection =
   | 'integrations'
   | 'blog'
   | 'portfolio'
+  | 'downloads'
   | 'links'
   | 'vcards'
   | 'estimates'

@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { CircleHelp, Home, Menu, MessageSquareText, Newspaper, Phone, RadioTower, X } from "lucide-react";
+import { AppWindow, CircleHelp, Home, Menu, MessageSquareText, Newspaper, Phone, RadioTower, X } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { useQuery } from "@tanstack/react-query";
@@ -44,6 +44,7 @@ export function Navbar() {
 
   const mobileLinks = [
     { href: pagePaths.home, label: "Home", icon: Home },
+    { href: pagePaths.downloads, label: "Apps", icon: AppWindow },
     { href: pagePaths.hub, label: "Skale Hub", icon: RadioTower },
     { href: pagePaths.blog, label: "Blog", icon: Newspaper },
     { href: pagePaths.faq, label: "FAQ", icon: CircleHelp },
@@ -82,6 +83,10 @@ export function Navbar() {
 
           <div className="hidden md:flex items-center gap-8">
             <PortfolioMegaMenu portfolioHref={pagePaths.portfolio} />
+
+            <Link href={pagePaths.downloads} className="text-sm font-semibold text-fog-300 transition-colors hover:text-fog-50">
+              {t("Apps")}
+            </Link>
 
             <LanguageToggle />
 

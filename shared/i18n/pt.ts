@@ -684,7 +684,12 @@ export const translations = {
     "Let's talk about your website": 'Vamos conversar sobre seu site',
     "Tell us about your project in 1 minute. We'll reply within 24 hours with a proposal.": 'Conte sobre o seu projeto em 1 minuto. Respondemos em até 24 horas com uma proposta.',
     // Portfolio categories: /apps, /services, the /portfolio umbrella and the navbar menu (2026-10)
-    'Apps': 'Apps', 'See all': 'Ver tudo', 'Portfolio menu': 'Menu do portfólio', '03 · Products': '03 · Produtos',
+    'Apps': 'Aplicativos', 'Platforms': 'Plataformas', 'platforms': 'plataformas',
+    '01 · Platforms': '01 · Plataformas', 'See the platforms': 'Ver as plataformas',
+    'Explore Skale Club platforms for your business and everyday work.': 'Conheça as plataformas da Skale Club para sua empresa e seu dia a dia.',
+    'Subscription-based online platforms for booking, content, websites, CRM and sales, designed to simplify daily work and help your business grow.': 'Plataformas online por assinatura para agendamentos, conteúdo, sites, CRM e vendas, criadas para simplificar o dia a dia e ajudar sua empresa a crescer.',
+    'Online platforms and the services we perform: AI, automation, websites, marketing and more.': 'Plataformas online e os serviços que prestamos: IA, automação, sites, marketing e mais.',
+    'See all': 'Ver tudo', 'Portfolio menu': 'Menu do portfólio', '03 · Products': '03 · Produtos',
     'Ready-made apps we build and run, each with a fixed price. Subscribe and start.': 'Apps prontos que criamos e operamos, cada um com preço fechado. Você assina e começa.',
     'Marketing and technology services tailored to your business: AI, automation, websites and more.': 'Serviços de marketing e tecnologia sob medida para o seu negócio: IA, automação, sites e mais.',
     'apps': 'apps', 'services': 'serviços', 'products': 'produtos',

@@ -4,6 +4,11 @@ import { buildPagePaths, DEFAULT_PAGE_SLUGS, type PageSlugs } from "#shared/page
 import { isReservedSlug } from "#shared/reservedSlugs.js";
 import { productDbSlugForUrlSlug } from "#shared/landingSeo.js";
 import { getLandingRow, getPublishedBlogRow, type BlogRow, type LandingRow } from "./data.js";
+import { downloadableAppStore } from "../lib/downloadableApps.js";
+import { publicDownloadableApp, type PublicDownloadableApp } from "#shared/schema/downloads.js";
+import { storage } from "../storage.js";
+import { fromPortfolioService, type CatalogItem } from "#shared/catalog.js";
+import { platformDbSlug, platformSlug } from "#shared/platforms.js";
 
 // Decides, for a request that reached the SPA fallback, whether the URL is a
 // real page (200) or a soft 404, and whether it must stay out of the index.
@@ -25,6 +30,8 @@ export interface RouteResolution {
   alternate: LandingRow | null;
   /** The published blog post serving this URL, when it is one. */
   blog: BlogRow | null;
+  application?: PublicDownloadableApp;
+  platform?: CatalogItem;
 }
 
 // First path segments the client routes explicitly before its `/:slug` landing
@@ -48,7 +55,7 @@ function staticRoutes(pageSlugs?: Partial<PageSlugs> | null) {
   const hubs = new Set<string>();
   for (const slugs of [pageSlugs, null]) {
     const paths = buildPagePaths(slugs);
-    for (const key of ["thankYou", "privacyPolicy", "termsOfService", "contact", "faq", "blog", "portfolio", "apps", "services", "hub", "links"] as const) {
+    for (const key of ["thankYou", "privacyPolicy", "termsOfService", "contact", "faq", "blog", "portfolio", "apps", "downloads", "services", "hub", "links"] as const) {
       exact.add(paths[key]);
     }
     vcards.add(paths.vcard);
@@ -93,6 +100,28 @@ export async function resolveRoute(
 
   const routes = staticRoutes(pageSlugs);
   if (routes.exact.has(path)) return ok();
+  if (path.startsWith("/downloads/")) {
+    const slug = path.slice("/downloads/".length);
+    if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(slug) || slug.length > 80) return { ...NOT_FOUND };
+    try {
+      const application = await downloadableAppStore.get(slug);
+      return application?.isPublished ? ok({ application: publicDownloadableApp(application) }) : { ...NOT_FOUND };
+    } catch (err) {
+      console.error("[seo] application lookup failed:", (err as Error).message);
+      return { ...NOT_FOUND };
+    }
+  }
+  if (path.startsWith("/platforms/")) {
+    const slug = platformDbSlug(path.slice("/platforms/".length));
+    if (!slug) return { ...NOT_FOUND };
+    try {
+      const row = await storage.getPortfolioServiceBySlug(slug);
+      return row?.isActive ? ok({ platform: { ...fromPortfolioService(row), slug: platformSlug(row.slug) } }) : { ...NOT_FOUND };
+    } catch (err) {
+      console.error("[seo] platform lookup failed:", (err as Error).message);
+      return { ...NOT_FOUND };
+    }
+  }
   if (hasPrefix(path, "/admin") || hasPrefix(path, "/oauth") || hasPrefix(path, "/print")) return ok();
   if (["/live/", "/contracts/", "/e/", "/p/", "/f/", "/w/"].some((prefix) => path.startsWith(prefix) && path.length > prefix.length)) return ok();
   for (const vcard of Array.from(routes.vcards)) if (hasPrefix(path, vcard)) return ok();
