@@ -53,6 +53,7 @@ import { scheduleBootstrapTasks } from "./lib/bootstrapTasks.js";
   // let in-flight requests finish, drain the pool, then exit.
   const shutdown = (signal: string) => {
     log(`${signal} received, shutting down`);
+    app.locals.liveSharingStreams?.close();
     httpServer.close(() => {
       pool.end().catch(() => undefined).finally(() => process.exit(0));
     });

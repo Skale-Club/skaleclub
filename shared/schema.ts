@@ -17,3 +17,4 @@ export * from "./schema/content.js";
 export * from "./schema/whiteboards.js";
 export * from "./schema/boards.js";
 export * from "./schema/contracts.js";
+export * from "./schema/liveSharing.js";

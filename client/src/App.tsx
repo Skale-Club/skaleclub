@@ -52,6 +52,7 @@ const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <Pa
 const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const ContractSigning = lazy(() => import("@/pages/ContractSigning").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const LiveSharing = lazy(() => import("@/pages/LiveSharing").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PresentationViewer = lazy(() => import("@/pages/PresentationViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const WhiteboardViewer = lazy(() => import("@/pages/WhiteboardViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const BoardViewer = lazy(() => import("@/pages/BoardViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -89,6 +90,12 @@ function DeferredChatWidget() {
 }
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  if (pathname === '/live' || pathname.startsWith('/live/')) return <>{children}</>;
+  return <AnalyticsLifecycle>{children}</AnalyticsLifecycle>;
+}
+
+function AnalyticsLifecycle({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
@@ -130,6 +137,7 @@ function SEOProvider({ children }: { children: React.ReactNode }) {
 const RESERVED_LANDING_SEGMENTS = new Set<string>([
   "admin",
   "contracts",
+  "live",
   "oauth",
   "e",
   "p",
@@ -213,6 +221,14 @@ function Router() {
 
   if (location.startsWith('/contracts/')) {
     return <Suspense fallback={fallback}><Switch><Route path="/contracts/:id" component={ContractSigning} /><Route component={NotFound} /></Switch></Suspense>;
+  }
+
+  if (location.startsWith('/live/')) {
+    return <Suspense fallback={fallback}><Switch>
+      <Route path="/live/:id/present" component={LiveSharing} />
+      <Route path="/live/:id" component={LiveSharing} />
+      <Route component={NotFound} />
+    </Switch></Suspense>;
   }
 
   // Block only the first load. A refetch after a failure puts the query back in

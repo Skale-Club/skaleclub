@@ -5,6 +5,10 @@ import "./index.css";
 import { registerServiceWorker, unregisterStaleServiceWorker } from "./lib/pwa";
 import { installChunkReloadHandlers } from "./lib/chunkReload";
 
+function isPrivateSessionPath() {
+  return /^\/(?:contracts|live)(?:\/|$)/.test(window.location.pathname);
+}
+
 function sentryEnvironment(): string {
   const host = window.location.hostname;
   if (host === "skale.club" || host === "www.skale.club") return "production";
@@ -17,7 +21,7 @@ function sentryEnvironment(): string {
 // replay; every later one does (replaysOnErrorSampleRate below).
 let replayRequested = false;
 function loadReplayOnce() {
-  if (window.location.pathname.startsWith('/contracts/')) return;
+  if (isPrivateSessionPath()) return;
   if (replayRequested) return;
   replayRequested = true;
   Sentry.lazyLoadIntegration("replayIntegration")
@@ -33,7 +37,7 @@ Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
   environment: sentryEnvironment(),
   release: import.meta.env.VITE_RELEASE || undefined,
-  enabled: !!import.meta.env.VITE_SENTRY_DSN && import.meta.env.PROD && !window.location.pathname.startsWith('/contracts/'),
+  enabled: !!import.meta.env.VITE_SENTRY_DSN && import.meta.env.PROD && !isPrivateSessionPath(),
   integrations: [Sentry.browserTracingIntegration()],
   // Same-origin relay (server/routes/monitoring.ts) so ad blockers do not drop events.
   tunnel: "/api/monitoring",
@@ -57,12 +61,15 @@ Sentry.init({
     /^safari-(web-)?extension:\/\//i,
   ],
   beforeSend(event) {
-    if (window.location.pathname.startsWith('/contracts/')) return null;
+    if (isPrivateSessionPath()) return null;
     loadReplayOnce();
     return event;
   },
   beforeSendTransaction(event) {
-    return window.location.pathname.startsWith('/contracts/') ? null : event;
+    return isPrivateSessionPath() ? null : event;
+  },
+  beforeBreadcrumb(breadcrumb) {
+    return isPrivateSessionPath() ? null : breadcrumb;
   },
 });
 
@@ -76,7 +83,7 @@ installChunkReloadHandlers();
 // the user is logging into the admin area, jump to /admin/login before rendering the homepage.
 try {
   const raw = window.sessionStorage.getItem("adminPostLoginRedirect");
-  if (raw && !window.location.pathname.startsWith("/admin")) {
+  if (raw && !window.location.pathname.startsWith("/admin") && !isPrivateSessionPath()) {
     let ts: number | null = null;
     try {
       const parsed = JSON.parse(raw) as { ts?: unknown };

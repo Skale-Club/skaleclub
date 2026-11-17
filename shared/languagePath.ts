@@ -12,6 +12,7 @@ export type SiteLanguage = "en" | "pt";
 const LANGUAGE_EXEMPT_PREFIXES = [
   "/admin",
   "/contracts",
+  "/live",
   "/api",
   "/assets",
   "/e",

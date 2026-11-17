@@ -1,8 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { SENTRY_IGNORE_ERRORS, isMcpClientError, scrubQueryParams } from "../sentry-scrub";
+import { SENTRY_IGNORE_ERRORS, isMcpClientError, isPrivateLiveEvent, scrubQueryParams } from "../sentry-scrub";
 
 const SQL = 'Failed query: select "id" from "api_tokens" where "api_tokens"."token_hash" = $1';
+
+test("live credentials and financial session requests are excluded from telemetry", () => {
+  assert.equal(isPrivateLiveEvent({ request: { url: "https://skale.club/api/live-sessions/abc/join" } }), true);
+  assert.equal(isPrivateLiveEvent({ request: { url: "https://skale.club/live/abc#token=secret" } }), true);
+  assert.equal(isPrivateLiveEvent({ transaction: "POST /api/live-sessions/:liveId/join" }), true);
+  assert.equal(isPrivateLiveEvent({ request: { url: "https://skale.club/blog/live-events" } }), false);
+});
 
 test("removes bound values from every place a failed query appears", () => {
   const event = scrubQueryParams({

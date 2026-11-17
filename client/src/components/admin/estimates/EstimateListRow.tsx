@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageThumbnail } from '@/components/ui/PageThumbnail';
 import type { EstimateWithStats } from '@shared/schema';
+import { PresentLiveButton } from '@/components/live/PresentLiveButton';
 
 type EstimateListRowProps = {
   est: EstimateWithStats;
@@ -37,7 +38,7 @@ export function EstimateListRow({
   onDelete,
 }: EstimateListRowProps) {
   return (
-    <div className="flex items-center gap-3 border rounded-lg p-4 bg-card">
+    <div className="flex flex-wrap items-center gap-3 border rounded-lg p-4 bg-card">
       <PageThumbnail
         thumbnailUrl={est.thumbnailUrl}
         title={`${est.companyName?.trim() || est.contactName?.trim() || est.clientName} thumbnail`}
@@ -96,7 +97,8 @@ export function EstimateListRow({
       >
         {est.accessCode ? <Lock className="w-4 h-4" /> : <LockOpen className="w-4 h-4" />}
       </Button>
-      <div className="flex gap-1 shrink-0">
+      <div className="flex flex-wrap gap-1 shrink-0">
+        <PresentLiveButton kind="estimate" sourceId={String(est.id)} />
         <Button
           variant="ghost"
           size="icon"

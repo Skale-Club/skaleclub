@@ -193,7 +193,7 @@ export const CORE_PAGES_LASTMOD = "2026-10-02";
 // Private, tooling and thin utility URLs. Public forms (/f/x) and vCards are
 // single-purpose utility pages (a form, a contact card) that answer 200 for
 // any slug, so they stay out of the index like the thank-you page.
-const NOINDEX_PREFIXES = ["/contracts", "/e", "/p", "/w", "/b", "/admin", "/print", "/oauth", "/nfc-order", "/plaque-order", "/thankyou", "/thank-you", "/svg", "/f", "/vcard"];
+const NOINDEX_PREFIXES = ["/live", "/contracts", "/e", "/p", "/w", "/b", "/admin", "/print", "/oauth", "/nfc-order", "/plaque-order", "/thankyou", "/thank-you", "/svg", "/f", "/vcard"];
 
 export function isNoindexPath(pathname: string, pageSlugs?: Partial<PageSlugs> | null): boolean {
   const clean = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
