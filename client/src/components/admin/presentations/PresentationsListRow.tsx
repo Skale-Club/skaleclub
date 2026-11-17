@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageThumbnail } from '@/components/ui/PageThumbnail';
 import type { PresentationWithStats } from '@shared/schema';
+import { PresentLiveButton } from '@/components/live/PresentLiveButton';
 
 export type PresentationsListRowProps = {
   p: PresentationWithStats;
@@ -112,7 +113,8 @@ export function PresentationsListRow({
           {p.slideCount}
         </Badge>
       </div>
-      <div className="flex gap-1 shrink-0 self-start md:self-auto">
+      <div className="flex flex-wrap gap-1 shrink-0 self-start md:self-auto">
+        <PresentLiveButton kind="presentation" sourceId={p.id} />
         <Button
           variant="ghost"
           size="icon"

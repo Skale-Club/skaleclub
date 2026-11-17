@@ -21,6 +21,7 @@ const NETWORK_ONLY_PATHS = [
   /^\/p\//,
   /^\/admin(?:\/|$)/,
   /^\/contracts(?:\/|$)/,
+  /^\/live(?:\/|$)/,
   /^\/print(?:\/|$)/,
   /\.wasm$/,
 ];

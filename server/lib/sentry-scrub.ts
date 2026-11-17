@@ -10,6 +10,12 @@
  */
 export const SENTRY_IGNORE_ERRORS = [/\(node:\d+\) \[DEP\d+\] DeprecationWarning/];
 
+/** Live joins carry temporary viewing credentials and may unlock financial data. */
+export function isPrivateLiveEvent(event: { request?: { url?: string }; transaction?: string }): boolean {
+  return /\/(?:api\/live-sessions|live)(?:\/|[?#]|$)/.test(event.request?.url ?? "") ||
+    /\/api\/live-sessions(?:\/|$)/.test(event.transaction ?? "");
+}
+
 /**
  * Drizzle appends the bound values to its error text ("Failed query: ...\nparams: a,b"), so a
  * failed query sends whatever it was bound to: a token hash on /mcp, a visitor id on

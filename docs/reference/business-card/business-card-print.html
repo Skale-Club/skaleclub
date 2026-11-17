@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Skale Club Business Card - Print</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    /* Print-only build of business-card-final.html. Same face CSS, no guides/chrome.
+       Each page = one full bleed canvas (3.5 x 2 in trim + 0.125 in bleed per side). */
+    @page { size: 3.75in 2.25in; margin: 0; }
+
+    :root {
+      --skale-navy: #1C53A3;
+      --cta: #5173D6;
+      --cta-soft: #8FA9EE;
+      --surface-dark: #111111;
+      --zinc-300: #D4D4D8;
+      --in: 1in;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: #111111; }
+    html, body {
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    body {
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .sheet {
+      position: relative;
+      width: 3.75in; height: 2.25in;
+      overflow: hidden;
+      break-after: page; page-break-after: always;
+      break-inside: avoid;
+    }
+    .sheet:last-child { break-after: auto; page-break-after: auto; }
+
+    .canvas {
+      --sw: calc(var(--in) * 2 / 120);
+      position: absolute; left: 0; top: 0;
+      width: calc(var(--in) * 3.75); height: calc(var(--in) * 2.25);
+      overflow: hidden;
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .name { margin: 0; line-height: 1.1; font-weight: 800; letter-spacing: -0.01em; color: #fff; white-space: nowrap; }
+    .lines { line-height: 1.6; font-weight: 400; white-space: nowrap; }
+    .rule { background: var(--cta); height: var(--sw); }
+
+    .qrbox { position: absolute; width: calc(var(--in) * 0.95); height: calc(var(--in) * 0.95); }
+    .qr { width: 100%; height: 100%; border-radius: calc(var(--in) * 0.04); overflow: hidden; background: #fff; }
+    .qr svg { display: block; width: 100%; height: 100%; }
+
+    .logo { position: absolute; display: block; width: auto; user-select: none; -webkit-user-drag: none; }
+
+    .front {
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E") repeat,
+        radial-gradient(circle calc(var(--in) * 1.8) at calc(var(--in) * 3.625) calc(var(--in) * 0.125),
+          rgba(81,115,214,0.160) 0%, rgba(81,115,214,0.160) 5%, rgba(81,115,214,0.159) 10%, rgba(81,115,214,0.156) 15%,
+          rgba(81,115,214,0.151) 20%, rgba(81,115,214,0.143) 25%, rgba(81,115,214,0.134) 30%, rgba(81,115,214,0.122) 35%,
+          rgba(81,115,214,0.109) 40%, rgba(81,115,214,0.095) 45%, rgba(81,115,214,0.080) 50%, rgba(81,115,214,0.065) 55%,
+          rgba(81,115,214,0.051) 60%, rgba(81,115,214,0.038) 65%, rgba(81,115,214,0.026) 70%, rgba(81,115,214,0.017) 75%,
+          rgba(81,115,214,0.009) 80%, rgba(81,115,214,0.004) 85%, rgba(81,115,214,0.001) 90%, rgba(81,115,214,0.000) 95%,
+          rgba(81,115,214,0.000) 100%),
+        radial-gradient(circle calc(var(--in) * 3) at calc(var(--in) * 3.625) calc(var(--in) * 0.125),
+          rgba(28,83,163,0.500) 0%, rgba(28,83,163,0.499) 5%, rgba(28,83,163,0.496) 10%, rgba(28,83,163,0.487) 15%,
+          rgba(28,83,163,0.471) 20%, rgba(28,83,163,0.448) 25%, rgba(28,83,163,0.418) 30%, rgba(28,83,163,0.382) 35%,
+          rgba(28,83,163,0.341) 40%, rgba(28,83,163,0.297) 45%, rgba(28,83,163,0.250) 50%, rgba(28,83,163,0.203) 55%,
+          rgba(28,83,163,0.159) 60%, rgba(28,83,163,0.118) 65%, rgba(28,83,163,0.082) 70%, rgba(28,83,163,0.052) 75%,
+          rgba(28,83,163,0.029) 80%, rgba(28,83,163,0.013) 85%, rgba(28,83,163,0.004) 90%, rgba(28,83,163,0.001) 95%,
+          rgba(28,83,163,0.000) 100%),
+        var(--surface-dark);
+    }
+    .front .logo {
+      height: calc(var(--in) * 0.7);
+      left: calc(var(--in) * 0.4);
+      top: 50%; transform: translateY(-50%);
+    }
+    .front .tagline {
+      position: absolute; right: calc(var(--in) * 0.28); bottom: calc(var(--in) * 0.28);
+      font-size: calc(var(--in) * 7.5 / 72); line-height: 1; font-weight: 500;
+      letter-spacing: -0.005em; color: #D4D4D8; white-space: nowrap;
+    }
+    .front .tagline em { font-style: normal; font-weight: 700; color: var(--cta-soft); }
+
+    .back { background: var(--surface-dark); }
+    .back .info {
+      position: absolute; left: calc(var(--in) * 0.25); top: calc(var(--in) * 0.25); bottom: calc(var(--in) * 0.25);
+      width: calc(var(--in) * 2.15); display: flex; flex-direction: column; justify-content: center;
+    }
+    .back .name { font-size: calc(var(--in) * 13 / 72); }
+    .back .rule { width: calc(var(--in) * 0.3); margin: calc(var(--in) * 0.1) 0 calc(var(--in) * 0.09); }
+    .back .lines { font-size: calc(var(--in) * 7.5 / 72); color: var(--zinc-300); }
+    .back .qrbox { right: calc(var(--in) * 0.25); top: 50%; transform: translateY(-50%); }
+  </style>
+</head>
+<body>
+  <div class="sheet" id="sheet-front">
+    <div class="canvas front">
+      <img class="logo" src="logo-main.png" alt="Skale Club" width="1106" height="1116" draggable="false">
+      <div class="tagline">We help businesses grow <em>smarter.</em></div>
+    </div>
+  </div>
+
+  <div class="sheet" id="sheet-back">
+    <div class="canvas back">
+      <div class="info">
+        <p class="name">Vanildo de Souza Jr</p>
+        <div class="rule"></div>
+        <div class="lines">
+          <div>(508) 801-8190</div>
+          <div>vanildo@skale.club</div>
+          <div>skale.club</div>
+        </div>
+      </div>
+      <div class="qrbox"><div class="qr" role="img" aria-label="QR code: skale.club/vcard/vanildo"></div></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script>
+    (function () {
+      var QR_URL = 'https://skale.club/vcard/vanildo';
+
+      function buildQrSvg(text) {
+        var qr = qrcode(0, 'M');
+        qr.addData(text);
+        qr.make();
+        var n = qr.getModuleCount();
+        var quiet = 4;
+        var size = n + quiet * 2;
+        var d = '';
+        for (var r = 0; r < n; r++) {
+          for (var c = 0; c < n; c++) {
+            if (qr.isDark(r, c)) d += 'M' + (c + quiet) + ' ' + (r + quiet) + 'h1v1h-1z';
+          }
+        }
+        return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '"' +
+          ' shape-rendering="crispEdges" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' +
+          '<rect width="' + size + '" height="' + size + '" fill="#FFFFFF"/>' +
+          '<path d="' + d + '" fill="#18181B"/></svg>';
+      }
+
+      window.__ready = false;
+      window.__error = null;
+      try {
+        if (typeof qrcode !== 'function') throw new Error('qrcode-generator failed to load');
+        document.querySelector('.qr').innerHTML = buildQrSvg(QR_URL);
+      } catch (e) {
+        window.__error = String(e && e.message || e);
+        return;
+      }
+
+      var fontsDone = Promise.all([
+        document.fonts.load('400 10px Inter'),
+        document.fonts.load('500 10px Inter'),
+        document.fonts.load('700 10px Inter'),
+        document.fonts.load('800 10px Inter')
+      ]).then(function () { return document.fonts.ready; });
+
+      var imgsDone = Promise.all(Array.prototype.map.call(document.images, function (img) {
+        return img.decode ? img.decode() : Promise.resolve();
+      }));
+
+      Promise.all([fontsDone, imgsDone]).then(function () {
+        if (!document.querySelector('.qr svg')) throw new Error('QR svg missing');
+        window.__ready = true;
+      }).catch(function (e) { window.__error = String(e && e.message || e); });
+    })();
+  </script>
+</body>
+</html>

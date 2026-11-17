@@ -98,7 +98,7 @@ export function serveStatic(app: Express) {
       if (!/noindex/i.test(existing)) res.setHeader("X-Robots-Tag", "noindex, nofollow");
     }
     // The shell embeds per-page tags: let browsers and CDNs revalidate it.
-    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Cache-Control", pathname === "/live" || pathname.startsWith("/live/") ? "no-store" : "no-cache");
     // Indexable pages also get their text in the body (and lose the loader), so
     // the raw HTML is never an empty shell: see server/seo/content/html.ts.
     const ctx = { settings, route };

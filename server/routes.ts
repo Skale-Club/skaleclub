@@ -30,6 +30,10 @@ import { registerIntegrationRoutes } from "./routes/integrations.js";
 import { registerEstimatesRoutes } from "./routes/estimates.js";
 import { registerContractRoutes } from "./routes/contracts.js";
 import { registerPresentationsRoutes } from "./routes/presentations.js";
+import { registerLiveSharingRoutes } from "./routes/liveSharing.js";
+import { LiveSharingService } from "./liveSharing/service.js";
+import { postgresLiveSessionStore } from "./liveSharing/postgresStore.js";
+import { loadLiveSource } from "./liveSharing/source.js";
 import { registerWhiteboardsRoutes } from "./routes/whiteboards.js";
 import { registerBoardsRoutes } from "./routes/boards.js";
 import { registerBoardsAiRoutes } from "./routes/boardsAi.js";
@@ -138,6 +142,14 @@ export async function registerRoutes(
   registerMcpRoutes(app);
   registerOAuthRoutes(app);
   registerPresentationsRoutes(app);
+  app.locals.liveSharingStreams = registerLiveSharingRoutes(app, {
+    service: new LiveSharingService(postgresLiveSessionStore, {
+      secret: () => process.env.SESSION_SECRET ?? "",
+      loadSource: loadLiveSource,
+    }),
+    requireAdmin,
+    enabled: () => process.env.LIVE_SHARING_ENABLED === "true",
+  });
   registerWhiteboardsRoutes(app);
   registerBoardsRoutes(app);
   registerBoardsAiRoutes(app);

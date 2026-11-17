@@ -6,6 +6,7 @@
 export const RESERVED_SLUGS: readonly string[] = [
   "admin",
   "contracts",  // private contract viewer
+  "live",       // optional live presentation / estimate sessions
   "blog",
   "portfolio",
   "apps",       // /apps — portfolio category page

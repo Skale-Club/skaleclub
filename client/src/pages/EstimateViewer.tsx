@@ -16,7 +16,7 @@ import { NotFoundState } from '@/components/NotFoundState';
 import type { CompanySettings, EstimateServiceItem } from '@shared/schema';
 import { brandPageTitle } from '@shared/seoTitle';
 
-interface PublicEstimate {
+export interface PublicEstimate {
   id: number;
   clientName: string;
   companyName: string | null;
@@ -210,7 +210,7 @@ const i18n = {
   },
 };
 
-function SectionContent({ index, data, lang, siteSettings }: { index: number; data: PublicEstimate; lang: 'en' | 'pt-BR'; siteSettings?: CompanySettings | null }) {
+export function SectionContent({ index, data, lang, siteSettings }: { index: number; data: PublicEstimate; lang: 'en' | 'pt-BR'; siteSettings?: Pick<CompanySettings, 'companyName' | 'logoAvatarFull' | 'logoDark' | 'logoMain' | 'logoAvatarMark' | 'logoIcon'> | null }) {
   const t = lang === 'pt-BR' ? i18n.pt : i18n.en;
 
   const gradientOverlay = (
