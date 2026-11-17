@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Skale Club | Vanildo de Souza Jr</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cta: #5173D6;
+      --cta-soft: #8FA9EE;
+      --surface-dark: #111111;
+      --zinc-100: #FAFAFA;
+      --zinc-300: #D4D4D8;
+      --zinc-400: #A1A1AA;
+      --zinc-500: #71717A;
+      --zinc-600: #52525B;
+      --ink: #0B0B0C;
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; background: #0a0a0b; color-scheme: dark; }
+    body {
+      margin: 0;
+      background: #0a0a0b;
+      color: var(--zinc-100);
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; }
+    svg.i { display: block; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ---------- Preview chrome (not part of the page) ---------- */
+    .chrome { display: flex; flex-wrap: wrap; gap: 8px; }
+    .toggle {
+      appearance: none; display: inline-flex; align-items: center; gap: 10px;
+      padding: 8px 14px 8px 10px; border: 1px solid #34343B; border-radius: 999px;
+      background: #17171A; color: #F4F4F5;
+      font: 600 12px/1 "Inter", system-ui, sans-serif; cursor: pointer; white-space: nowrap;
+    }
+    .toggle:hover { border-color: #55555E; }
+    .toggle:focus-visible { outline: 2px solid var(--cta-soft); outline-offset: 2px; }
+    .toggle .dot { width: 26px; height: 16px; border-radius: 999px; background: #3A3A42; position: relative; transition: background .15s; }
+    .toggle .dot::after {
+      content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px;
+      border-radius: 50%; background: #fff; transition: transform .15s;
+    }
+    .toggle[aria-pressed="true"] .dot { background: var(--cta); }
+    .toggle[aria-pressed="true"] .dot::after { transform: translateX(10px); }
+
+    /* ---------- Frame (desktop) ---------- */
+    .stage { display: block; }
+    .frame { position: relative; }
+    .screen { position: relative; min-height: 100dvh; }
+
+    /* Background: same two glows + grain as the card front, anchored top-right.
+       Card values at --in:120px: navy 3in (360px), #5173D6 1.8in (216px), centre 0.125in (15px) in from the corner. */
+    .bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E") repeat,
+        radial-gradient(circle 216px at calc(100% - 15px) 15px,
+          rgba(81,115,214,0.160) 0%, rgba(81,115,214,0.160) 5%, rgba(81,115,214,0.159) 10%, rgba(81,115,214,0.156) 15%,
+          rgba(81,115,214,0.151) 20%, rgba(81,115,214,0.143) 25%, rgba(81,115,214,0.134) 30%, rgba(81,115,214,0.122) 35%,
+          rgba(81,115,214,0.109) 40%, rgba(81,115,214,0.095) 45%, rgba(81,115,214,0.080) 50%, rgba(81,115,214,0.065) 55%,
+          rgba(81,115,214,0.051) 60%, rgba(81,115,214,0.038) 65%, rgba(81,115,214,0.026) 70%, rgba(81,115,214,0.017) 75%,
+          rgba(81,115,214,0.009) 80%, rgba(81,115,214,0.004) 85%, rgba(81,115,214,0.001) 90%, rgba(81,115,214,0.000) 95%,
+          rgba(81,115,214,0.000) 100%),
+        radial-gradient(circle 360px at calc(100% - 15px) 15px,
+          rgba(28,83,163,0.500) 0%, rgba(28,83,163,0.499) 5%, rgba(28,83,163,0.496) 10%, rgba(28,83,163,0.487) 15%,
+          rgba(28,83,163,0.471) 20%, rgba(28,83,163,0.448) 25%, rgba(28,83,163,0.418) 30%, rgba(28,83,163,0.382) 35%,
+          rgba(28,83,163,0.341) 40%, rgba(28,83,163,0.297) 45%, rgba(28,83,163,0.250) 50%, rgba(28,83,163,0.203) 55%,
+          rgba(28,83,163,0.159) 60%, rgba(28,83,163,0.118) 65%, rgba(28,83,163,0.082) 70%, rgba(28,83,163,0.052) 75%,
+          rgba(28,83,163,0.029) 80%, rgba(28,83,163,0.013) 85%, rgba(28,83,163,0.004) 90%, rgba(28,83,163,0.001) 95%,
+          rgba(28,83,163,0.000) 100%),
+        var(--surface-dark);
+    }
+
+    /* ---------- The page ---------- */
+    .page {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 400px; margin: 0 auto;
+      min-height: 100dvh; padding: 28px 20px 0;
+      display: flex; flex-direction: column;
+      animation: enter 400ms ease-out both;
+    }
+    @keyframes enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .page { animation: none; } }
+
+    .logo { display: block; height: 36px; width: auto; align-self: flex-start; user-select: none; -webkit-user-drag: none; }
+
+    .identity { margin-top: 56px; }
+    .avatar { display: none; width: 72px; height: 72px; border-radius: 50%; object-fit: cover; margin-bottom: 16px; }
+    .has-avatar .avatar { display: block; }
+    .name { margin: 0; font-size: 32px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; color: #fff; text-wrap: balance; }
+    .org { margin: 8px 0 0; font-size: 15px; line-height: 1.3; color: var(--zinc-400); }
+    .bio { margin: 16px 0 0; font-size: 16px; line-height: 1.5; color: var(--zinc-300); }
+
+    .save {
+      appearance: none; border: 0; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; height: 52px; margin-top: 32px; border-radius: 12px;
+      background: var(--zinc-100); color: var(--ink);
+      font: 600 15px/1 "Inter", system-ui, sans-serif;
+      transition: background .15s;
+    }
+    .save:hover { background: #fff; }
+    .save:active { background: #E4E4E7; }
+    .save svg { width: 18px; height: 18px; }
+
+    .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+    .act {
+      appearance: none; cursor: pointer; height: 64px; border-radius: 12px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.10);
+      color: var(--zinc-300); font: 500 12px/1 "Inter", system-ui, sans-serif;
+      transition: background .15s;
+    }
+    .act:hover, .act:active { background: rgba(255,255,255,0.09); }
+    .act svg { width: 20px; height: 20px; color: var(--cta-soft); }
+
+    .list { margin-top: 32px; }
+    .row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .row:first-child { border-top: 1px solid rgba(255,255,255,0.08); }
+    .row .txt { min-width: 0; }
+    .row .lbl { display: block; font-size: 12px; line-height: 1.2; color: var(--zinc-500); }
+    .row .val { display: block; margin-top: 4px; font-size: 15px; line-height: 1.3; color: var(--zinc-100); overflow-wrap: anywhere; }
+    .row svg { flex: none; width: 18px; height: 18px; color: var(--zinc-600); transition: color .15s; }
+    .row:hover svg { color: var(--cta-soft); }
+    .row:focus-visible, .act:focus-visible, .save:focus-visible { outline: 2px solid var(--cta-soft); outline-offset: 2px; }
+
+    .coupon {
+      margin-top: 32px; padding: 16px; border-radius: 12px;
+      border: 1px solid rgba(81,115,214,0.40);
+    }
+    .coupon[hidden] { display: none; }
+    .coupon .k { font-size: 12px; font-weight: 500; line-height: 1; color: var(--cta-soft); }
+    .coupon .amt { margin-top: 8px; font-size: 24px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.1; color: #fff; }
+    .coupon .code {
+      display: inline-block; margin-top: 12px; padding: 6px 10px; border-radius: 8px;
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.10);
+      font: 500 13px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.06em; color: var(--zinc-100);
+    }
+
+    .share { margin-top: 40px; display: flex; flex-direction: column; align-items: center; }
+    .share p { margin: 0 0 14px; font-size: 13px; line-height: 1.3; color: var(--zinc-500); text-align: center; }
+    .plate { width: 148px; height: 148px; border-radius: 8px; background: #fff; overflow: hidden; }
+    .plate svg { display: block; width: 100%; height: 100%; }
+
+    .foot { margin: 40px 0 32px; text-align: center; font-size: 13px; line-height: 1; }
+    .foot a { color: var(--zinc-600); transition: color .15s; }
+    .foot a:hover { color: var(--zinc-300); }
+
+    .toast {
+      position: absolute; left: 50%; bottom: 24px; z-index: 5; transform: translate(-50%, 8px);
+      padding: 10px 14px; border-radius: 10px; background: #1d1d21; border: 1px solid rgba(255,255,255,0.12);
+      font-size: 13px; color: var(--zinc-100); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+      white-space: nowrap;
+    }
+    .toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+    /* ---------- Mobile: full bleed, toggles in a fixed pill ---------- */
+    @media (max-width: 599px) {
+      .chrome {
+        position: fixed; left: 12px; bottom: 12px; z-index: 50; flex-wrap: nowrap; gap: 4px;
+        padding: 4px; border-radius: 999px; background: rgba(17,17,19,0.88);
+        border: 1px solid #34343B; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      }
+      .chrome .toggle { border-color: transparent; background: transparent; padding: 7px 10px 7px 8px; font-size: 11px; }
+      .page { padding-bottom: 56px; }
+      .toast { position: fixed; bottom: 64px; }
+    }
+
+    /* ---------- Desktop: centered phone frame ---------- */
+    @media (min-width: 600px) {
+      .stage { padding: 24px 16px 40px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+      .frame {
+        width: 390px; height: 844px; flex: none; border: 1px solid #2a2a2e; border-radius: 40px;
+        overflow: hidden; background: var(--surface-dark);
+        box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+      }
+      .bg { position: absolute; }
+      .screen { height: 100%; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+      .screen::-webkit-scrollbar { display: none; }
+      .page { min-height: 100%; padding-top: 44px; }
+      .toast { bottom: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="chrome" role="group" aria-label="Simulation toggles">
+      <button class="toggle" id="t-avatar" type="button" aria-pressed="false"><span class="dot" aria-hidden="true"></span><span>simular com foto</span></button>
+    </div>
+
+    <div class="frame" id="frame">
+      <div class="bg" aria-hidden="true"></div>
+      <div class="screen" id="screen">
+        <main class="page" id="page">
+          <img class="logo" src="logo-main.png" alt="Skale Club" width="1106" height="1116" draggable="false">
+
+          <section class="identity">
+            <img class="avatar" src="sample-avatar.jpg" alt="Vanildo de Souza Jr" width="72" height="72">
+            <h1 class="name">Vanildo de Souza Jr</h1>
+            <p class="org">Skale Club</p>
+            <p class="bio">We help businesses grow smarter.</p>
+          </section>
+
+          <button class="save" id="save" type="button">
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            <span>Save contact</span>
+          </button>
+
+          <div class="actions">
+            <a class="act" href="tel:+15088018190">
+              <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <span>Call</span>
+            </a>
+            <a class="act" href="mailto:vanildo@skale.club">
+              <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              <span>Email</span>
+            </a>
+            <button class="act" id="share" type="button">
+              <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+              <span>Share</span>
+            </button>
+          </div>
+
+          <nav class="list" aria-label="Contact details">
+            <a class="row" href="tel:+15088018190">
+              <span class="txt"><span class="lbl">Phone</span><span class="val">(508) 801-8190</span></span>
+              <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+            </a>
+            <a class="row" href="mailto:vanildo@skale.club">
+              <span class="txt"><span class="lbl">Email</span><span class="val">vanildo@skale.club</span></span>
+              <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+            </a>
+            <a class="row" href="https://skale.club" target="_blank" rel="noopener noreferrer">
+              <span class="txt"><span class="lbl">Website</span><span class="val">skale.club</span></span>
+              <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+            </a>
+          </nav>
+
+
+          <section class="share">
+            <p>Show this code to share my card</p>
+            <div class="plate" id="qr" role="img" aria-label="QR code: https://skale.club/vcard/vanildo"></div>
+          </section>
+
+          <footer class="foot"><a href="https://skale.club">skale.club</a></footer>
+        </main>
+      </div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script>
+    (function () {
+      var CARD_URL = 'https://skale.club/vcard/vanildo';
+
+      // QR: dark modules #111111 on a white plate, 4-module quiet zone included.
+      function buildQrSvg(text) {
+        if (typeof qrcode !== 'function') return null;
+        var qr = qrcode(0, 'M');
+        qr.addData(text);
+        qr.make();
+        var n = qr.getModuleCount(), quiet = 4, size = n + quiet * 2, d = '';
+        for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) {
+          if (qr.isDark(r, c)) d += 'M' + (c + quiet) + ' ' + (r + quiet) + 'h1v1h-1z';
+        }
+        return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '"' +
+          ' shape-rendering="crispEdges" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' +
+          '<rect width="' + size + '" height="' + size + '" fill="#FFFFFF"/>' +
+          '<path d="' + d + '" fill="#111111"/></svg>';
+      }
+      var qrEl = document.getElementById('qr');
+      try { qrEl.innerHTML = buildQrSvg(CARD_URL) || ''; } catch (e) {}
+
+      // Simulation toggles
+      function bindToggle(id, apply) {
+        var b = document.getElementById(id);
+        b.addEventListener('click', function () {
+          var on = b.getAttribute('aria-pressed') !== 'true';
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          apply(on);
+        });
+      }
+      var page = document.getElementById('page');
+      bindToggle('t-avatar', function (on) { page.classList.toggle('has-avatar', on); });
+
+      // Toast
+      var toast = document.getElementById('toast'), tt;
+      function say(msg) {
+        toast.textContent = msg; toast.classList.add('on');
+        clearTimeout(tt); tt = setTimeout(function () { toast.classList.remove('on'); }, 1800);
+      }
+
+      // Save contact: tiny .vcf blob (mock of downloadVCard)
+      document.getElementById('save').addEventListener('click', function () {
+        var vcf = ['BEGIN:VCARD', 'VERSION:3.0', 'N:de Souza Jr;Vanildo;;;', 'FN:Vanildo de Souza Jr', 'ORG:Skale Club',
+          'TEL;TYPE=CELL:+15088018190', 'EMAIL:vanildo@skale.club', 'URL:https://skale.club',
+          'NOTE:We help businesses grow smarter.', 'END:VCARD'].join('\r\n');
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([vcf], { type: 'text/vcard' }));
+        a.download = 'Vanildo_Souza.vcf';
+        document.body.appendChild(a); a.click(); a.remove();
+        say('Contact saved');
+      });
+
+      // Share: native sheet, else copy link
+      document.getElementById('share').addEventListener('click', function () {
+        if (navigator.share) {
+          navigator.share({ title: 'Vanildo de Souza Jr', text: 'We help businesses grow smarter.', url: CARD_URL }).catch(function () {});
+        } else if (navigator.clipboard) {
+          navigator.clipboard.writeText(CARD_URL).then(function () { say('Link copied'); }, function () { say('Copy not available'); });
+        } else { say('Copy not available'); }
+      });
+    })();
+  </script>
+</body>
+</html>

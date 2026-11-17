@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skale Club Business Card — Dark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --skale-navy: #1C53A3;
+      --cta: #5173D6;
+      --cta-soft: #8FA9EE;
+      --surface-dark: #111111;
+      --surface-card: #0C1424;
+      --surface-raised: #142038;
+      --ink-a: #0A0A0B;
+      --zinc-300: #D4D4D8;
+      --indigo-200: #C7D2FE;
+
+      --chrome-bg: #0E0E10;
+      --chrome-text: #F4F4F5;
+      --chrome-muted: #A1A1AA;
+      --chrome-line: #26262B;
+
+      --g-bleed: #FF5A5F;
+      --g-trim: #22D3EE;
+      --g-safe: #4ADE80;
+
+      /* 1 inch of card in CSS px. Everything inside a face is derived from it. */
+      --in: 120px;
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; background: #0E0E10; color-scheme: dark; }
+
+    body {
+      margin: 0;
+      background: #0E0E10;
+      color: var(--chrome-text);
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .page { max-width: 1000px; margin: 0 auto; padding: 40px 16px 72px; }
+
+    /* ---------- Mockup chrome ---------- */
+    .head {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 12px 16px; margin-bottom: 20px;
+    }
+    h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.005em; }
+    .toggle {
+      appearance: none; display: inline-flex; align-items: center; gap: 10px;
+      padding: 8px 14px 8px 10px; border: 1px solid #34343B; border-radius: 999px;
+      background: #17171A; color: var(--chrome-text);
+      font: 600 13px/1 "Inter", system-ui, sans-serif; cursor: pointer;
+    }
+    .toggle:hover { border-color: #55555E; }
+    .toggle:focus-visible { outline: 2px solid var(--cta-soft); outline-offset: 2px; }
+    .toggle .dot { width: 26px; height: 16px; border-radius: 999px; background: #3A3A42; position: relative; transition: background .15s; }
+    .toggle .dot::after {
+      content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px;
+      border-radius: 50%; background: #fff; transition: transform .15s;
+    }
+    .toggle[aria-pressed="true"] .dot { background: var(--cta); }
+    .toggle[aria-pressed="true"] .dot::after { transform: translateX(10px); }
+
+    .legend { display: none; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 8px; font-size: 12px; color: var(--chrome-muted); }
+    body.guides .legend { display: flex; }
+    .legend span { display: inline-flex; align-items: center; gap: 8px; }
+    .legend i { display: inline-block; width: 22px; height: 0; border-top: 2px solid; }
+    .legend .l-bleed i { border-color: var(--g-bleed); }
+    .legend .l-trim i  { border-color: var(--g-trim); }
+    .legend .l-safe i  { border-top-style: dashed; border-color: var(--g-safe); }
+
+    .dir { margin-top: 56px; padding-top: 28px; border-top: 1px solid var(--chrome-line); }
+    .dir:first-of-type { margin-top: 32px; }
+    .dir h2 { margin: 0 0 20px; font-size: 20px; font-weight: 800; letter-spacing: -0.015em; }
+
+    .faces { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 32px; }
+    .slot { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; min-width: 0; }
+    .label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--chrome-muted); }
+    .faces .face { box-shadow: 0 0 0 1px rgba(255,255,255,.10), 0 14px 34px rgba(0,0,0,.65); }
+
+    .note { margin: 20px auto 0; max-width: calc(var(--in) * 7.5 + 32px); font-size: 12px; line-height: 1.6; color: var(--chrome-muted); text-align: center; }
+
+    .foot { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--chrome-line); font-size: 12px; line-height: 1.8; color: var(--chrome-muted); }
+    .foot b { color: var(--chrome-text); font-weight: 600; }
+    .foot p { margin: 0; }
+
+    /* ---------- Card faces (physical model) ----------
+       .face   = crop window: trim size by default, full bleed canvas when guides are on.
+       .canvas = full bleed canvas (3.75 x 2.25 in). Artwork extends to its edge.
+       Units: calc(var(--in) * inches). Type: calc(var(--in) * pt / 72). */
+    .face {
+      position: relative; flex: none;
+      width: calc(var(--in) * 3.5); height: calc(var(--in) * 2);
+      overflow: hidden; border-radius: 0;
+    }
+    body.guides .face { width: calc(var(--in) * 3.75); height: calc(var(--in) * 2.25); }
+    .canvas {
+      --sw: calc(var(--in) * 2 / 120);             /* hairline: 2px at 120px/in */
+      position: absolute;
+      left: calc(var(--in) * -0.125); top: calc(var(--in) * -0.125);
+      width: calc(var(--in) * 3.75); height: calc(var(--in) * 2.25);
+      overflow: hidden;
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    body.guides .canvas { left: 0; top: 0; }
+
+    /* shared pieces */
+    .name { margin: 0; line-height: 1.1; font-weight: 800; letter-spacing: -0.01em; color: #fff; white-space: nowrap; }
+    .lines { line-height: 1.6; font-weight: 400; white-space: nowrap; }
+    .lines a { color: inherit; text-decoration: none; }
+    .rule { background: var(--cta); height: var(--sw); }
+
+    .qrbox { position: absolute; width: calc(var(--in) * 0.95); height: calc(var(--in) * 0.95); }
+    .qr {
+      width: 100%; height: 100%;
+      border-radius: calc(var(--in) * 0.04); overflow: hidden; background: #fff;
+    }
+    .qr svg { display: block; width: 100%; height: 100%; }
+    .qr .fallback {
+      display: grid; place-items: center; width: 100%; height: 100%;
+      color: #3F3F46; font-size: calc(var(--in) * 5 / 72); text-align: center;
+    }
+    /* open bracket echo: top-right + bottom-left L corners */
+    .qrbox.bracketed::before, .qrbox.bracketed::after {
+      content: ""; position: absolute; width: calc(var(--in) * 0.3); height: calc(var(--in) * 0.3);
+      border: 0 solid var(--cta); pointer-events: none;
+    }
+    .qrbox.bracketed::before {
+      top: calc(var(--in) * -0.06 - var(--sw)); right: calc(var(--in) * -0.06 - var(--sw));
+      border-top-width: var(--sw); border-right-width: var(--sw);
+    }
+    .qrbox.bracketed::after {
+      bottom: calc(var(--in) * -0.06 - var(--sw)); left: calc(var(--in) * -0.06 - var(--sw));
+      border-bottom-width: var(--sw); border-left-width: var(--sw);
+    }
+
+    .logo { position: absolute; display: block; width: auto; user-select: none; -webkit-user-drag: none; }
+
+    /* ===== A · Colchete ===== */
+    .a-front { background: var(--ink-a); }
+    .a-front .rail {
+      position: absolute; height: calc(var(--in) * 0.9);
+      border: 0 solid var(--cta);
+      --bw: calc(var(--in) * 0.035);
+    }
+    /* top-right L: long arm runs off the left edge, short arm hooks down */
+    .a-front .rail.tr {
+      top: calc(var(--in) * 0.345); left: 0; right: calc(var(--in) * 0.345);
+      border-top-width: var(--bw); border-right-width: var(--bw);
+    }
+    /* bottom-left L: long arm runs off the right edge, short arm hooks up */
+    .a-front .rail.bl {
+      bottom: calc(var(--in) * 0.345); right: 0; left: calc(var(--in) * 0.345);
+      border-bottom-width: var(--bw); border-left-width: var(--bw);
+    }
+    .a-front .logo { height: calc(var(--in) * 0.9); left: calc(var(--in) * 0.75); top: 50%; transform: translateY(-50%); }
+
+    .a-back { background: var(--ink-a); }
+    .a-back .info {
+      position: absolute; left: calc(var(--in) * 0.25); top: calc(var(--in) * 0.25); bottom: calc(var(--in) * 0.25);
+      width: calc(var(--in) * 2.15); display: flex; flex-direction: column; justify-content: center;
+    }
+    .a-back .name { font-size: calc(var(--in) * 14 / 72); }
+    .a-back .lines {
+      margin-top: calc(var(--in) * 0.14);
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: calc(var(--in) * 7 / 72); line-height: 1.75; color: var(--zinc-300);
+    }
+    .a-back .lines div { display: grid; grid-template-columns: calc(var(--in) * 0.17) auto; align-items: baseline; }
+    .a-back .lines b { font-weight: 400; font-size: 0.86em; color: var(--cta-soft); }
+    .a-back .qrbox { right: calc(var(--in) * 0.33); top: 50%; transform: translateY(-50%); }
+
+    /* ===== B · Binário ===== */
+    .b-front { background: #03040a; }
+    .b-front .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .b-front .vignette {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 52% 62% at 50% 50%,
+        rgba(3,4,10,.94) 0%, rgba(3,4,10,.78) 38%, rgba(3,4,10,.30) 72%, rgba(3,4,10,0) 100%);
+    }
+    .b-front .logo {
+      height: calc(var(--in) * 0.85); left: 50%; top: 50%; transform: translate(-50%, -50%);
+      filter: drop-shadow(0 0 calc(var(--in) * 0.08) rgba(81,115,214,.45));
+    }
+
+    .b-back { background: var(--surface-card); }
+    .b-back .strip {
+      position: absolute; left: 0; right: 0; top: 0; height: calc(var(--in) * 0.4); overflow: hidden;
+      -webkit-mask-image: linear-gradient(to bottom, #000 35%, transparent 100%);
+              mask-image: linear-gradient(to bottom, #000 35%, transparent 100%);
+    }
+    .b-back .strip img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: left top; mix-blend-mode: screen; opacity: .55; }
+    .b-back .info {
+      position: absolute; left: calc(var(--in) * 0.25); top: calc(var(--in) * 0.45); bottom: calc(var(--in) * 0.25);
+      width: calc(var(--in) * 2.15); display: flex; flex-direction: column; justify-content: center;
+    }
+    .b-back .name { font-size: calc(var(--in) * 13 / 72); }
+    .b-back .lines { margin-top: calc(var(--in) * 0.1); font-size: calc(var(--in) * 7.5 / 72); color: var(--indigo-200); }
+    .b-back .lines .site { color: var(--cta-soft); }
+    .b-back .qrbox { right: calc(var(--in) * 0.25); top: calc(50% + var(--in) * 0.1); transform: translateY(-50%); }
+
+    /* ===== C · Mascote ===== */
+    .c-front {
+      background:
+        radial-gradient(circle at calc(var(--in) * 2.7) calc(var(--in) * 1.2),
+          rgba(28,83,163,.25) 0, rgba(28,83,163,.12) calc(var(--in) * 0.9), rgba(28,83,163,0) calc(var(--in) * 1.7)),
+        var(--surface-dark);
+    }
+    .c-front .logo { height: calc(var(--in) * 0.8); left: calc(var(--in) * 0.3); top: 50%; transform: translateY(-50%); }
+    .c-front .mascot {
+      position: absolute; display: block; height: calc(var(--in) * 2.1); width: auto;
+      right: calc(var(--in) * 0.25); bottom: calc(var(--in) * -0.06);   /* body runs off the bottom bleed; head clears the safe line */
+      user-select: none; -webkit-user-drag: none;
+    }
+
+    .c-back { background: var(--surface-dark); }
+    .c-back .info {
+      position: absolute; left: calc(var(--in) * 0.25); top: calc(var(--in) * 0.25); bottom: calc(var(--in) * 0.25);
+      width: calc(var(--in) * 2.15); display: flex; flex-direction: column; justify-content: center;
+    }
+    .c-back .name { font-size: calc(var(--in) * 13 / 72); }
+    .c-back .rule { width: calc(var(--in) * 0.3); margin: calc(var(--in) * 0.1) 0 calc(var(--in) * 0.09); }
+    .c-back .lines { font-size: calc(var(--in) * 7.5 / 72); color: var(--zinc-300); }
+    .c-back .qrbox { right: calc(var(--in) * 0.25); top: 50%; transform: translateY(-50%); }
+
+    /* Print guides (hidden unless toggled) */
+    .guides-layer { display: none; position: absolute; inset: 0; pointer-events: none; z-index: 20; }
+    body.guides .guides-layer { display: block; }
+    .guides-layer i { position: absolute; display: block; }
+    .g-bleed { inset: 0; border: 1px solid var(--g-bleed); }
+    .g-trim  { inset: calc(var(--in) * 0.125); border: 1px solid var(--g-trim); }
+    .g-safe  { inset: calc(var(--in) * 0.25);  border: 1px dashed var(--g-safe); }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 699px) {
+      :root { --in: 80px; }
+      .page { padding-top: 24px; }
+      .faces { gap: 24px; }
+      .dir { margin-top: 40px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="head">
+      <h1>Business card — Vanildo de Souza Jr · direções escuras</h1>
+      <button class="toggle" id="guides-toggle" type="button" aria-pressed="false">
+        <span class="dot" aria-hidden="true"></span><span>Mostrar guias</span>
+      </button>
+    </header>
+
+    <div class="legend" aria-hidden="true">
+      <span class="l-bleed"><i></i>Sangria (borda do arquivo)</span>
+      <span class="l-trim"><i></i>Corte (trim)</span>
+      <span class="l-safe"><i></i>Área segura</span>
+    </div>
+
+    <section class="dir" id="dir-a">
+      <h2>A · Colchete</h2>
+      <div class="faces">
+        <div class="slot"><div class="label">Frente</div><div class="face-host" data-face="a-front"></div></div>
+        <div class="slot"><div class="label">Verso</div><div class="face-host" data-face="a-back"></div></div>
+      </div>
+      <p class="note">Preto rico (C60 M40 Y40 K100) no fundo. Sugestão: hot-stamping ou verniz localizado no colchete.</p>
+    </section>
+
+    <section class="dir" id="dir-b">
+      <h2>B · Binário</h2>
+      <div class="faces">
+        <div class="slot"><div class="label">Frente</div><div class="face-host" data-face="b-front"></div></div>
+        <div class="slot"><div class="label">Verso</div><div class="face-host" data-face="b-back"></div></div>
+      </div>
+      <p class="note">O padrão binário imprime bem em papel fosco; evitar dígitos menores que 4pt no arquivo final.</p>
+    </section>
+
+    <section class="dir" id="dir-c">
+      <h2>C · Mascote</h2>
+      <div class="faces">
+        <div class="slot"><div class="label">Frente</div><div class="face-host" data-face="c-front"></div></div>
+        <div class="slot"><div class="label">Verso</div><div class="face-host" data-face="c-back"></div></div>
+      </div>
+      <p class="note">Mascote precisa de 300 dpi: a imagem tem 1499 px de altura e ocupa 2,1 pol no cartão (~700 dpi) — sobra.</p>
+    </section>
+
+    <footer class="foot">
+      <p><b>3,5 × 2 pol (88,9 × 50,8 mm)</b> · sangria 1/8 pol · área segura 1/8 pol · frente/verso</p>
+      <p>QR → skale.club/vcard/vanildo (vCard ainda não criado)</p>
+    </footer>
+  </main>
+
+  <template id="tpl-a-front">
+    <div class="face"><div class="canvas a-front">
+      <div class="rail tr"></div>
+      <div class="rail bl"></div>
+      <img class="logo" src="logo-main.png" alt="Skale Club" width="1106" height="1116" draggable="false">
+      <div class="guides-layer" aria-hidden="true"><i class="g-bleed"></i><i class="g-trim"></i><i class="g-safe"></i></div>
+    </div></div>
+  </template>
+
+  <template id="tpl-a-back">
+    <div class="face"><div class="canvas a-back">
+      <div class="info">
+        <p class="name">Vanildo de Souza Jr</p>
+        <div class="lines">
+          <div><b>T</b><a href="tel:+15088018190">(508) 801-8190</a></div>
+          <div><b>E</b><span>vanildo@skale.club</span></div>
+          <div><b>W</b><span>skale.club</span></div>
+        </div>
+      </div>
+      <div class="qrbox bracketed"><div class="qr" role="img" aria-label="QR code: skale.club/vcard/vanildo"></div></div>
+      <div class="guides-layer" aria-hidden="true"><i class="g-bleed"></i><i class="g-trim"></i><i class="g-safe"></i></div>
+    </div></div>
+  </template>
+
+  <template id="tpl-b-front">
+    <div class="face"><div class="canvas b-front">
+      <img class="bg" src="binary-pattern.svg" alt="" draggable="false">
+      <div class="vignette"></div>
+      <img class="logo" src="logo-main.png" alt="Skale Club" width="1106" height="1116" draggable="false">
+      <div class="guides-layer" aria-hidden="true"><i class="g-bleed"></i><i class="g-trim"></i><i class="g-safe"></i></div>
+    </div></div>
+  </template>
+
+  <template id="tpl-b-back">
+    <div class="face"><div class="canvas b-back">
+      <div class="strip"><img src="binary-pattern.svg" alt="" draggable="false"></div>
+      <div class="info">
+        <p class="name">Vanildo de Souza Jr</p>
+        <div class="lines">
+          <div><a href="tel:+15088018190">(508) 801-8190</a></div>
+          <div>vanildo@skale.club</div>
+          <div class="site">skale.club</div>
+        </div>
+      </div>
+      <div class="qrbox"><div class="qr" role="img" aria-label="QR code: skale.club/vcard/vanildo"></div></div>
+      <div class="guides-layer" aria-hidden="true"><i class="g-bleed"></i><i class="g-trim"></i><i class="g-safe"></i></div>
+    </div></div>
+  </template>
+
+  <template id="tpl-c-front">
+    <div class="face"><div class="canvas c-front">
+      <img class="logo" src="logo-main.png" alt="Skale Club" width="1106" height="1116" draggable="false">
+      <img class="mascot" src="mascot.webp" alt="" width="1169" height="1500" draggable="false">
+      <div class="guides-layer" aria-hidden="true"><i class="g-bleed"></i><i class="g-trim"></i><i class="g-safe"></i></div>
+    </div></div>
+  </template>
+
+  <template id="tpl-c-back">
+    <div class="face"><div class="canvas c-back">
+      <div class="info">
+        <p class="name">Vanildo de Souza Jr</p>
+        <div class="rule"></div>
+        <div class="lines">
+          <div><a href="tel:+15088018190">(508) 801-8190</a></div>
+          <div>vanildo@skale.club</div>
+          <div>skale.club</div>
+        </div>
+      </div>
+      <div class="qrbox"><div class="qr" role="img" aria-label="QR code: skale.club/vcard/vanildo"></div></div>
+      <div class="guides-layer" aria-hidden="true"><i class="g-bleed"></i><i class="g-trim"></i><i class="g-safe"></i></div>
+    </div></div>
+  </template>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script>
+    (function () {
+      // QR as inline SVG paths: dark modules on its own white quiet zone (never inverted).
+      function buildQrSvg(text) {
+        if (typeof qrcode !== 'function') return null;
+        var qr = qrcode(0, 'M');
+        qr.addData(text);
+        qr.make();
+        var n = qr.getModuleCount();
+        var quiet = 4;
+        var size = n + quiet * 2;
+        var d = '';
+        for (var r = 0; r < n; r++) {
+          for (var c = 0; c < n; c++) {
+            if (qr.isDark(r, c)) d += 'M' + (c + quiet) + ' ' + (r + quiet) + 'h1v1h-1z';
+          }
+        }
+        return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '"' +
+          ' shape-rendering="crispEdges" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' +
+          '<rect width="' + size + '" height="' + size + '" fill="#FFFFFF"/>' +
+          '<path d="' + d + '" fill="#18181B"/></svg>';
+      }
+
+      var qrSvg = null;
+      try { qrSvg = buildQrSvg('https://skale.club/vcard/vanildo'); } catch (e) { qrSvg = null; }
+
+      document.querySelectorAll('.face-host').forEach(function (host) {
+        var tpl = document.getElementById('tpl-' + host.getAttribute('data-face'));
+        host.appendChild(tpl.content.cloneNode(true));
+      });
+
+      document.querySelectorAll('.qr').forEach(function (el) {
+        el.innerHTML = qrSvg || '<div class="fallback">QR indisponível<br>(sem acesso à biblioteca)</div>';
+      });
+
+      var btn = document.getElementById('guides-toggle');
+      btn.addEventListener('click', function () {
+        var on = document.body.classList.toggle('guides');
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    })();
+  </script>
+</body>
+</html>
