@@ -41,7 +41,7 @@ function rawQuery(req: Request): string {
 }
 
 export function registerXpotRedirects(app: Express) {
-  app.get(["/nfc", "/nfc/*", "/smart-tags", "/smart-tags/*"], (_req: Request, res: Response) => {
+  app.get(/^\/(?:nfc|smart-tags)(?:\/.*)?$/, (_req: Request, res: Response) => {
     res.redirect(302, xpotAppUrl());
   });
 
