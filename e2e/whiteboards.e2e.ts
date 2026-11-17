@@ -567,7 +567,7 @@ function whiteboardSuite(browserName: EngineName) {
         await viewer.goto(`${baseUrl}/w/${board().slug}`);
         await viewer.getByTestId("whiteboard-viewer").waitFor({ timeout: 30_000 });
         await viewer.waitForTimeout(1500);
-        assert.equal(await viewer.title(), "Skale Club | Google Ads: leilao");
+        assert.equal(await viewer.title(), "Google Ads: leilao | Skale Club");
         assert.match((await viewer.locator('meta[name="robots"]').getAttribute("content")) ?? "", /noindex/);
         assert.equal(await viewer.locator(".excalidraw.excalidraw--view-mode").count(), 1, "view mode");
         assert.equal(await viewer.locator(".App-toolbar").count(), 0, "no drawing tools");
