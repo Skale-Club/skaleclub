@@ -17,7 +17,7 @@ import { SectionFrame } from '@/components/editorial';
 const POSTS_PER_PAGE = 9;
 
 export default function Blog() {
-  usePageSeo({ title: "Blog", description: "Tips, guides, and insights about marketing services" });
+  usePageSeo({ core: "blog" });
   const [searchTerm, setSearchTerm] = useState('');
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const pagePaths = usePagePaths();

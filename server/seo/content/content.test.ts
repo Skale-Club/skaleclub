@@ -70,8 +70,15 @@ test("Portuguese routes use the PT translations and /br links", async () => {
   assert.match(html, /href="\/br\/blog"/);
 });
 
-test("private, unknown and thin pages get no content", async () => {
-  assert.equal(await buildPageContentHtml("/nope", { settings, route: { ...ok(), status: 404, noindex: true } }, data), "");
+test("an unknown URL gets a readable not-found block", async () => {
+  const html = await buildPageContentHtml("/nope", { settings, route: { ...ok(), status: 404, noindex: true } }, data);
+  assert.match(html, /<h1>Page Not Found<\/h1>/);
+  assert.match(html, /href="\/services"/);
+  const pt = await buildPageContentHtml("/br/nope", { settings, route: { ...ok(), status: 404, noindex: true } }, data);
+  assert.match(pt, /href="\/br\/services"/);
+});
+
+test("private and thin pages get no content", async () => {
   assert.equal(await buildPageContentHtml("/thankyou", { settings, route: ok({ noindex: true }) }, data), "");
   assert.equal(await buildPageContentHtml("/admin", { settings, route: ok() }, data), "");
 });

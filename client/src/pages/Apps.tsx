@@ -7,7 +7,7 @@ import { PortfolioApps } from "@/components/portfolio/PortfolioApps";
 /** Platform catalog. /portfolio shows the same list with a "See all" link. */
 export default function Apps() {
   const { t } = useTranslation();
-  usePageSeo({ title: t("Platforms"), description: t("Explore Skale Club platforms for your business and everyday work.") });
+  usePageSeo({ core: "apps" });
 
   return (
     <CatalogPageShell source="apps">

@@ -156,3 +156,12 @@ worth reading before inferring anything from config files in the repo root:
   `/api/health` and `/api/version`; Coolify does the build.
 - `vercel.json`, `api/`, `wrangler.jsonc` and `cloudflare/` were removed after
   the Vercel wind-down; the container is the only deploy target.
+
+## Server-rendered pages
+
+**Initial Shell / Server-Rendered Pages**: public pages are rendered by React on the server and hydrated, never served as an empty shell. `server/seo/shell.ts` (`buildShell`) builds every HTML response and is the ONE function both render paths call (`server/static.ts` in production, `server/vite.ts` in development). It injects the per-page head (`server/seo/inject.ts`), then fills the body:
+- **Real render**: `client/src/entry-server.tsx` (`renderPage`) prefetches the route's API queries through this server's own HTTP API, renders `<App>` with `prerenderToNodeStream` and returns the HTML plus the dehydrated React Query cache. `server/ssr-react.ts` loads it (dev: `vite.ssrLoadModule`; prod: `dist/server/entry-server.js`, built by `script/build.ts`), inlines the cache as `__REACT_QUERY_STATE__` (and, for Portuguese, `__SSR_TRANSLATIONS__` and `__SSR_PAGE_INFO__`), and `client/src/main.tsx` hydrates with `hydrateRoot`. `ENABLE_REACT_SSR=false` switches it off.
+- **Text fallback** (`server/seo/content/*`): only when the render is empty (`hasMainContent`: an h1/h2 inside `<main>` or 500 characters), throws, or exceeds 3 s. It is an ordinary in-flow block ahead of `#root`, never a fixed overlay.
+- Invariants: the `#initial-loader` and the fallback/React output are mutually exclusive (the server strips the loader whenever it injects content); nothing may hide the app indefinitely (`INITIAL_SHELL_TIMEOUT_MS`, `client/src/lib/initial-shell.ts`); admin routes keep the loader and get no body; unknown URLs are real 404s with `noindex` (`server/seo/routes.ts`). Public HTML is sent with `s-maxage=60, stale-while-revalidate=60`, 404s with `s-maxage=0`.
+- Rules for client code: nothing may read `window`/`document`/`localStorage` while rendering (use an effect), because the first client render must equal the server HTML. Use `useRawPathname()` instead of wouter's `usePathname()`. **Adding a public route to `App.tsx` means adding it to `specsForRoute` in `entry-server.tsx` (its queries), to `preloadRouteForPath` in `App.tsx`, and to `server/seo/routes.ts`.** The query keys in `specsForRoute` must equal the components' `useQuery` keys exactly.
+

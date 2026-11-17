@@ -7,6 +7,11 @@
 // together). React removes it when the route mounts: see clearInitialShell() in
 // client/src/lib/initialLoad.tsx. It is a readable fallback, not a copy of the
 // React tree, so it styles itself and cannot disturb the real layout.
+//
+// It is only served when the real React render (server/ssr-react.ts) was not
+// possible. It is an ordinary in-flow block placed BEFORE #root, never a fixed
+// overlay: an opaque sheet over the page is what made Google score the site as
+// Soft 404, and it was also the full-screen text page visitors saw flash.
 
 export const CONTENT_ID = "seo-content";
 export const CONTENT_PLACEHOLDER = "<!-- SEO_CONTENT -->";
@@ -83,7 +88,7 @@ function link(href: string, label: string, className?: string): string {
 }
 
 const STYLE = `<style>
-#${CONTENT_ID}{position:fixed;inset:0;z-index:9999;overflow-y:auto;background:#0d121a;color:#c4ccda;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+#${CONTENT_ID}{position:relative;background:#0d121a;color:#c4ccda;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
 #${CONTENT_ID} *{box-sizing:border-box}
 #${CONTENT_ID} a{color:#8fa8ec;text-decoration:none}
 #${CONTENT_ID} .scx-w{max-width:72rem;margin:0 auto;padding:0 1.25rem}

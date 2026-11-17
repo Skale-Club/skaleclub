@@ -25,7 +25,7 @@ import { SectionFrame } from "@/components/editorial";
 
 export default function TermsOfService() {
   const { t } = useTranslation();
-  usePageSeo({ title: t("Terms of Service") });
+  usePageSeo({ core: "termsOfService" });
   const { data: settings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });

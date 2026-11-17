@@ -9,7 +9,7 @@ import { SectionFrame } from '@/components/editorial';
 
 export default function FaqPage() {
   const { t } = useTranslation();
-  usePageSeo({ title: t("FAQ"), description: t("Find answers to common questions about our services.") });
+  usePageSeo({ core: "faq" });
   const { data: faqs, isLoading } = useQuery<Faq[]>({
     queryKey: ['/api/faqs']
   });

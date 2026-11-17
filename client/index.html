@@ -107,10 +107,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
   </head>
   <body>
-    <div id="root"></div>
-    <!-- The server puts the page's text here (server/seo/content) and drops the
-         loader block below whenever it does: the two are never served together. -->
+    <!-- When the React render is not possible the server puts the page's text here
+         (server/seo/content), in normal flow and ahead of #root, and drops the loader
+         block below: the two are never served together. -->
     <!-- SEO_CONTENT -->
+    <div id="root"></div>
     <!-- INITIAL_LOADER_START -->
     <div id="initial-loader" style="position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; display: flex; align-items: center; justify-content: center; background-color: #0d121a;">
       <div class="loader-dots">

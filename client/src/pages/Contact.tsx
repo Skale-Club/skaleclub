@@ -8,7 +8,7 @@ import { ContactForm } from "@/components/contact/ContactForm";
 
 export default function Contact() {
   const { t } = useTranslation();
-  usePageSeo({ title: t("Contact"), description: t("Get in touch with Skale Club. Call, email or send us a message and we will get back to you.") });
+  usePageSeo({ core: "contact" });
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ["/api/company-settings"],
   });

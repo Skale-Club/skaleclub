@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { formatDate } from '@/lib/format';
 import { useTranslation } from '@/hooks/useTranslation';
+import { splitLanguagePath } from '@shared/languagePath';
 import type { BlogPost, CompanySettings } from '@shared/schema';
 import { usePagePaths } from '@/lib/pagePaths';
 import { NotFoundState } from '@/components/NotFoundState';
@@ -27,6 +28,16 @@ export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
   const pagePaths = usePagePaths();
   const { t, language } = useTranslation();
+
+  // Posts are written in English only. A /br/blog/<slug> URL used to show that English text
+  // under a Portuguese page; it now goes to the English post (the server answers the same
+  // 301 for a real request, see blogRedirectTarget in server/seo/shell.ts). A full
+  // navigation, because the router would re-add the /br prefix.
+  useEffect(() => {
+    if (language !== 'pt') return;
+    const { path } = splitLanguagePath(window.location.pathname);
+    window.location.replace(path + window.location.search + window.location.hash);
+  }, [language]);
 
   const { data: post, isLoading, error } = useQuery<BlogPost>({
     queryKey: ['/api/blog', params.slug],
@@ -72,7 +83,10 @@ export default function BlogPostPage() {
     }
   }, [post, settings]);
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  // Set after mount: the server renders without a URL, and reading `window` while rendering
+  // would make the first client render (and the share links in it) differ from that HTML.
+  const [shareUrl, setShareUrl] = useState('');
+  useEffect(() => setShareUrl(window.location.href), [params.slug]);
   const shareText = post?.title || '';
 
   const shareLinks = {

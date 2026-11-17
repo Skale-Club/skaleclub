@@ -8,7 +8,7 @@ import { SectionFrame } from "@/components/editorial";
 
 export default function PrivacyPolicy() {
   const { t } = useTranslation();
-  usePageSeo({ title: t("Privacy Policy") });
+  usePageSeo({ core: "privacyPolicy" });
   const { data: settings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });

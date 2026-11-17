@@ -1,7 +1,7 @@
 import { legacyLanguagePath, splitLanguagePath, withLanguage } from "#shared/languagePath.js";
 import { buildPagePaths } from "#shared/pageSlugs.js";
 import { CORE_SEO, coreKeyForPath, corePathForKey, type CoreSeoKey } from "#shared/coreSeo.js";
-import { brandPageTitle } from "#shared/seoTitle.js";
+import { brandFirstTitle, brandPageTitle } from "#shared/seoTitle.js";
 import {
   CORE_OG_IMAGE,
   LANDING_SEO,
@@ -16,7 +16,20 @@ import { getPlatformLanding } from "#shared/platformLandings.js";
 import { platformPath } from "#shared/platforms.js";
 import { HeadEditor } from "./head.js";
 import type { RouteResolution } from "./routes.js";
-import { absoluteUrl, breadcrumbs, landingFaq, nfcGuideFaq, nfcProduct, organizationGraph } from "./structuredData.js";
+import { PRODUCT_CARDS } from "#shared/products.js";
+import {
+  absoluteUrl,
+  blogPosting,
+  breadcrumbs,
+  faqPage,
+  landingFaq,
+  nfcGuideFaq,
+  nfcPlaqueProduct,
+  nfcProduct,
+  organizationGraph,
+  productsItemList,
+  serviceSchema,
+} from "./structuredData.js";
 
 // Per-page <head> for the SPA shell: title/description/canonical/hreflang/Open
 // Graph/JSON-LD, computed on the server so the very first response is right.
@@ -30,7 +43,21 @@ export function canonicalOrigin(): string {
 export interface InjectContext {
   settings: CompanySettings | null;
   route: RouteResolution;
+  /** The FAQ rows the /faq page renders, already in the page's language: they become its
+   * FAQPage markup, so the markup and the visible answers are the same text. */
+  faqs?: ReadonlyArray<{ question: string; answer: string }>;
 }
+
+// What each service page is called in its structured data, per language.
+const SERVICE_PAGES: Record<string, { en: string; pt: string }> = {
+  services: { en: "Marketing and technology services", pt: "Serviços de marketing e tecnologia" },
+  websites: { en: "Websites for service businesses", pt: "Sites para empresas de serviços" },
+  barbershops: { en: "AI reception and booking for barbershops", pt: "Atendimento e agenda com IA para barbearias" },
+};
+const PRODUCT_NAMES: Record<string, { en: string; pt: string }> = {
+  "nfc-review-plaque": { en: "NFC review plaque", pt: "Placa de avaliação NFC" },
+  "nfc-keychains": { en: "NFC keychains", pt: "Chaveiros NFC" },
+};
 
 const NOINDEX_ROBOTS = "noindex, nofollow";
 const NO_LANGUAGE_PAIR = new Set<CoreSeoKey>(["links"]);
@@ -166,7 +193,8 @@ export function injectSeo(html: string, pathname: string, ctx: InjectContext): s
   }
 
   if (title) {
-    title = brandPageTitle(title, settings?.companyName);
+    // Inner pages lead with their keyword; the homepage leads with the brand.
+    title = (coreKey === "home" ? brandFirstTitle : brandPageTitle)(title, settings?.companyName);
     const socialTitle = blog ? blog.title : title;
     head.title(title).meta("property", "og:title", socialTitle).meta("name", "twitter:title", socialTitle);
   }
@@ -200,7 +228,17 @@ export function injectSeo(html: string, pathname: string, ctx: InjectContext): s
     blocks.push(breadcrumbs(origin, [homeCrumb, { name: CORE_SEO[coreKey].crumb[lang], path: canonicalPath }]));
   }
 
+  if (coreKey === "faq") {
+    const faq = faqPage(ctx.faqs ?? []);
+    if (faq) blocks.push(faq);
+  }
+
+  if (coreKey === "services" && description) {
+    blocks.push(serviceSchema(origin, settings, { name: SERVICE_PAGES.services[lang], description, url: canonical, language: lang }));
+  }
+
   if (blog) {
+    blocks.push(blogPosting(origin, settings, blog, canonical, imageUrl, lang));
     blocks.push(
       breadcrumbs(origin, [
         homeCrumb,
@@ -229,6 +267,29 @@ export function injectSeo(html: string, pathname: string, ctx: InjectContext): s
     const faq = nfcGuideFaq(lang);
     if (faq) blocks.push(faq);
     blocks.push(breadcrumbs(origin, [homeCrumb, { name: NFC_GUIDE_CRUMB[lang], path: canonicalPath }]));
+  }
+
+  const serviceName = SERVICE_PAGES[baseSlugOf(seoSlug)];
+  if (landing && serviceName && baseSlugOf(seoSlug) !== "services" && description) {
+    blocks.push(serviceSchema(origin, settings, { name: serviceName[lang], description, url: canonical, language: lang }));
+  }
+
+  if (baseSlugOf(seoSlug) === "products") {
+    blocks.push(
+      productsItemList(
+        origin,
+        PRODUCT_CARDS.map((card) => ({
+          name: PRODUCT_NAMES[card.slug]?.[lang] ?? card.title,
+          path: isPt ? withLanguage(card.href, "pt") : card.href,
+        })),
+      ),
+    );
+  }
+
+  if (baseSlugOf(seoSlug) === "nfc-review-plaque") {
+    blocks.push(
+      nfcPlaqueProduct(origin, PRODUCT_NAMES["nfc-review-plaque"][lang], description ?? "", (image ?? CORE_OG_IMAGE).path, canonical),
+    );
   }
 
   if (baseSlugOf(seoSlug) === "nfc-keychains") {

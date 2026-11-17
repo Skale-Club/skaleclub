@@ -16,6 +16,7 @@ import {
   linksPage,
   makeContext,
   nfcGuidePage,
+  notFoundPage,
   portfolioPage,
   privacyPage,
   productsPage,
@@ -41,7 +42,7 @@ export async function buildPageContent(
   { settings, route }: InjectContext,
   data: ContentData = contentData,
 ): Promise<PageContent | null> {
-  if (route.status !== 200 || route.noindex) return null;
+  if (route.status === 200 && route.noindex) return null;
 
   const cleanPath = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   const normalized = legacyLanguagePath(cleanPath) ?? cleanPath;
@@ -49,6 +50,8 @@ export async function buildPageContent(
   const lang: "en" | "pt" = route.landing ? (route.landing.language === "pt" || language === "pt" ? "pt" : "en") : language === "pt" ? "pt" : "en";
   const cached = lang === "pt" ? await safe(() => data.ptTranslations(), null) : null;
   const ctx = makeContext(lang, makeTranslator(lang, cached), settings);
+  // An unknown URL: a readable "not found" with a way back, served with HTTP 404.
+  if (route.status === 404) return notFoundPage(ctx);
 
   const portfolio = () => safe<PortfolioService[]>(() => data.portfolio(), []);
   const posts = () => safe<BlogPost[]>(() => data.recentPosts(), []);

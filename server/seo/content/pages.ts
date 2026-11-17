@@ -369,3 +369,13 @@ export function linksPage(ctx: BuildContext): PageContent {
     sections: [{ heading: ctx.t("Links"), items: links.map((l) => ({ title: String(l.title), href: l.url })) }],
   });
 }
+
+/** The summary of an unknown URL. Same words as client/src/pages/not-found.tsx. */
+export function notFoundPage(ctx: BuildContext): PageContent {
+  const { t } = ctx;
+  return shell(ctx, {
+    h1: t("Page Not Found"),
+    lead: t("The page you are looking for might have been removed, had its name changed, or is temporarily unavailable."),
+    sections: [],
+  });
+}
