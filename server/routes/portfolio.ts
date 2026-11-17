@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { z } from "zod";
 import { DEFAULT_PORTFOLIO_SERVICES } from "#shared/defaults/cms.js";
@@ -86,7 +87,7 @@ export function registerPortfolioRoutes(app: Express) {
   app.put("/api/portfolio-services/:id", requireAdmin, async (req, res) => {
     try {
       const validatedData = insertPortfolioServiceSchema.partial().parse(req.body);
-      const service = await storage.updatePortfolioService(Number(req.params.id), validatedData);
+      const service = await storage.updatePortfolioService(Number(routeParam(req, "id")), validatedData);
       res.json(service);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -98,7 +99,7 @@ export function registerPortfolioRoutes(app: Express) {
 
   app.delete("/api/portfolio-services/:id", requireAdmin, async (req, res) => {
     try {
-      await storage.deletePortfolioService(Number(req.params.id));
+      await storage.deletePortfolioService(Number(routeParam(req, "id")));
       res.json({ success: true });
     } catch (err) {
       sendError(res, err, "Failed to delete service");

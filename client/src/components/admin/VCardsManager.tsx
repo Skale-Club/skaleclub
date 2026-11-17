@@ -1,3 +1,4 @@
+import { Facebook, Instagram, Linkedin, Twitter, Youtube } from "@/components/ui/brand-icons";
 import { useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -17,11 +18,6 @@ import {
   Upload,
   Copy,
   Link as LinkIcon,
-  Instagram,
-  Linkedin,
-  Twitter,
-  Youtube,
-  Facebook,
   Send,
   X,
   QrCode,
@@ -490,7 +486,7 @@ export function VCardsManager() {
                           {SOCIAL_PLATFORMS.map((platform) => (
                             <SelectItem key={platform.value} value={platform.value}>
                               <div className="flex items-center gap-2">
-                                <platform.icon className="w-4 h-4" />
+                                <platform.icon className="w-4 h-4" aria-hidden="true" />
                                 {platform.label}
                               </div>
                             </SelectItem>

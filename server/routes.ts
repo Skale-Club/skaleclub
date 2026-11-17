@@ -1,3 +1,4 @@
+import { routeParam } from "./lib/routeParam.js";
 import type { Express } from "express";
 import { rateLimit, normalizeIpKey } from "./lib/rateLimit.js";
 import type { Server } from "http";
@@ -879,7 +880,7 @@ export async function registerRoutes(
 
   app.get('/api/chat/conversations/:id', requireAdmin, async (req, res) => {
     try {
-      const conversation = await storage.getConversation(req.params.id);
+      const conversation = await storage.getConversation(routeParam(req, "id"));
       if (!conversation) return res.status(404).json({ message: 'Conversation not found' });
       const messages = await storage.getConversationMessages(conversation.id);
       res.json({ conversation, messages });
@@ -892,9 +893,9 @@ export async function registerRoutes(
   app.post('/api/chat/conversations/:id/status', requireAdmin, async (req, res) => {
     try {
       const { status } = z.object({ status: z.enum(['open', 'closed']) }).parse(req.body);
-      const existing = await storage.getConversation(req.params.id);
+      const existing = await storage.getConversation(routeParam(req, "id"));
       if (!existing) return res.status(404).json({ message: 'Conversation not found' });
-      const updated = await storage.updateConversation(req.params.id, { status });
+      const updated = await storage.updateConversation(routeParam(req, "id"), { status });
       res.json(updated);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -907,7 +908,7 @@ export async function registerRoutes(
 
   app.delete('/api/chat/conversations/:id', requireAdmin, async (req, res) => {
     try {
-      await storage.deleteConversation(req.params.id);
+      await storage.deleteConversation(routeParam(req, "id"));
       res.json({ success: true });
     } catch (err) {
       console.error('Chat conversation delete error:', err);
@@ -918,11 +919,11 @@ export async function registerRoutes(
   // Public conversation history (by ID stored in browser)
   app.get('/api/chat/conversations/:id/messages', async (req, res) => {
     try {
-      const conversation = await storage.getConversation(req.params.id);
+      const conversation = await storage.getConversation(routeParam(req, "id"));
       if (!conversation) {
         return res.status(404).json({ message: 'Conversation not found' });
       }
-      const messages = await storage.getConversationMessages(req.params.id);
+      const messages = await storage.getConversationMessages(routeParam(req, "id"));
       // Public endpoint keyed only by a conversation id kept in localStorage —
       // never echo back the stored visitor identity (name/email/phone/first
       // page URL). The widget reads `messages` only; the trimmed conversation

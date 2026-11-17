@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { z } from "zod";
 import { storage } from "../storage.js";
@@ -35,7 +36,7 @@ export function registerRedirectRoutes(app: Express) {
       if (data.slug && isReservedSlug(data.slug)) {
         return res.status(400).json({ message: `"${data.slug}" is a reserved path` });
       }
-      res.json(await storage.updateRedirect(Number(req.params.id), data));
+      res.json(await storage.updateRedirect(Number(routeParam(req, "id")), data));
     } catch (err) {
       if (err instanceof z.ZodError) return res.status(400).json({ message: "Validation error", errors: err.errors });
       sendError(res, err, "Failed to update redirect");
@@ -44,7 +45,7 @@ export function registerRedirectRoutes(app: Express) {
 
   app.delete("/api/redirects/:id", requireAdmin, async (req, res) => {
     try {
-      await storage.deleteRedirect(Number(req.params.id));
+      await storage.deleteRedirect(Number(routeParam(req, "id")));
       res.json({ success: true });
     } catch (err) {
       sendError(res, err, "Failed to delete redirect");

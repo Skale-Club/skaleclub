@@ -1,14 +1,15 @@
+import { Instagram } from "@/components/ui/brand-icons";
 // `featureGrid` section type: a header and 2-6 icon cards (title + one line).
 // Built for the NFC landing ("what the tap opens", "where to use it"). Copy is
 // English (the t() source language); PT is served via t() on 'pt' pages.
 
 import type { z } from "zod";
 import {
-  Star, Instagram, IdCard, UtensilsCrossed, Globe, MessageCircle,
+  Star, IdCard, UtensilsCrossed, Globe, MessageCircle,
   Store, ConciergeBell, Car, KeyRound, Nfc, Smartphone,
   PhoneMissed, CalendarX, CalendarClock,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import type { SiteIcon } from "@/components/ui/brand-icons";
 import { FcGoogle } from "react-icons/fc";
 import { SiInstagram, SiWhatsapp } from "react-icons/si";
 import { Band, EditorialCard, Figure } from "@/components/editorial";
@@ -24,7 +25,7 @@ import {
 // Closed allowlist, like processStepper: seeded props can never name an icon
 // the bundle does not ship.
 
-const ICON_MAP: Record<(typeof featureGridIconNames)[number], LucideIcon> = {
+const ICON_MAP: Record<(typeof featureGridIconNames)[number], SiteIcon> = {
   Star, Instagram, IdCard, UtensilsCrossed, Globe, MessageCircle,
   Store, ConciergeBell, Car, KeyRound, Nfc, Smartphone,
   PhoneMissed, CalendarX, CalendarClock,
@@ -35,7 +36,7 @@ const ICON_MAP: Record<(typeof featureGridIconNames)[number], LucideIcon> = {
 // (digital card, menu, website), the item's icon on its own solid colour.
 type FeatureGridBrand = (typeof featureGridBrands)[number];
 
-function BrandBadge({ brand, Icon }: { brand: FeatureGridBrand; Icon: LucideIcon }) {
+function BrandBadge({ brand, Icon }: { brand: FeatureGridBrand; Icon: SiteIcon }) {
   const base = "flex h-11 w-11 items-center justify-center rounded-full";
   if (brand === "google") {
     return <span className={`${base} bg-white ring-1 ring-inset ring-ink-700/10`}><FcGoogle className="h-6 w-6" aria-hidden="true" /></span>;

@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { z } from "zod";
 import { storage } from "../storage.js";
@@ -43,7 +44,7 @@ export function registerFormRoutes(app: Express) {
   // List leads for a form (admin), paginated.
   app.get("/api/forms/:id/leads", requireAdmin, async (req, res) => {
     try {
-      const id = Number(req.params.id);
+      const id = Number(routeParam(req, "id"));
       if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
 
       const limit = Math.min(Number(req.query.limit) || 20, 100);
@@ -63,7 +64,7 @@ export function registerFormRoutes(app: Express) {
   // Read one form (admin).
   app.get("/api/forms/:id", requireAdmin, async (req, res) => {
     try {
-      const id = Number(req.params.id);
+      const id = Number(routeParam(req, "id"));
       if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
 
       const form = await storage.getForm(id);
@@ -118,7 +119,7 @@ export function registerFormRoutes(app: Express) {
   // Update a form (config, metadata, active/default flags).
   app.put("/api/forms/:id", requireAdmin, async (req, res) => {
     try {
-      const id = Number(req.params.id);
+      const id = Number(routeParam(req, "id"));
       if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
 
       const parsed = updateFormSchema.parse(req.body);
@@ -162,7 +163,7 @@ export function registerFormRoutes(app: Express) {
   // ?force=true → hard-delete, but only when countLeadsForForm(id) === 0.
   app.delete("/api/forms/:id", requireAdmin, async (req, res) => {
     try {
-      const id = Number(req.params.id);
+      const id = Number(routeParam(req, "id"));
       if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
 
       const form = await storage.getForm(id);
@@ -207,7 +208,7 @@ export function registerFormRoutes(app: Express) {
   // Duplicate a form. Body may override slug/name.
   app.post("/api/forms/:id/duplicate", requireAdmin, async (req, res) => {
     try {
-      const id = Number(req.params.id);
+      const id = Number(routeParam(req, "id"));
       if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
 
       const body = z
@@ -230,7 +231,7 @@ export function registerFormRoutes(app: Express) {
   // Promote a form to default. Also restores active flag if it was archived.
   app.post("/api/forms/:id/set-default", requireAdmin, async (req, res) => {
     try {
-      const id = Number(req.params.id);
+      const id = Number(routeParam(req, "id"));
       if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
 
       const form = await storage.getForm(id);

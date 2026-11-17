@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { publicCounterLimits } from "../lib/rateLimit.js";
 import { and, eq, ne, sql } from "drizzle-orm";
@@ -19,7 +20,7 @@ export function registerVCardRoutes(app: Express) {
 
   app.get("/api/vcards/:username", async (req, res) => {
     try {
-      const [vcard] = await db.select().from(vcards).where(eq(vcards.username, req.params.username));
+      const [vcard] = await db.select().from(vcards).where(eq(vcards.username, routeParam(req, "username")));
       // Public route: an archived card must not stay readable. Admin routes
       // (list / update) still see inactive cards.
       if (!vcard || !vcard.isActive) return res.status(404).json({ error: "VCard not found" });
@@ -54,7 +55,7 @@ export function registerVCardRoutes(app: Express) {
   app.put("/api/vcards/:id", requireAdmin, async (req, res) => {
     try {
       const data = insertVCardSchema.parse(req.body);
-      const id = parseInt(req.params.id);
+      const id = parseInt(routeParam(req, "id"));
 
       const existing = await db.select().from(vcards).where(and(eq(vcards.username, data.username), ne(vcards.id, id)));
       if (existing.length > 0) return res.status(400).json({ error: "Username já existe." });
@@ -69,7 +70,7 @@ export function registerVCardRoutes(app: Express) {
 
   app.delete("/api/vcards/:id", requireAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(routeParam(req, "id"));
       await db.delete(vcards).where(eq(vcards.id, id));
       res.json({ success: true });
     } catch (err) {
@@ -79,9 +80,9 @@ export function registerVCardRoutes(app: Express) {
   });
 
   // Track VCard view — increments viewCount and updates lastViewedAt
-  app.post("/api/vcards/:username/view", ...publicCounterLimits((req) => `view:${req.params.username}`), async (req, res) => {
+  app.post("/api/vcards/:username/view", ...publicCounterLimits((req) => `view:${routeParam(req, "username")}`), async (req, res) => {
     try {
-      const [vcard] = await db.select().from(vcards).where(eq(vcards.username, req.params.username));
+      const [vcard] = await db.select().from(vcards).where(eq(vcards.username, routeParam(req, "username")));
       if (!vcard || !vcard.isActive) return res.status(404).json({ error: "VCard not found" });
 
       const [updated] = await db
@@ -101,9 +102,9 @@ export function registerVCardRoutes(app: Express) {
   });
 
   // Track VCard download — increments downloadCount
-  app.post("/api/vcards/:username/download", ...publicCounterLimits((req) => `dl:${req.params.username}`), async (req, res) => {
+  app.post("/api/vcards/:username/download", ...publicCounterLimits((req) => `dl:${routeParam(req, "username")}`), async (req, res) => {
     try {
-      const [vcard] = await db.select().from(vcards).where(eq(vcards.username, req.params.username));
+      const [vcard] = await db.select().from(vcards).where(eq(vcards.username, routeParam(req, "username")));
       if (!vcard || !vcard.isActive) return res.status(404).json({ error: "VCard not found" });
 
       const [updated] = await db

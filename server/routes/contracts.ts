@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express, Request, RequestHandler } from "express";
 import { z } from "zod";
 import { contractDraftSchema } from "#shared/contracts.js";
@@ -163,7 +164,7 @@ export function registerContractRoutes(
     "/api/contracts/:id",
     admin,
     handle(async (req, res) => {
-      const id = idSchema.parse(req.params.id);
+      const id = idSchema.parse(routeParam(req, "id"));
       const row = await service.store.get(id);
       if (!row) throw new ContractError(404, "Contract not found.");
       res.json({
@@ -181,7 +182,7 @@ export function registerContractRoutes(
         .parse(req.body);
       res.json(
         await service.update(
-          idSchema.parse(req.params.id),
+          idSchema.parse(routeParam(req, "id")),
           draft,
           version,
           actor(req),
@@ -198,7 +199,7 @@ export function registerContractRoutes(
       const { version } = versionSchema.parse(req.body);
       res.json(
         await service.issue(
-          idSchema.parse(req.params.id),
+          idSchema.parse(routeParam(req, "id")),
           version,
           actor(req),
           evidence(req),
@@ -213,7 +214,7 @@ export function registerContractRoutes(
     handle(async (req, res) => {
       res.json(
         await service.invitation(
-          idSchema.parse(req.params.id),
+          idSchema.parse(routeParam(req, "id")),
           canonicalOrigin(),
           actor(req),
           evidence(req),
@@ -227,7 +228,7 @@ export function registerContractRoutes(
     handle(async (req, res) => {
       res.json(
         await service.void(
-          idSchema.parse(req.params.id),
+          idSchema.parse(routeParam(req, "id")),
           actor(req),
           evidence(req),
         ),
@@ -239,14 +240,14 @@ export function registerContractRoutes(
     admin,
     sendLimit,
     handle(async (req, res) => {
-      res.json(await service.notifyCopy(idSchema.parse(req.params.id)));
+      res.json(await service.notifyCopy(idSchema.parse(routeParam(req, "id"))));
     }),
   );
   app.get(
     "/api/contracts/:id/record",
     admin,
     handle(async (req, res) => {
-      const row = await service.store.get(idSchema.parse(req.params.id));
+      const row = await service.store.get(idSchema.parse(routeParam(req, "id")));
       if (!row || !row.snapshot)
         throw new ContractError(404, "Contract record not found.");
       download(res, service.view(row));
@@ -256,7 +257,7 @@ export function registerContractRoutes(
     "/api/contracts/:id/evidence",
     admin,
     handle(async (req, res) => {
-      const id = idSchema.parse(req.params.id);
+      const id = idSchema.parse(routeParam(req, "id"));
       const row = await service.store.get(id);
       if (!row?.receipt)
         throw new ContractError(404, "Signed record not found.");
@@ -275,7 +276,7 @@ export function registerContractRoutes(
     "/api/signing/:id",
     publicLimit,
     handle(async (req, res) => {
-      res.json(await service.gate(idSchema.parse(req.params.id), bearer(req)));
+      res.json(await service.gate(idSchema.parse(routeParam(req, "id")), bearer(req)));
     }),
   );
   app.post(
@@ -284,7 +285,7 @@ export function registerContractRoutes(
     handle(async (req, res) => {
       res.json(
         await service.requestCode(
-          idSchema.parse(req.params.id),
+          idSchema.parse(routeParam(req, "id")),
           bearer(req),
           evidence(req),
         ),
@@ -304,7 +305,7 @@ export function registerContractRoutes(
         .parse(req.body);
       res.json(
         await service.verify(
-          idSchema.parse(req.params.id),
+          idSchema.parse(routeParam(req, "id")),
           bearer(req),
           challengeToken,
           code,
@@ -319,7 +320,7 @@ export function registerContractRoutes(
     handle(async (req, res) => {
       res.json(
         await service.document(
-          idSchema.parse(req.params.id),
+          idSchema.parse(routeParam(req, "id")),
           bearer(req),
           access(req),
         ),
@@ -333,7 +334,7 @@ export function registerContractRoutes(
       download(
         res,
         await service.document(
-          idSchema.parse(req.params.id),
+          idSchema.parse(routeParam(req, "id")),
           bearer(req),
           access(req),
         ),
@@ -353,7 +354,7 @@ export function registerContractRoutes(
         .strict()
         .parse(req.body);
       const contract = await service.sign(
-        idSchema.parse(req.params.id),
+        idSchema.parse(routeParam(req, "id")),
         bearer(req),
         access(req),
         input.typedName,

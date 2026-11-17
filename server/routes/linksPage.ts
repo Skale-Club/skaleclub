@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 // Phase 11 — Click Analytics API (LINKS-04).
 // Public, IP-rate-limited click increment for /links page.
 //
@@ -33,9 +34,9 @@ function getClientIp(req: Request): string {
 }
 
 export function registerLinksPageRoutes(app: Express) {
-  app.post("/api/links-page/click/:linkId", ...publicCounterLimits((req) => String(req.params.linkId)), async (req, res) => {
+  app.post("/api/links-page/click/:linkId", ...publicCounterLimits((req) => String(routeParam(req, "linkId"))), async (req, res) => {
     try {
-      const linkId = String(req.params.linkId ?? "");
+      const linkId = String(routeParam(req, "linkId") ?? "");
       if (!linkId) return res.status(404).json({ message: "Link not found" });
 
       const ip = getClientIp(req);

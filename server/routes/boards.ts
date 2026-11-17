@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { storage } from "../storage.js";
 import { randomSlugSuffix, slugifyTitle } from "../lib/slug.js";
@@ -32,7 +33,7 @@ export function registerBoardsRoutes(app: Express) {
   // before /:id so "slug" is never taken for an id.
   app.get("/api/boards/slug/:slug", async (req, res) => {
     try {
-      const board = await storage.getBoardBySlug(req.params.slug);
+      const board = await storage.getBoardBySlug(routeParam(req, "slug"));
       if (!board || board.visibility !== "link") return res.status(404).json({ message: "Board not found" });
       const body: PublicBoard = {
         id: board.id,
@@ -60,9 +61,9 @@ export function registerBoardsRoutes(app: Express) {
   });
 
   app.get("/api/boards/:id", requireAdmin, async (req, res) => {
-    if (!UUID_RE.test(req.params.id)) return res.status(400).json({ message: "Invalid board id" });
+    if (!UUID_RE.test(routeParam(req, "id"))) return res.status(400).json({ message: "Invalid board id" });
     try {
-      const board = await storage.getBoard(req.params.id);
+      const board = await storage.getBoard(routeParam(req, "id"));
       if (!board) return res.status(404).json({ message: "Board not found" });
       res.json(board);
     } catch (err) {
@@ -95,7 +96,7 @@ export function registerBoardsRoutes(app: Express) {
   // can carry a lot of nodes, so this path gets the large JSON limit
   // (LARGE_BODY_RE in server/lib/bodyLimits.ts).
   app.put("/api/boards/:id", requireAdmin, async (req, res) => {
-    if (!UUID_RE.test(req.params.id)) return res.status(400).json({ message: "Invalid board id" });
+    if (!UUID_RE.test(routeParam(req, "id"))) return res.status(400).json({ message: "Invalid board id" });
     try {
       // A bad thumbnail alone must not lose the save: it is only a card
       // preview, so it is dropped and everything else is stored.
@@ -105,7 +106,7 @@ export function registerBoardsRoutes(app: Express) {
       }
       const rawThumbnail = (req.body as { thumbnailUrl?: unknown } | null)?.thumbnailUrl;
       const thumbnail = rawThumbnail === null ? ({ success: true, data: null } as const) : boardThumbnailSchema.safeParse(rawThumbnail);
-      const existing = await storage.getBoard(req.params.id);
+      const existing = await storage.getBoard(routeParam(req, "id"));
       if (!existing) return res.status(404).json({ message: "Board not found" });
       const { baseVersion, ...updateData }: Omit<typeof parsed.data, "baseVersion"> & { baseVersion?: number; thumbnailUrl?: string | null } = parsed.data;
       if (rawThumbnail !== undefined && thumbnail.success) updateData.thumbnailUrl = thumbnail.data;
@@ -136,9 +137,9 @@ export function registerBoardsRoutes(app: Express) {
   });
 
   app.delete("/api/boards/:id", requireAdmin, async (req, res) => {
-    if (!UUID_RE.test(req.params.id)) return res.status(400).json({ message: "Invalid board id" });
+    if (!UUID_RE.test(routeParam(req, "id"))) return res.status(400).json({ message: "Invalid board id" });
     try {
-      const existing = await storage.getBoard(req.params.id);
+      const existing = await storage.getBoard(routeParam(req, "id"));
       if (!existing) return res.status(404).json({ message: "Board not found" });
       await storage.deleteBoard(existing.id);
       res.json({ success: true });

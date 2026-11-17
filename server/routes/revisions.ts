@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { contentRevisionEntities } from "#shared/schema.js";
 import { listRevisions, restoreRevision, RevisionError } from "../storage/revisions.js";
@@ -8,12 +9,12 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export function registerRevisionRoutes(app: Express) {
   app.get("/api/admin/revisions/:entity/:id", requireAdmin, async (req, res) => {
     try {
-      const entity = String(req.params.entity);
+      const entity = String(routeParam(req, "entity"));
       if (!(contentRevisionEntities as readonly string[]).includes(entity)) {
         return res.status(400).json({ message: "Unknown entity" });
       }
       const limit = Number(req.query.limit ?? 20);
-      const rows = await listRevisions(entity, String(req.params.id), Number.isFinite(limit) ? limit : 20);
+      const rows = await listRevisions(entity, String(routeParam(req, "id")), Number.isFinite(limit) ? limit : 20);
       res.json(rows);
     } catch (err) {
       console.error("[revisions] list failed:", err);
@@ -22,7 +23,7 @@ export function registerRevisionRoutes(app: Express) {
   });
 
   app.post("/api/admin/revisions/:revisionId/restore", requireAdmin, async (req, res) => {
-    const revisionId = String(req.params.revisionId);
+    const revisionId = String(routeParam(req, "revisionId"));
     if (!UUID_RE.test(revisionId)) return res.status(400).json({ message: "Invalid revision id" });
     try {
       const result = await restoreRevision(revisionId);

@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { requireAdmin } from "./_shared.js";
 import {
@@ -32,7 +33,7 @@ export function registerMcpRoutes(app: Express) {
   // Rotate token — new raw token returned once
   app.post("/api/mcp/tokens/:id/rotate", requireAdmin, async (req, res) => {
     try {
-      const { token, rawToken } = await rotateApiToken(req.params.id);
+      const { token, rawToken } = await rotateApiToken(routeParam(req, "id"));
       const { tokenHash: _h, ...safe } = token;
       return res.json({ ...safe, rawToken });
     } catch {
@@ -42,7 +43,7 @@ export function registerMcpRoutes(app: Express) {
 
   // Delete token
   app.delete("/api/mcp/tokens/:id", requireAdmin, async (req, res) => {
-    await deleteApiToken(req.params.id);
+    await deleteApiToken(routeParam(req, "id"));
     res.status(204).end();
   });
 

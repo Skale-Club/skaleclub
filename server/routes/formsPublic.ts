@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { z } from "zod";
 import crypto from "crypto";
@@ -126,7 +127,7 @@ export function registerFormPublicRoutes(app: Express) {
 
   app.get("/api/forms/slug/:slug/config", async (req, res) => {
     try {
-      const form = await storage.getFormBySlug(req.params.slug);
+      const form = await storage.getFormBySlug(routeParam(req, "slug"));
       if (!form || !form.isActive) {
         return res.status(404).json({ message: "Form not found" });
       }
@@ -210,7 +211,7 @@ export function registerFormPublicRoutes(app: Express) {
     publicLeadRateLimit,
     async (req, res) => {
     try {
-      const form = await storage.getFormBySlug(req.params.slug);
+      const form = await storage.getFormBySlug(routeParam(req, "slug"));
       if (!form || !form.isActive) {
         return res.status(404).json({ message: "Form not found" });
       }
@@ -265,7 +266,7 @@ export function registerFormPublicRoutes(app: Express) {
             // the sweep's reconcile will.
             if (existing.formCompleto) {
               try {
-                const form = await storage.getFormBySlug(req.params.slug);
+                const form = await storage.getFormBySlug(routeParam(req, "slug"));
                 const formConfig = (form?.config as FormConfig | null) ?? DEFAULT_FORM_CONFIG;
                 const xphere = await storage.getXphereSettings();
                 if (
@@ -293,7 +294,7 @@ export function registerFormPublicRoutes(app: Express) {
     publicLeadRateLimit,
     async (req, res) => {
       try {
-        const form = await storage.getFormBySlug(req.params.slug);
+        const form = await storage.getFormBySlug(routeParam(req, "slug"));
         if (!form || !form.isActive) return res.status(404).json({ message: "Form not found" });
 
         const parsed = bookingQuerySchema.parse(req.query);
@@ -328,7 +329,7 @@ export function registerFormPublicRoutes(app: Express) {
     }),
     async (req, res) => {
       try {
-        const form = await storage.getFormBySlug(req.params.slug);
+        const form = await storage.getFormBySlug(routeParam(req, "slug"));
         if (!form || !form.isActive) return res.status(404).json({ message: "Form not found" });
 
         const parsed = bookingCreateSchema.parse(req.body);
@@ -400,7 +401,7 @@ export function registerFormPublicRoutes(app: Express) {
     }),
     async (req, res) => {
       try {
-        const form = await storage.getFormBySlug(req.params.slug);
+        const form = await storage.getFormBySlug(routeParam(req, "slug"));
         if (!form || !form.isActive) {
           return res.status(404).json({ message: "Form not found" });
         }
@@ -465,7 +466,7 @@ export function registerFormPublicRoutes(app: Express) {
     }),
     async (req, res) => {
       try {
-        const form = await storage.getFormBySlug(req.params.slug);
+        const form = await storage.getFormBySlug(routeParam(req, "slug"));
         if (!form || !form.isActive) {
           return res.status(404).json({ message: "Form not found" });
         }

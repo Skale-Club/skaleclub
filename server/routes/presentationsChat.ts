@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { z } from "zod";
 import { storage } from "../storage.js";
@@ -173,7 +174,7 @@ export function registerPresentationsChatRoutes(app: Express) {
       "gemini-2.5-flash";
 
     // 3. Load presentation + guidelines BEFORE SSE
-    const existing = await storage.getPresentation(req.params.id);
+    const existing = await storage.getPresentation(routeParam(req, "id"));
     if (!existing) {
       return res.status(404).json({ message: "Presentation not found" });
     }
@@ -238,7 +239,7 @@ export function registerPresentationsChatRoutes(app: Express) {
         return;
       }
 
-      await storage.updatePresentation(req.params.id, {
+      await storage.updatePresentation(routeParam(req, "id"), {
         slides: validation.data,
         guidelinesSnapshot: guidelines,
         version: existing.version + 1,

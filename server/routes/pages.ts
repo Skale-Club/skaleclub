@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { storage } from "../storage.js";
 import { insertPageSchema, updatePageSchema } from "#shared/schema.js";
@@ -9,7 +10,7 @@ export function registerPageRoutes(app: Express) {
   // (same pitfall guard noted at server/routes/presentations.ts:44-45)
   app.get("/api/pages/slug/:slug", async (req, res) => {
     try {
-      const row = await storage.getPageBySlug(req.params.slug);
+      const row = await storage.getPageBySlug(routeParam(req, "slug"));
       if (!row || !row.isActive) {
         return res.status(404).json({ message: "Page not found" });
       }
@@ -36,7 +37,7 @@ export function registerPageRoutes(app: Express) {
   // ADMIN get by id
   app.get("/api/pages/:id", requireAdmin, async (req, res) => {
     try {
-      const row = await storage.getPage(req.params.id);
+      const row = await storage.getPage(routeParam(req, "id"));
       if (!row) return res.status(404).json({ message: "Page not found" });
       res.json(row);
     } catch (err) {
@@ -73,7 +74,7 @@ export function registerPageRoutes(app: Express) {
       if (!parsed.success) {
         return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
       }
-      const existing = await storage.getPage(req.params.id);
+      const existing = await storage.getPage(routeParam(req, "id"));
       if (!existing) return res.status(404).json({ message: "Page not found" });
 
       const updateData: any = { ...parsed.data };
@@ -89,7 +90,7 @@ export function registerPageRoutes(app: Express) {
         updateData.slug = slug;
       }
 
-      const updated = await storage.updatePage(req.params.id, updateData);
+      const updated = await storage.updatePage(routeParam(req, "id"), updateData);
       res.json(updated);
     } catch (err) {
       sendError(res, err, "Failed to update page");
@@ -99,9 +100,9 @@ export function registerPageRoutes(app: Express) {
   // ADMIN delete
   app.delete("/api/pages/:id", requireAdmin, async (req, res) => {
     try {
-      const existing = await storage.getPage(req.params.id);
+      const existing = await storage.getPage(routeParam(req, "id"));
       if (!existing) return res.status(404).json({ message: "Page not found" });
-      await storage.deletePage(req.params.id);
+      await storage.deletePage(routeParam(req, "id"));
       res.json({ success: true });
     } catch (err) {
       sendError(res, err, "Failed to delete page");

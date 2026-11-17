@@ -1,7 +1,8 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import postcss from "postcss";
-import tailwindcss from "tailwindcss";
+import tailwindcss from "@tailwindcss/postcss";
+import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
@@ -14,11 +15,11 @@ import { getAppLanding } from "../shared/appLandings.js";
 const output = process.argv[2];
 if (!output || !isAbsolute(output)) throw new Error("Pass an absolute, dedicated preview output directory.");
 Object.assign(globalThis, { React, require: createRequire(import.meta.url) });
-const { default: config } = await import("../tailwind.config.ts");
 mkdirSync(output, { recursive: true });
-const source = readFileSync(new URL("../client/src/components/downloads/AppLanding.tsx", import.meta.url), "utf8");
-const css = await postcss([tailwindcss({ ...config, content: [{ raw: source, extension: "tsx" }], plugins: [] })])
-  .process("@tailwind base; @tailwind utilities;", { from: undefined });
+// Compile the same v4 entry/config as production so preview styles cannot drift.
+const stylesheet = fileURLToPath(new URL("../client/src/index.css", import.meta.url));
+const css = await postcss([tailwindcss()])
+  .process(readFileSync(stylesheet, "utf8"), { from: stylesheet });
 const base = ":root{--font-sans:Inter,ui-sans-serif,system-ui,sans-serif;--font-display:Inter,ui-sans-serif,system-ui,sans-serif;--font-mono:monospace;--nav-offset:5rem}html{scroll-behavior:smooth}body{margin:0;background:#0a1221}.review-nav{position:absolute;top:16px;left:20px;right:20px;margin:auto;max-width:1100px;height:64px;display:flex;align-items:center;justify-content:space-between;border:1px solid #ffffff20;border-radius:40px;padding:0 24px;color:#f0f3fa;background:#111d32}.review-nav a{text-decoration:none;font-weight:600}";
 writeFileSync(join(output, "styles.css"), css.css + base);
 const links: string[] = [];

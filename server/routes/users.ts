@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { z } from "zod";
 import { and, asc, eq, ne, sql } from "drizzle-orm";
@@ -65,7 +66,7 @@ export function registerUserRoutes(app: Express) {
           phone: z.union([phoneInput, z.literal("")]).optional(),
         })
         .parse(req.body);
-      const userId = req.params.id;
+      const userId = routeParam(req, "id");
 
       const [existingUser] = await db.select().from(users).where(eq(users.id, userId));
       if (!existingUser) return res.status(404).json({ message: "User not found" });
@@ -104,7 +105,7 @@ export function registerUserRoutes(app: Express) {
   // Delete user
   app.delete("/api/users/:id", requireAdmin, async (req, res) => {
     try {
-      const userId = req.params.id;
+      const userId = routeParam(req, "id");
 
       if ((req.session as any)?.userId === userId) {
         return res.status(409).json({ message: "You cannot delete your own account" });

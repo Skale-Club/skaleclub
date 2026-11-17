@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express, Request, Response } from "express";
 
 /**
@@ -46,7 +47,7 @@ export function registerXpotRedirects(app: Express) {
 
   for (const kind of ["n", "q"] as const) {
     app.get(`/${kind}/:code`, (req: Request, res: Response) => {
-      res.redirect(301, xpotTagUrl(kind, req.params.code, rawQuery(req)));
+      res.redirect(301, xpotTagUrl(kind, routeParam(req, "code"), rawQuery(req)));
     });
   }
 }

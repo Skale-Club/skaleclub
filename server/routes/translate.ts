@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { z } from "zod";
 import crypto from "crypto";
@@ -92,7 +93,7 @@ export function registerTranslateRoutes(app: Express) {
   });
 
   app.delete("/api/translations/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
+    const id = Number(routeParam(req, "id"));
     if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ message: "Invalid translation id" });
     try {
       const deleted = await db.delete(translations).where(eq(translations.id, id)).returning({ id: translations.id });

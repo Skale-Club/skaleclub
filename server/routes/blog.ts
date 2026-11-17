@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express, RequestHandler } from "express";
 import { z } from "zod";
 import { storage } from "../storage.js";
@@ -64,7 +65,7 @@ export function registerBlogRoutes(app: Express) {
 
   app.delete("/api/blog/tags/:tag", requireAdmin, async (req, res) => {
     try {
-      const rawTag = decodeURIComponent(req.params.tag || "").trim();
+      const rawTag = decodeURIComponent(routeParam(req, "tag") || "").trim();
       if (!rawTag) {
         return res.status(400).json({ message: "Tag is required" });
       }
@@ -91,7 +92,7 @@ export function registerBlogRoutes(app: Express) {
 
   app.put("/api/blog/tags/:tag", requireAdmin, async (req, res) => {
     try {
-      const rawTag = decodeURIComponent(req.params.tag || "").trim();
+      const rawTag = decodeURIComponent(routeParam(req, "tag") || "").trim();
       const nextTag = String(req.body?.name || "").trim();
       if (!rawTag || !nextTag) {
         return res.status(400).json({ message: "Tag and new name are required" });
@@ -142,7 +143,7 @@ export function registerBlogRoutes(app: Express) {
 
   app.get("/api/blog/:idOrSlug", async (req, res) => {
     try {
-      const param = req.params.idOrSlug;
+      const param = routeParam(req, "idOrSlug");
       let post;
 
       if (/^\d+$/.test(param)) {
@@ -180,7 +181,7 @@ export function registerBlogRoutes(app: Express) {
   app.get("/api/blog/:id/related", async (req, res) => {
     try {
       const limit = req.query.limit ? Number(req.query.limit) : 4;
-      const posts = await storage.getRelatedBlogPosts(Number(req.params.id), limit);
+      const posts = await storage.getRelatedBlogPosts(Number(routeParam(req, "id")), limit);
       setPublicCache(res, 300);
       res.json(posts);
     } catch (err) {
@@ -211,7 +212,7 @@ export function registerBlogRoutes(app: Express) {
       if (typeof validatedData.content === "string") {
         validatedData.content = sanitizeBlogHtml(validatedData.content);
       }
-      const post = await storage.updateBlogPost(Number(req.params.id), validatedData);
+      const post = await storage.updateBlogPost(Number(routeParam(req, "id")), validatedData);
       res.json(post);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -223,7 +224,7 @@ export function registerBlogRoutes(app: Express) {
 
   app.delete("/api/blog/:id", requireAdmin, async (req, res) => {
     try {
-      await storage.deleteBlogPost(Number(req.params.id));
+      await storage.deleteBlogPost(Number(routeParam(req, "id")));
       res.json({ success: true });
     } catch (err) {
       sendError(res, err, "Failed to delete post");

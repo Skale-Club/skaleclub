@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express, Request } from "express";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
@@ -130,7 +131,7 @@ export function registerCompanyRoutes(app: Express) {
   // holding a session UUID. No client code calls it (the admin panel works by
   // numeric id), so gating it costs nothing.
   app.get('/api/form-leads/:sessionId', requireAdmin, async (req, res) => {
-    const lead = await storage.getFormLeadBySession(req.params.sessionId);
+    const lead = await storage.getFormLeadBySession(routeParam(req, "sessionId"));
     if (!lead) {
       return res.status(404).json({ message: 'Lead not found' });
     }
@@ -154,7 +155,7 @@ export function registerCompanyRoutes(app: Express) {
 
   app.patch('/api/form-leads/:id', requireAdmin, async (req, res) => {
     try {
-      const id = Number(req.params.id);
+      const id = Number(routeParam(req, "id"));
       if (Number.isNaN(id)) {
         return res.status(400).json({ message: 'Invalid lead id' });
       }
@@ -174,7 +175,7 @@ export function registerCompanyRoutes(app: Express) {
   });
 
   app.delete('/api/form-leads/:id', requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
+    const id = Number(routeParam(req, "id"));
     if (Number.isNaN(id)) return res.status(400).json({ message: 'Invalid lead id' });
     const deleted = await storage.deleteFormLead(id);
     if (!deleted) return res.status(404).json({ message: 'Lead not found' });

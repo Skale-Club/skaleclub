@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express, Request } from "express";
 import crypto from "crypto";
 
@@ -272,7 +273,7 @@ export function registerSkaleHubRoutes(app: Express) {
 
   app.post("/api/skale-hub/:liveId/access", hubPublicRateLimit, async (req, res) => {
     try {
-      const liveId = parseLiveId(req.params.liveId);
+      const liveId = parseLiveId(routeParam(req, "liveId"));
       if (!liveId) {
         return res.status(400).json({ message: "Invalid live id" });
       }
@@ -421,7 +422,7 @@ export function registerSkaleHubRoutes(app: Express) {
 
   app.get("/api/skale-hub/lives/:id", requireAdmin, async (req, res) => {
     try {
-      const liveId = parseLiveId(req.params.id);
+      const liveId = parseLiveId(routeParam(req, "id"));
       if (!liveId) {
         return res.status(400).json({ message: "Invalid live id" });
       }
@@ -474,7 +475,7 @@ export function registerSkaleHubRoutes(app: Express) {
 
   app.put("/api/skale-hub/lives/:id", requireAdmin, async (req, res) => {
     try {
-      const liveId = parseLiveId(req.params.id);
+      const liveId = parseLiveId(routeParam(req, "id"));
       if (!liveId) {
         return res.status(400).json({ message: "Invalid live id" });
       }
@@ -518,7 +519,7 @@ export function registerSkaleHubRoutes(app: Express) {
 
   app.delete("/api/skale-hub/lives/:id", requireAdmin, async (req, res) => {
     try {
-      const liveId = parseLiveId(req.params.id);
+      const liveId = parseLiveId(routeParam(req, "id"));
       if (!liveId) {
         return res.status(400).json({ message: "Invalid live id" });
       }

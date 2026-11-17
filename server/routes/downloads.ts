@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express, RequestHandler } from "express";
 import { downloadableAppSchema, publicDownloadableApp, appReleaseSchema } from "#shared/schema/downloads.js";
 import { downloadableAppStore } from "../lib/downloadableApps.js";
@@ -16,16 +17,16 @@ export function registerDownloadRoutes(app: Express, store = downloadableAppStor
   });
   app.get("/api/downloadable-apps/:slug", async (req, res) => {
     try {
-      const row = await store.get(req.params.slug);
+      const row = await store.get(routeParam(req, "slug"));
       if (!row?.isPublished) return res.status(404).json({ message: "Application not found" });
       res.json(publicDownloadableApp(await resolve(row)));
     } catch (err) { sendError(res, err, "Failed to load application"); }
   });
   app.get("/api/downloads/:slug/:releaseId", async (req, res) => {
     try {
-      const saved = await store.get(req.params.slug);
+      const saved = await store.get(routeParam(req, "slug"));
       const row = saved?.isPublished ? await resolve(saved) : saved;
-      const release = row?.isPublished ? row.releases.find((item) => item.id === req.params.releaseId && item.isPublished) : undefined;
+      const release = row?.isPublished ? row.releases.find((item) => item.id === routeParam(req, "releaseId") && item.isPublished) : undefined;
       if (!release) return res.status(404).json({ message: "Download not found" });
       // Validate on read as well, including records edited outside this API.
       const parsed = appReleaseSchema.safeParse(release);
@@ -40,9 +41,9 @@ export function registerDownloadRoutes(app: Express, store = downloadableAppStor
   const save = (create: boolean): RequestHandler => async (req, res) => {
     const parsed = downloadableAppSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
-    if (!create && !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(req.params.id)) return res.status(400).json({ message: "Invalid application id" });
+    if (!create && !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(routeParam(req, "id"))) return res.status(400).json({ message: "Invalid application id" });
     try {
-      const row = create ? await store.create(parsed.data) : await store.update(req.params.id, parsed.data);
+      const row = create ? await store.create(parsed.data) : await store.update(routeParam(req, "id"), parsed.data);
       if (!row) return res.status(404).json({ message: "Application not found" });
       res.status(create ? 201 : 200).json(row);
     } catch (err) {

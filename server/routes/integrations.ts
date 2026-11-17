@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { z } from "zod";
 import OpenAI from "openai";
@@ -1117,7 +1118,7 @@ export function registerIntegrationRoutes(app: Express) {
 
   app.post('/api/integrations/xphere/deliveries/:id/retry', requireAdmin, async (req, res) => {
     try {
-      const { payload: _payload, ...row } = await retryXphereDelivery(req.params.id);
+      const { payload: _payload, ...row } = await retryXphereDelivery(routeParam(req, "id"));
       res.json(row);
     } catch (err) {
       const message = sanitizeXphereMessage(err);

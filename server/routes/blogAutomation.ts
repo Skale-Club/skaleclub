@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "../storage.js";
@@ -217,7 +218,7 @@ export function registerBlogAutomationRoutes(app: Express) {
 
   // PATCH /api/blog/rss-sources/:id — partial update (name, url, enabled)
   app.patch("/api/blog/rss-sources/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
+    const id = Number(routeParam(req, "id"));
     if (!Number.isFinite(id) || id <= 0) {
       return res.status(400).json({ message: "Invalid source id" });
     }
@@ -232,7 +233,7 @@ export function registerBlogAutomationRoutes(app: Express) {
 
   // DELETE /api/blog/rss-sources/:id — cascade-deletes blog_rss_items via FK
   app.delete("/api/blog/rss-sources/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
+    const id = Number(routeParam(req, "id"));
     if (!Number.isFinite(id) || id <= 0) {
       return res.status(400).json({ message: "Invalid source id" });
     }
@@ -276,7 +277,7 @@ export function registerBlogAutomationRoutes(app: Express) {
   // POST /api/blog/jobs/:id/retry — re-run generation against the same RSS item
   // D-09: creates a NEW job row; the original failed row is preserved unchanged.
   app.post("/api/blog/jobs/:id/retry", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
+    const id = Number(routeParam(req, "id"));
     if (!Number.isFinite(id) || id <= 0) {
       return res.status(400).json({ message: "Invalid job id" });
     }
@@ -309,7 +310,7 @@ export function registerBlogAutomationRoutes(app: Express) {
   // POST /api/blog/jobs/:id/cancel — release stale lock + mark job cancelled
   // D-10: only allowed if lockAcquiredAt is older than 10 minutes.
   app.post("/api/blog/jobs/:id/cancel", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
+    const id = Number(routeParam(req, "id"));
     if (!Number.isFinite(id) || id <= 0) {
       return res.status(400).json({ message: "Invalid job id" });
     }
@@ -438,7 +439,7 @@ export function registerBlogAutomationRoutes(app: Express) {
   // POST /api/blog/posts/:id/approve — publish the draft NOW and record a
   // positive signal the generator will feed into future prompts.
   app.post("/api/blog/posts/:id/approve", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
+    const id = Number(routeParam(req, "id"));
     if (!Number.isFinite(id) || id <= 0) {
       return res.status(400).json({ message: "Invalid post id" });
     }
@@ -461,7 +462,7 @@ export function registerBlogAutomationRoutes(app: Express) {
   // reason is the strongest learning input) and DELETE the post. Title/topic
   // are snapshotted on the feedback row so learning survives the deletion.
   app.post("/api/blog/posts/:id/reject", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
+    const id = Number(routeParam(req, "id"));
     if (!Number.isFinite(id) || id <= 0) {
       return res.status(400).json({ message: "Invalid post id" });
     }

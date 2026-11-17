@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { storage } from "../storage.js";
 import { randomSlugSuffix } from "../lib/slug.js";
@@ -38,7 +39,7 @@ export function registerWhiteboardsRoutes(app: Express) {
   // /:id so "slug" is never taken for an id.
   app.get("/api/whiteboards/slug/:slug", async (req, res) => {
     try {
-      const board = await storage.getWhiteboardBySlug(req.params.slug);
+      const board = await storage.getWhiteboardBySlug(routeParam(req, "slug"));
       if (!board) return res.status(404).json({ message: "Whiteboard not found" });
       res.json({ id: board.id, slug: board.slug, title: board.title, scene: board.scene, updatedAt: board.updatedAt });
     } catch (err) {
@@ -58,9 +59,9 @@ export function registerWhiteboardsRoutes(app: Express) {
   });
 
   app.get("/api/whiteboards/:id", requireAdmin, async (req, res) => {
-    if (!UUID_RE.test(req.params.id)) return res.status(400).json({ message: "Invalid whiteboard id" });
+    if (!UUID_RE.test(routeParam(req, "id"))) return res.status(400).json({ message: "Invalid whiteboard id" });
     try {
-      const board = await storage.getWhiteboard(req.params.id);
+      const board = await storage.getWhiteboard(routeParam(req, "id"));
       if (!board) return res.status(404).json({ message: "Whiteboard not found" });
       res.json(board);
     } catch (err) {
@@ -85,13 +86,13 @@ export function registerWhiteboardsRoutes(app: Express) {
   // Saves title, slug and/or scene. The scene body can carry embedded images,
   // so this path gets the large JSON limit (LARGE_BODY_RE in server/app.ts).
   app.put("/api/whiteboards/:id", requireAdmin, async (req, res) => {
-    if (!UUID_RE.test(req.params.id)) return res.status(400).json({ message: "Invalid whiteboard id" });
+    if (!UUID_RE.test(routeParam(req, "id"))) return res.status(400).json({ message: "Invalid whiteboard id" });
     try {
       const parsed = insertWhiteboardSchema.partial().safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
       }
-      const existing = await storage.getWhiteboard(req.params.id);
+      const existing = await storage.getWhiteboard(routeParam(req, "id"));
       if (!existing) return res.status(404).json({ message: "Whiteboard not found" });
       const { baseVersion, ...updateData } = parsed.data;
       if (typeof updateData.slug === "string") {
@@ -121,9 +122,9 @@ export function registerWhiteboardsRoutes(app: Express) {
   });
 
   app.delete("/api/whiteboards/:id", requireAdmin, async (req, res) => {
-    if (!UUID_RE.test(req.params.id)) return res.status(400).json({ message: "Invalid whiteboard id" });
+    if (!UUID_RE.test(routeParam(req, "id"))) return res.status(400).json({ message: "Invalid whiteboard id" });
     try {
-      const existing = await storage.getWhiteboard(req.params.id);
+      const existing = await storage.getWhiteboard(routeParam(req, "id"));
       if (!existing) return res.status(404).json({ message: "Whiteboard not found" });
       await storage.deleteWhiteboard(existing.id);
       res.json({ success: true });

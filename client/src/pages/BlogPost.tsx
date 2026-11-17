@@ -1,3 +1,4 @@
+import { Facebook, Linkedin, Twitter } from "@/components/ui/brand-icons";
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'wouter';
@@ -9,9 +10,6 @@ import {
   Calendar,
   User,
   FileText,
-  Facebook,
-  Twitter, 
-  Linkedin,
   Share2
 } from 'lucide-react';
 import { formatDate } from '@/lib/format';
@@ -200,27 +198,30 @@ export default function BlogPostPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground transition-colors"
+                      aria-label="Share on Facebook"
                       data-testid="link-share-facebook"
                     >
-                      <Facebook className="w-4 h-4" />
+                      <Facebook className="w-4 h-4" aria-hidden="true" />
                     </a>
                     <a
                       href={shareLinks.twitter}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground transition-colors"
+                      aria-label="Share on Twitter / X"
                       data-testid="link-share-twitter"
                     >
-                      <Twitter className="w-4 h-4" />
+                      <Twitter className="w-4 h-4" aria-hidden="true" />
                     </a>
                     <a
                       href={shareLinks.linkedin}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground transition-colors"
+                      aria-label="Share on LinkedIn"
                       data-testid="link-share-linkedin"
                     >
-                      <Linkedin className="w-4 h-4" />
+                      <Linkedin className="w-4 h-4" aria-hidden="true" />
                     </a>
                     <a
                       href={shareLinks.whatsapp}

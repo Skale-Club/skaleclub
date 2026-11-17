@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express, Request, Response, RequestHandler } from "express";
 import { z } from "zod";
 import { createLiveSchema, liveCommandSchema } from "#shared/liveSharing.js";
@@ -52,44 +53,44 @@ export function registerLiveSharingRoutes(app: Express, options: {
     res.status(201).json(await service.create(userId(req), body.kind, body.sourceId, body.language));
   }));
   const base = "/api/live-sessions/:liveId";
-  app.get(`${base}/presenter`, requireAdmin, wrap(async (req, res) => { res.json(await service.presenter(req.params.liveId, userId(req))); }));
+  app.get(`${base}/presenter`, requireAdmin, wrap(async (req, res) => { res.json(await service.presenter(routeParam(req, "liveId"), userId(req))); }));
   app.post(`${base}/takeover`, requireAdmin, rateLimitMiddleware({ limit: 20, windowMs: 60_000, keyFn: userId }), wrap(async (req, res) => {
-    res.json(await service.takeover(req.params.liveId, userId(req)));
+    res.json(await service.takeover(routeParam(req, "liveId"), userId(req)));
   }));
   app.post(`${base}/command`, requireAdmin, rateLimitMiddleware({ limit: 240, windowMs: 60_000, keyFn: userId }), wrap(async (req, res) => {
-    res.json(await service.command(req.params.liveId, userId(req), liveCommandSchema.parse(req.body)));
+    res.json(await service.command(routeParam(req, "liveId"), userId(req), liveCommandSchema.parse(req.body)));
   }));
   app.post(`${base}/heartbeat`, requireAdmin, rateLimitMiddleware({ limit: 30, windowMs: 60_000, keyFn: userId }), wrap(async (req, res) => {
     const { controllerToken } = controllerSchema.parse(req.body);
-    res.json({ ...await service.heartbeat(req.params.liveId, userId(req), controllerToken), audienceCount: streams.audienceCount(req.params.liveId) });
+    res.json({ ...await service.heartbeat(routeParam(req, "liveId"), userId(req), controllerToken), audienceCount: streams.audienceCount(routeParam(req, "liveId")) });
   }));
   for (const action of ["share", "revoke"] as const) {
     app.post(`${base}/${action}`, requireAdmin, rateLimitMiddleware({ limit: 20, windowMs: 60_000, keyFn: userId }), wrap(async (req, res) => {
       const { controllerToken } = controllerSchema.parse(req.body);
-      res.json(await service[action](req.params.liveId, userId(req), controllerToken));
+      res.json(await service[action](routeParam(req, "liveId"), userId(req), controllerToken));
     }));
   }
   app.post(`${base}/join`, rateLimitMiddleware({ limit: 200, windowMs: 5 * 60_000 }), wrap(async (req, res) => {
     const body = joinSchema.parse(req.body);
-    if (body.code !== undefined && rateLimit(`live-code:${normalizeIpKey(req.ip)}:${req.params.liveId}`, { limit: 10, windowMs: 5 * 60_000 })) {
+    if (body.code !== undefined && rateLimit(`live-code:${normalizeIpKey(req.ip)}:${routeParam(req, "liveId")}`, { limit: 10, windowMs: 5 * 60_000 })) {
       return res.status(429).json({ message: "Too many access-code attempts. Please try again later." });
     }
-    const { view, credential } = await service.join(req.params.liveId, body.token, body.code);
+    const { view, credential } = await service.join(routeParam(req, "liveId"), body.token, body.code);
     res.cookie(cookieName, credential, {
       httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict",
-      path: `/api/live-sessions/${req.params.liveId}`, maxAge: Math.max(0, Date.parse(view.state.expiresAt) - Date.now()),
+      path: `/api/live-sessions/${routeParam(req, "liveId")}`, maxAge: Math.max(0, Date.parse(view.state.expiresAt) - Date.now()),
     });
     res.json(view);
   }));
   app.get(`${base}/view`, rateLimitMiddleware({ limit: 120, windowMs: 60_000 }), wrap(async (req, res) => {
-    res.json(await service.audience(req.params.liveId, cookieCredential(req)));
+    res.json(await service.audience(routeParam(req, "liveId"), cookieCredential(req)));
   }));
   // Mark presenter streams explicitly: anonymous guests cannot select this role.
   app.get(`${base}/events`, rateLimitMiddleware({ limit: 120, windowMs: 60_000 }), (req, res, next) => {
     if (req.query.role === "presenter") return requireAdmin(req, res, next);
     next();
   }, wrap(async (req, res) => {
-    const id = req.params.liveId, presenter = req.query.role === "presenter", credential = cookieCredential(req);
+    const id = routeParam(req, "liveId"), presenter = req.query.role === "presenter", credential = cookieCredential(req);
     if (presenter) await service.presenter(id, userId(req));
     else await service.audience(id, credential);
     if (res.destroyed || res.writableEnded) return;

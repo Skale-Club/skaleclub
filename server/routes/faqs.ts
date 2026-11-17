@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { z } from "zod";
 import { storage } from "../storage.js";
@@ -32,7 +33,7 @@ export function registerFaqRoutes(app: Express) {
   app.put("/api/faqs/:id", requireAdmin, async (req, res) => {
     try {
       const validatedData = insertFaqSchema.partial().parse(req.body);
-      const faq = await storage.updateFaq(Number(req.params.id), validatedData);
+      const faq = await storage.updateFaq(Number(routeParam(req, "id")), validatedData);
       res.json(faq);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -44,7 +45,7 @@ export function registerFaqRoutes(app: Express) {
 
   app.delete("/api/faqs/:id", requireAdmin, async (req, res) => {
     try {
-      await storage.deleteFaq(Number(req.params.id));
+      await storage.deleteFaq(Number(routeParam(req, "id")));
       res.json({ success: true });
     } catch (err) {
       sendError(res, err, "Failed to delete FAQ");

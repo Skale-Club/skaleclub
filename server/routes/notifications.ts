@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import { z } from "zod";
 import { storage } from "../storage.js";
@@ -16,7 +17,7 @@ export function registerNotificationRoutes(app: Express) {
 
   app.put("/api/notifications/templates/:id", requireAdmin, async (req, res) => {
     try {
-      const id = Number(req.params.id);
+      const id = Number(routeParam(req, "id"));
       if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({ message: "Invalid template id" });
       }
@@ -49,7 +50,7 @@ export function registerNotificationRoutes(app: Express) {
 
   app.delete("/api/notifications/templates/:id", requireAdmin, async (req, res) => {
     try {
-      const id = Number(req.params.id);
+      const id = Number(routeParam(req, "id"));
       if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({ message: "Invalid template id" });
       }

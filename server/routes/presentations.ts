@@ -1,3 +1,4 @@
+import { routeParam } from "../lib/routeParam.js";
 import type { Express } from "express";
 import crypto from "crypto";
 import { storage } from "../storage.js";
@@ -59,7 +60,7 @@ export function registerPresentationsRoutes(app: Express) {
   // (RESEARCH.md Pitfall 3 guard)
   app.get("/api/presentations/slug/:slug", async (req, res) => {
     try {
-      const presentation = await storage.getPresentationBySlug(req.params.slug);
+      const presentation = await storage.getPresentationBySlug(routeParam(req, "slug"));
       if (!presentation) return res.status(404).json({ message: "Presentation not found" });
       const { thumbnailUrl, thumbnailSignature, ...publicPresentation } = presentation as any;
       res.json(publicPresentation);
@@ -74,7 +75,7 @@ export function registerPresentationsRoutes(app: Express) {
   app.post("/api/presentations/:id/view", rateLimitMiddleware({ limit: 10, windowMs: 60_000 }), async (req, res) => {
     // Presentation ids are uuids — reject anything else before it reaches the
     // query layer (an invalid uuid literal is a Postgres error, not a 404).
-    if (!UUID_RE.test(req.params.id)) {
+    if (!UUID_RE.test(routeParam(req, "id"))) {
       return res.status(400).json({ message: "Invalid presentation id" });
     }
     try {
@@ -83,7 +84,7 @@ export function registerPresentationsRoutes(app: Express) {
       const ipHash = rawIp
         ? crypto.createHash("sha256").update(rawIp).digest("hex")
         : undefined;
-      await storage.recordPresentationView(req.params.id, ipHash);
+      await storage.recordPresentationView(routeParam(req, "id"), ipHash);
       res.json({ success: true });
     } catch (err) {
       console.error("[presentations] POST /api/presentations/:id/view failed:", err);
@@ -172,7 +173,7 @@ export function registerPresentationsRoutes(app: Express) {
 
   // PRES-07: Update — accepts title/slides; version NOT in insertPresentationSchema
   // so it must be injected manually as existing.version + 1 (RESEARCH.md Pitfall 2 guard)
-  // IDs are UUID strings — do NOT call Number(req.params.id)
+  // IDs are UUID strings — do NOT call Number(routeParam(req, "id"))
   app.put("/api/presentations/:id", requireAdmin, async (req, res) => {
     try {
       const updateSchema = insertPresentationSchema.partial();
@@ -180,7 +181,7 @@ export function registerPresentationsRoutes(app: Express) {
       if (!parsed.success) {
         return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
       }
-      const existing = await storage.getPresentation(req.params.id);
+      const existing = await storage.getPresentation(routeParam(req, "id"));
       if (!existing) return res.status(404).json({ message: "Presentation not found" });
       const updateData = { ...parsed.data };
       if (typeof updateData.slug === "string") {
@@ -191,7 +192,7 @@ export function registerPresentationsRoutes(app: Express) {
         }
         updateData.slug = slug;
       }
-      const updated = await storage.updatePresentation(req.params.id, {
+      const updated = await storage.updatePresentation(routeParam(req, "id"), {
         ...updateData,
         version: existing.version + 1,
       });
@@ -207,9 +208,9 @@ export function registerPresentationsRoutes(app: Express) {
       if (!parsed.success) {
         return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
       }
-      const existing = await storage.getPresentation(req.params.id);
+      const existing = await storage.getPresentation(routeParam(req, "id"));
       if (!existing) return res.status(404).json({ message: "Presentation not found" });
-      const updated = await storage.updatePresentation(req.params.id, parsed.data);
+      const updated = await storage.updatePresentation(routeParam(req, "id"), parsed.data);
       res.json(updated);
     } catch (err) {
       sendError(res, err, "Failed to update thumbnail");
@@ -219,9 +220,9 @@ export function registerPresentationsRoutes(app: Express) {
   // PRES-08: Delete — 404-guard before delete; cascade of presentation_views is DB-handled
   app.delete("/api/presentations/:id", requireAdmin, async (req, res) => {
     try {
-      const existing = await storage.getPresentation(req.params.id);
+      const existing = await storage.getPresentation(routeParam(req, "id"));
       if (!existing) return res.status(404).json({ message: "Presentation not found" });
-      await storage.deletePresentation(req.params.id);
+      await storage.deletePresentation(routeParam(req, "id"));
       res.json({ success: true });
     } catch (err) {
       sendError(res, err, "Failed to delete presentation");

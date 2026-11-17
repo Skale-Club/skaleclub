@@ -1,7 +1,8 @@
-import type { LucideIcon } from "lucide-react";
+import { Facebook, Github, Instagram, Linkedin, Twitch, Twitter, Youtube } from "@/components/ui/brand-icons";
+import type { SiteIcon } from "@/components/ui/brand-icons";
 import {
   // social
-  Instagram, Facebook, Youtube, Linkedin, Twitter, Github, Twitch, Send, Rss, Share2, Hash, AtSign, Music, Podcast,
+  Send, Rss, Share2, Hash, AtSign, Music, Podcast,
   // contact
   Phone, PhoneCall, Mail, MessageCircle, MessageSquare, MapPin, Map, Navigation, Globe, Link, ExternalLink, Calendar, CalendarCheck, Clock, User, Users, Contact, QrCode,
   // commerce
@@ -28,8 +29,8 @@ import {
   PartyPopper, Music2, Guitar, Drama, Presentation, Mic2, CalendarDays,
 } from "lucide-react";
 
-/** Curated icon set offered for /links buttons (keeps the full lucide barrel out of the bundle). */
-export const LINK_ICONS: Record<string, LucideIcon> = {
+/** Curated UI and brand icons offered for /links buttons. */
+export const LINK_ICONS: Record<string, SiteIcon> = {
   Instagram, Facebook, Youtube, Linkedin, Twitter, Github, Twitch, Send, Rss, Share2, Hash, AtSign, Music, Podcast,
   Phone, PhoneCall, Mail, MessageCircle, MessageSquare, MapPin, Map, Navigation, Globe, Link, ExternalLink, Calendar, CalendarCheck, Clock, User, Users, Contact, QrCode,
   ShoppingCart, ShoppingBag, Store, Tag, Gift, CreditCard, Wallet, DollarSign, Percent, Package, Truck, Receipt, BadgePercent, Ticket,
@@ -45,7 +46,7 @@ export const LINK_ICONS: Record<string, LucideIcon> = {
   PartyPopper, Music2, Guitar, Drama, Presentation, Mic2, CalendarDays,
 };
 
-/** Icon for a stored lucide name, or undefined when it is not in the curated set. */
-export function getLinkIcon(name: string | undefined | null): LucideIcon | undefined {
+/** Icon for a stored icon name, or undefined when it is not in the curated set. */
+export function getLinkIcon(name: string | undefined | null): SiteIcon | undefined {
   return name ? LINK_ICONS[name] : undefined;
 }
