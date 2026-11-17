@@ -105,7 +105,7 @@
     "framer-motion": "^14.10.1",
     "ghostscript-wasm-esm": "^1.0.1",
     "lottie-react": "^3.1.2",
-    "lucide-react": "^0.453.0",
+    "lucide-react": "^1.70.0",
     "playwright": "1.65.0",
     "postcss": "^8.5.32",
     "react": "^19.3.1",
