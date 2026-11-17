@@ -56,9 +56,9 @@ export function registerRedirectRoutes(app: Express) {
 // Public resolver — registered LAST so it never shadows real routes.
 // Only intercepts single-segment paths with no dots and not reserved.
 export function registerPublicRedirectResolver(app: Express) {
-  app.get("/:slug([a-z0-9-]+)", async (req, res, next) => {
-    const { slug } = req.params;
-    if (isReservedSlug(slug)) return next();
+  app.get("/:slug", async (req, res, next) => {
+    const slug = routeParam(req, "slug");
+    if (!/^[a-z0-9-]+$/.test(slug) || isReservedSlug(slug)) return next();
     try {
       const record = await storage.getRedirectBySlug(slug);
       if (!record || !record.isActive) return next();
