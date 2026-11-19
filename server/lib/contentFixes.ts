@@ -193,7 +193,8 @@ export async function applyContentFixes(): Promise<TaskResult> {
 export const PRODUCT_SITES: Record<string, { site?: string; icon?: string; image?: string }> = {
   "scheduling-system": { site: "https://xkedule.com" },
   xtimator: { site: "https://xtimator.com" },
-  "smart-menu": { site: process.env.XMARTMENU_URL || "https://xmartmenu.skale.club" },
+  // XmartMenu was renamed Xprout on 2026-11-13; the old host 301s to xprout.app.
+  "smart-menu": { site: process.env.XPROUT_URL || "https://xprout.app" },
   xareable: { site: "https://xareable.com" },
   "crm-setup": { site: "https://xphere.app" },
 };
@@ -278,6 +279,7 @@ interface ProductCatalogArtwork {
   dashboard?: string;
   legacyHome?: string[];
   legacyLogo?: string[];
+  legacyDashboard?: string[];
 }
 
 const PRODUCT_CATALOG_ARTWORK: Record<string, ProductCatalogArtwork> = {
@@ -315,16 +317,21 @@ const PRODUCT_CATALOG_ARTWORK: Record<string, ProductCatalogArtwork> = {
     ],
   },
   "smart-menu": {
-    site: "https://xmartmenu.skale.club",
-    home: "/product-assets/catalog-2026-09/smart-menu-home.webp",
-    logo: "/product-assets/catalog-2026-09/smart-menu-logo.webp",
-    dashboard: "/product-assets/catalog-2026-09/smart-menu-dashboard.webp",
+    // Xprout (formerly XmartMenu). The slug stays "smart-menu" so URLs and
+    // Xphere page rules keep working; the XmartMenu captures are legacy.
+    site: "https://xprout.app",
+    home: "/product-assets/catalog-2026-11/xprout-home.webp",
+    logo: "/product-assets/catalog-2026-11/xprout-logo.webp",
+    dashboard: "/product-assets/catalog-2026-11/xprout-dashboard.webp",
     legacyHome: [
       "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/product-assets/smart-menu-home-2026-09.jpg",
+      "/product-assets/catalog-2026-09/smart-menu-home.webp",
     ],
     legacyLogo: [
       "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/1783205835559_464fce11-1b52-4e45-bdb2-3958d0fadd18.webp",
+      "/product-assets/catalog-2026-09/smart-menu-logo.webp",
     ],
+    legacyDashboard: ["/product-assets/catalog-2026-09/smart-menu-dashboard.webp"],
   },
   "crm-setup": {
     site: "https://xphere.app",
@@ -392,7 +399,7 @@ export async function refreshProductCatalogArtwork(): Promise<TaskResult> {
     // existing admin-selected dashboard always wins; products without a
     // verified capture keep their one-image popup.
     if (spec.dashboard && svc.dashboardImageUrl !== spec.dashboard) {
-      if (canReplaceProductAsset(svc.dashboardImageUrl, spec.dashboard)) {
+      if (canReplaceProductAsset(svc.dashboardImageUrl, spec.dashboard, spec.legacyDashboard)) {
         patch.dashboardImageUrl = spec.dashboard;
       } else {
         notes.push(`${svc.title}: kept unexpected admin dashboard ${svc.dashboardImageUrl}`);

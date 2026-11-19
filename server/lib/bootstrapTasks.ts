@@ -28,6 +28,8 @@ const TASKS: Task[] = [
   { name: "service-3d-printing", description: "3D Printing card in Our Services, with packaged editorial image", run: ensure3dPrintingService },
   { name: "service-images-editorial-2026-09", description: "Replace legacy 3D service artwork with the editorial photo set", run: refreshServiceImages },
   { name: "product-catalog-artwork-2026-09", description: "Official product logos, real website captures and verified demo dashboards", run: refreshProductCatalogArtwork },
+  // Same function, re-run once for the XmartMenu → Xprout rename (the task above is done in prod).
+  { name: "product-catalog-artwork-2026-11-xprout", description: "XmartMenu renamed Xprout: new logo, xprout.app capture and guest-menu preview", run: refreshProductCatalogArtwork },
   { name: "product-artwork", description: "Product icons and photos copied from each X app's own site", run: syncProductArtwork },
   // After service-3d-printing, so the card it adds gets a category too.
   { name: "catalog-categories-2026-09", description: "Explicit catalog category on each Our Services card", run: assignServiceCategories },
