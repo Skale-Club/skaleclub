@@ -38,6 +38,9 @@ const PATH_REDIRECTS: Record<string, string> = {
   // (/nfc-keychains, first level; the /nfc-guide is its second level).
   "/products/nfc-keychains": "/nfc-keychains",
   "/br/products/nfc-keychains": "/br/nfc-keychains",
+  // XmartMenu was renamed Xprout on 2026-11-13 (shared/platforms.ts).
+  "/platforms/xmartmenu": "/platforms/xprout",
+  "/br/platforms/xmartmenu": "/br/platforms/xprout",
 };
 
 export function registerCanonicalHostRedirects(app: Express) {
