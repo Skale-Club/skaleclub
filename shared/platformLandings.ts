@@ -1,5 +1,5 @@
 export type PlatformLandingLanguage = "en" | "pt";
-export type PlatformLandingSlug = "xkedule" | "xtimator" | "xphere" | "xareable" | "xcraper" | "xpot" | "xmartmenu" | "xpeed";
+export type PlatformLandingSlug = "xkedule" | "xtimator" | "xphere" | "xareable" | "xcraper" | "xpot" | "xprout" | "xpeed";
 export type PlatformCtaKind = "access" | "contact";
 
 export interface PlatformLandingContent {
@@ -14,7 +14,7 @@ export interface PlatformLandingContent {
 }
 
 export const PLATFORM_LANDING_SLUGS: readonly PlatformLandingSlug[] = [
-  "xkedule", "xtimator", "xphere", "xareable", "xcraper", "xpot", "xmartmenu", "xpeed",
+  "xkedule", "xtimator", "xphere", "xareable", "xcraper", "xpot", "xprout", "xpeed",
 ];
 
 type LocalizedLanding = Record<PlatformLandingLanguage, PlatformLandingContent>;
@@ -128,21 +128,22 @@ const LANDINGS: Record<PlatformLandingSlug, LocalizedLanding> = {
       ctaKind: "access",
     },
   },
-  xmartmenu: {
+  // Formerly XmartMenu (renamed 2026-11-13). Copy follows https://xprout.app.
+  xprout: {
     en: {
-      slug: "xmartmenu", name: "XmartMenu", eyebrow: "Digital menus for restaurants",
-      headline: "Make your menu easy to browse.",
-      intro: "Share a digital restaurant menu that customers can open on their own devices.",
-      benefits: ["Present dishes and details clearly", "Share a menu by link or QR", "Update menu information in one place"],
-      seo: { title: "XmartMenu | Digital Restaurant Menus", description: "Create and share digital menus for restaurants with XmartMenu." },
+      slug: "xprout", name: "Xprout", eyebrow: "Visual menus for restaurants",
+      headline: "Let guests explore the menu.",
+      intro: "A visual menu where every dish leads with a real photo, with 3D to show selected dishes right on the table.",
+      benefits: ["Lead every dish with a real photo", "Show selected dishes in 3D", "Your logo and colors on every page"],
+      seo: { title: "Xprout | Visual Restaurant Menus with 3D Dishes", description: "Give guests a visual restaurant menu with real dish photos and 3D views of selected dishes, branded with your logo and colors." },
       ctaKind: "access",
     },
     pt: {
-      slug: "xmartmenu", name: "XmartMenu", eyebrow: "Cardápios digitais para restaurantes",
-      headline: "Facilite a consulta ao cardápio.",
-      intro: "Compartilhe um cardápio digital que clientes podem abrir nos próprios celulares.",
-      benefits: ["Apresente pratos e detalhes", "Compartilhe por link ou QR", "Atualize informações em um só lugar"],
-      seo: { title: "XmartMenu | Cardápios digitais para restaurantes", description: "Crie e compartilhe cardápios digitais para restaurantes com o XmartMenu." },
+      slug: "xprout", name: "Xprout", eyebrow: "Cardápios visuais para restaurantes",
+      headline: "Deixe o cliente explorar o cardápio.",
+      intro: "Um cardápio visual em que cada prato aparece com foto real, com 3D para mostrar pratos selecionados direto na mesa.",
+      benefits: ["Cada prato com uma foto real", "Pratos selecionados em 3D", "Seu logo e suas cores em cada página"],
+      seo: { title: "Xprout | Cardápios visuais com pratos em 3D", description: "Dê aos clientes um cardápio visual com fotos reais dos pratos e pratos selecionados em 3D, com o logo e as cores do seu restaurante." },
       ctaKind: "access",
     },
   },

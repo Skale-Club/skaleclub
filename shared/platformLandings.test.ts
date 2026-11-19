@@ -24,6 +24,13 @@ test("platform aliases keep canonical branded paths and allow future CMS entries
   for (const invalid of ["../apps", "a/b", "", "A", "a".repeat(81)]) assert.equal(platformPath(invalid), undefined);
 });
 
+test("the former XmartMenu slug resolves to Xprout", () => {
+  assert.equal(platformSlug("xmartmenu"), "xprout");
+  assert.equal(platformDbSlug("xmartmenu"), "smart-menu");
+  assert.equal(platformPath("smart-menu"), "/platforms/xprout");
+  assert.equal(getPlatformLanding("xprout", "en")?.name, "Xprout");
+});
+
 test("platform access links accept web destinations and reject executable or credential URLs", () => {
   assert.equal(safePlatformUrl("xpeed.skale.club"), "https://xpeed.skale.club/");
   for (const invalid of ["javascript:alert(1)", "data:text/html,test", "mailto:a@test.com", "https://user:secret@test.com", "https://", ""]) assert.equal(safePlatformUrl(invalid), undefined);
